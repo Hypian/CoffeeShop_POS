@@ -382,11 +382,7 @@ window.updateCartQty = function(productId, delta) {
   renderCart();
 };
 
-window.checkoutOrder = function() {
-  if (window.checkAutoRollover) window.checkAutoRollover();
-  state.cart = [];
-  renderCart();
-};
+
 
 window.clearCart = function() {
   state.cart = [];
@@ -497,6 +493,7 @@ window.setCashPreset = function(amount) {
 };
 
 window.processDirectPayment = function() {
+  if (window.checkAutoRollover) window.checkAutoRollover();
   const method = document.getElementById('directPaymentMethod').value;
   const totals = calculateCartTotals();
   let paymentDetails = '';
@@ -680,6 +677,7 @@ window.clearSignature = function() {
 };
 
 window.processTabPayment = function() {
+  if (window.checkAutoRollover) window.checkAutoRollover();
   if (!state.currentTabEmployee) {
     window.showToast('Please select an employee for tab checkout', 'error');
     return;
@@ -861,16 +859,12 @@ window.openAddDepartmentModal = function() {
 };
 
 window.saveNewDepartment = function() {
-  const name = (document.getElementById('addDeptName').value || '').trim();
+  const name = (document.getElementById('addDeptName').value || '').trim().toUpperCase();
   const code = (document.getElementById('addDeptCode').value || '').trim().toUpperCase();
   const limit = parseFloat(document.getElementById('addDeptLimit').value) || 0;
 
   if (!name || !code) {
     window.showToast('Department name and code are required.', 'error');
-    return;
-  }
-  if (limit <= 0) {
-    window.showToast('Please specify a valid monthly credit limit.', 'error');
     return;
   }
 
@@ -1086,6 +1080,84 @@ window.closeShift = function() {
 };
 
 // Reports View Renderer
+
+window.printHRReport = function() {
+  const depts = state.departments;
+  let printHtml = `
+    <div style="font-family:sans-serif; color:#000; padding:20px; max-width:800px; margin:0 auto;">
+      <h1 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">HR Payroll Deductions Report</h1>
+      <p style="text-align:right; font-size:12px; color:#555;">Generated: ${new Date().toLocaleString()}</p>
+      <p style="font-size:14px; margin-bottom:30px;">This report details the outstanding Tab/Credit balances for all employees, grouped by department, to be deducted from payroll.</p>
+  `;
+  
+  let hasData = false;
+  depts.forEach(d => {
+    const emps = state.employees.filter(e => e.departmentId === d.id && e.currentBalance > 0);
+    if (emps.length > 0) {
+      hasData = true;
+      printHtml += `
+        <h3 style="margin-top:20px; background-color:#f1f5f9; padding:8px 12px; font-size:16px;">Department: ${d.name} (${d.code})</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
+          <tr style="border-bottom:2px solid #000;">
+            <th style="text-align:left; padding:8px;">Staff ID</th>
+            <th style="text-align:left; padding:8px;">Employee Name</th>
+            <th style="text-align:right; padding:8px;">Amount to Deduct</th>
+          </tr>
+      `;
+      let deptTotal = 0;
+      emps.forEach(e => {
+        deptTotal += e.currentBalance;
+        printHtml += `
+          <tr style="border-bottom:1px solid #ccc;">
+            <td style="padding:8px;">${e.staffId || 'N/A'}</td>
+            <td style="padding:8px;">${e.fullName}</td>
+            <td style="text-align:right; padding:8px;">${formatMoney(e.currentBalance)}</td>
+          </tr>
+        `;
+      });
+      printHtml += `
+          <tr style="font-weight:bold; background-color:#f8fafc;">
+            <td colspan="2" style="padding:8px; text-align:right;">Department Total:</td>
+            <td style="text-align:right; padding:8px;">${formatMoney(deptTotal)}</td>
+          </tr>
+        </table>
+      `;
+    }
+  });
+
+  if (!hasData) {
+    printHtml += `<p style="text-align:center; font-style:italic; padding:30px 0;">No outstanding balances to report.</p>`;
+  }
+
+  const totalOutstanding = state.employees.reduce((s,e)=>s+e.currentBalance, 0);
+  printHtml += `
+      <div style="margin-top:30px; font-size:18px; font-weight:bold; text-align:right; border-top:2px solid #000; padding-top:10px;">
+        Total Organization Deductions: ${formatMoney(totalOutstanding)}
+      </div>
+      
+      <div style="margin-top:80px; display:flex; justify-content:space-between; font-size:14px;">
+        <div style="width: 45%;">
+          <p style="margin-bottom:40px;">Prepared By (Manager):</p>
+          <p style="border-top:1px solid #000; padding-top:5px;">Name & Signature</p>
+        </div>
+        <div style="width: 45%;">
+          <p style="margin-bottom:40px;">Received By (HR Department):</p>
+          <p style="border-top:1px solid #000; padding-top:5px;">Name, Date & Signature</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const printWindow = window.open('', '', 'width=800,height=800');
+  printWindow.document.write(printHtml);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+};
+
 function renderReports() {
   const container = document.getElementById('reportsContent');
   if (!container) return;
@@ -1131,8 +1203,24 @@ function renderReports() {
           <p class="text-xs text-[#475569]">Generate & print full A4 management report with financial breakdown and department tab balances.</p>
         </div>
       </div>
-      <button onclick="printDailyA4Report()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-lg shadow-[#F59E0B]/20">
-        <span>🖨️</span> Print A4 Report
+      <div class="flex gap-2">
+        <button onclick="printDailyA4Report()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-lg shadow-[#F59E0B]/20">
+          <span>🖨</span> Print A4 Report
+        </button>
+      </div>
+    </div>
+
+    <!-- HR Export Banner -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 mt-4 mb-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl">👥</div>
+        <div>
+          <h3 class="text-base font-bold text-[#0F172A]">HR Payroll Deductions Export</h3>
+          <p class="text-xs text-[#475569]">Print a grouped department-by-department report of all outstanding staff consumed tabs for salary deductions.</p>
+        </div>
+      </div>
+      <button onclick="printHRReport()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-lg shadow-[#8B5CF6]/20">
+        🖨 Export HR Report
       </button>
     </div>
 
