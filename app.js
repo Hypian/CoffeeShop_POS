@@ -163,9 +163,11 @@ function loadStorageData() {
       state.orders = (parsed.orders && parsed.orders.length) ? parsed.orders : DEFAULT_ORDERS;
       state.auditLogs = parsed.auditLogs ? parsed.auditLogs : [];
       state.archives = parsed.archives ? parsed.archives : [];
+      state.tabReceipts = parsed.tabReceipts ? parsed.tabReceipts : [];
       state.lastActiveDate = parsed.lastActiveDate || new Date().toLocaleDateString();
       state.auditLogs = parsed.auditLogs ? parsed.auditLogs : [];
       state.archives = parsed.archives ? parsed.archives : [];
+      state.tabReceipts = parsed.tabReceipts ? parsed.tabReceipts : [];
       state.lastActiveDate = parsed.lastActiveDate || new Date().toLocaleDateString();
       
       // Auto-migrate old USD data to RWF
@@ -184,9 +186,11 @@ function loadStorageData() {
       state.orders = [...DEFAULT_ORDERS];
       state.auditLogs = [];
       state.archives = [];
+      state.tabReceipts = [];
       state.lastActiveDate = new Date().toLocaleDateString();
       state.auditLogs = [];
       state.archives = [];
+      state.tabReceipts = [];
       state.lastActiveDate = new Date().toLocaleDateString();
     }
   } else {
@@ -197,9 +201,11 @@ function loadStorageData() {
     state.orders = [...DEFAULT_ORDERS];
     state.auditLogs = [];
     state.archives = [];
+    state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
     state.auditLogs = [];
     state.archives = [];
+    state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
   }
 }
@@ -225,6 +231,7 @@ window.saveData = function() {
     orders: state.orders,
     auditLogs: state.auditLogs,
     archives: state.archives,
+    tabReceipts: state.tabReceipts,
     lastActiveDate: state.lastActiveDate
   }));
 }
@@ -534,6 +541,7 @@ window.processDirectPayment = function() {
   });
 
   state.orders.unshift(order);
+  state.tabReceipts.unshift(order);
   saveData();
   window.clearCart();
   window.closeModal('modalDirectCheckout');
@@ -723,6 +731,7 @@ window.processTabPayment = function() {
   });
 
   state.orders.unshift(order);
+  state.tabReceipts.unshift(order);
   saveData();
   window.clearCart();
   window.closeModal('modalTabCheckout');
@@ -823,6 +832,7 @@ window.applyPartialSettle = function() {
     return;
   }
   emp.currentBalance -= amt;
+  if (emp.currentBalance <= 0) { state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== emp.id); }
   addAuditLog("Tab Partial Settlement", `Settled RWF ${amt} for ${emp.fullName}`);
   saveData();
   window.closeModal('modalSettleTab');
@@ -839,6 +849,7 @@ window.applyFullSettle = function() {
   }
   const amt = emp.currentBalance;
   emp.currentBalance = 0;
+  state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== emp.id);
   addAuditLog("Tab Full Settlement", `Fully settled RWF ${amt} for ${emp.fullName}`);
   saveData();
   window.closeModal('modalSettleTab');
@@ -1081,17 +1092,166 @@ window.closeShift = function() {
 
 // Reports View Renderer
 
+
+window.updateHREmployeeDropdown = function() {
+  const deptSelect = document.getElementById('hrFilterDept');
+  const empSelect = document.getElementById('hrFilterEmp');
+  if (!deptSelect || !empSelect) return;
+  
+  if (deptSelect.value === 'ALL') {
+    empSelect.innerHTML = '<option value="ALL">All Staff</option>';
+    empSelect.disabled = true;
+  } else {
+    const emps = state.employees.filter(e => e.departmentId === deptSelect.value && e.currentBalance > 0);
+    empSelect.innerHTML = '<option value="ALL">All Staff in Dept</option>' + emps.map(e => `<option value="${e.id}">${e.fullName}</option>`).join('');
+    empSelect.disabled = false;
+  }
+};
+
+
+window.exportHRCSV = function() {
+  const deptId = document.getElementById('hrFilterDept')?.value || 'ALL';
+  const empId = document.getElementById('hrFilterEmp')?.value || 'ALL';
+  
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  if (empId !== 'ALL') {
+    // Detailed statement for individual employee
+    const emp = state.employees.find(e => e.id === empId);
+    if (!emp) return;
+    const dept = state.departments.find(d => d.id === emp.departmentId);
+    const receipts = state.tabReceipts.filter(r => r.employeeId === empId);
+    
+    csvContent += "Detailed Statement of Account\n";
+    csvContent += `Employee:,${emp.fullName}\n`;
+    csvContent += `Staff ID:,${emp.staffId || 'N/A'}\n`;
+    csvContent += `Department:,${dept ? dept.name : 'Unknown'}\n`;
+    csvContent += `Total Outstanding:,${emp.currentBalance}\n\n`;
+    
+    csvContent += "Date & Time,Order ID,Items Consumed,Amount\n";
+    if (receipts.length > 0) {
+      receipts.reverse().forEach(r => {
+        const itemsStr = r.items.map(i => `${i.qty}x ${state.products.find(p=>p.id===i.productId)?.name || 'Item'}`).join('; ');
+        csvContent += `"${new Date(r.timestamp).toLocaleString()}","${r.id}","${itemsStr}",${r.total}\n`;
+      });
+    }
+  } else {
+    // Departmental Export
+    let deptsToExport = state.departments;
+    if (deptId !== 'ALL') {
+      deptsToExport = state.departments.filter(d => d.id === deptId);
+    }
+    
+    csvContent += "HR Payroll Deductions Export\n\n";
+    csvContent += "Department,Staff ID,Employee Name,Amount to Deduct\n";
+    
+    deptsToExport.forEach(d => {
+      const emps = state.employees.filter(e => e.departmentId === d.id && e.currentBalance > 0);
+      emps.forEach(e => {
+        csvContent += `"${d.name} (${d.code})","${e.staffId || 'N/A'}","${e.fullName}",${e.currentBalance}\n`;
+      });
+    });
+  }
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `hr_export_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 window.printHRReport = function() {
-  const depts = state.departments;
+  const deptId = document.getElementById('hrFilterDept')?.value || 'ALL';
+  const empId = document.getElementById('hrFilterEmp')?.value || 'ALL';
+  
+  if (empId !== 'ALL') {
+    // PRINT DETAILED STATEMENT FOR INDIVIDUAL EMPLOYEE
+    const emp = state.employees.find(e => e.id === empId);
+    const dept = state.departments.find(d => d.id === emp.departmentId);
+    const receipts = state.tabReceipts.filter(r => r.employeeId === empId);
+    
+    let printHtml = `
+      <div style="font-family:sans-serif; color:#000; padding:20px; max-width:800px; margin:0 auto;">
+        <h1 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">Detailed Statement of Account</h1>
+        <p style="text-align:right; font-size:12px; color:#555;">Generated: ${new Date().toLocaleString()}</p>
+        
+        <div style="background-color:#f1f5f9; padding:15px; margin:20px 0; border-radius:8px;">
+          <h2 style="margin:0 0 10px 0; font-size:18px;">${emp.fullName}</h2>
+          <p style="margin:0 0 5px 0;"><strong>Staff ID:</strong> ${emp.staffId || 'N/A'}</p>
+          <p style="margin:0 0 5px 0;"><strong>Department:</strong> ${dept ? dept.name : 'Unknown'}</p>
+          <p style="margin:0; font-size:16px; color:#EF4444;"><strong>Total Outstanding: ${formatMoney(emp.currentBalance)}</strong></p>
+        </div>
+        
+        <h3 style="margin-top:30px; border-bottom:1px solid #ccc; padding-bottom:5px;">Itemized Receipt History</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
+          <tr style="border-bottom:2px solid #000;">
+            <th style="text-align:left; padding:8px;">Date & Time</th>
+            <th style="text-align:left; padding:8px;">Order ID</th>
+            <th style="text-align:left; padding:8px;">Items Consumed</th>
+            <th style="text-align:right; padding:8px;">Amount</th>
+          </tr>
+    `;
+    
+    if (receipts.length > 0) {
+      let sum = 0;
+      receipts.reverse().forEach(r => {
+        sum += r.total;
+        const itemsStr = r.items.map(i => `${i.qty}x ${state.products.find(p=>p.id===i.productId)?.name || 'Item'}`).join(', ');
+        printHtml += `
+          <tr style="border-bottom:1px solid #ccc;">
+            <td style="padding:8px;">${new Date(r.timestamp).toLocaleString()}</td>
+            <td style="padding:8px; font-size:11px;">${r.id}</td>
+            <td style="padding:8px;">${itemsStr}</td>
+            <td style="text-align:right; padding:8px;">${formatMoney(r.total)}</td>
+          </tr>
+        `;
+      });
+      printHtml += `
+          <tr style="font-weight:bold; background-color:#f8fafc;">
+            <td colspan="3" style="padding:8px; text-align:right;">Calculated Total of Receipts:</td>
+            <td style="text-align:right; padding:8px;">${formatMoney(sum)}</td>
+          </tr>
+      `;
+    } else {
+      printHtml += `<tr><td colspan="4" style="padding:20px; text-align:center; font-style:italic;">No detailed receipts found for this balance (may have been accumulated before archiving was enabled).</td></tr>`;
+    }
+    
+    printHtml += `
+        </table>
+        <div style="margin-top:60px; display:flex; justify-content:space-between; font-size:14px;">
+          <div style="width: 45%;">
+            <p style="margin-bottom:40px;">Employee Acknowledgement:</p>
+            <p style="border-top:1px solid #000; padding-top:5px;">Name, Date & Signature</p>
+          </div>
+          <div style="width: 45%;">
+            <p style="margin-bottom:40px;">Prepared By (HR / Admin):</p>
+            <p style="border-top:1px solid #000; padding-top:5px;">Name, Date & Signature</p>
+          </div>
+        </div>
+      </div>
+    `;
+    openPrintWindow(printHtml);
+    return;
+  }
+
+  // PRINT DEPARTMENTAL EXPORT
+  let deptsToPrint = state.departments;
+  if (deptId !== 'ALL') {
+    deptsToPrint = state.departments.filter(d => d.id === deptId);
+  }
+  
   let printHtml = `
     <div style="font-family:sans-serif; color:#000; padding:20px; max-width:800px; margin:0 auto;">
-      <h1 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">HR Payroll Deductions Report</h1>
+      <h1 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">HR Payroll Deductions Export</h1>
       <p style="text-align:right; font-size:12px; color:#555;">Generated: ${new Date().toLocaleString()}</p>
-      <p style="font-size:14px; margin-bottom:30px;">This report details the outstanding Tab/Credit balances for all employees, grouped by department, to be deducted from payroll.</p>
+      <p style="font-size:14px; margin-bottom:30px;">This report details the outstanding Tab/Credit balances for employees to be deducted from payroll.</p>
   `;
   
   let hasData = false;
-  depts.forEach(d => {
+  let overallTotal = 0;
+  deptsToPrint.forEach(d => {
     const emps = state.employees.filter(e => e.departmentId === d.id && e.currentBalance > 0);
     if (emps.length > 0) {
       hasData = true;
@@ -1107,6 +1267,7 @@ window.printHRReport = function() {
       let deptTotal = 0;
       emps.forEach(e => {
         deptTotal += e.currentBalance;
+        overallTotal += e.currentBalance;
         printHtml += `
           <tr style="border-bottom:1px solid #ccc;">
             <td style="padding:8px;">${e.staffId || 'N/A'}</td>
@@ -1126,13 +1287,12 @@ window.printHRReport = function() {
   });
 
   if (!hasData) {
-    printHtml += `<p style="text-align:center; font-style:italic; padding:30px 0;">No outstanding balances to report.</p>`;
+    printHtml += `<p style="text-align:center; font-style:italic; padding:30px 0;">No outstanding balances found for the selected criteria.</p>`;
   }
 
-  const totalOutstanding = state.employees.reduce((s,e)=>s+e.currentBalance, 0);
   printHtml += `
       <div style="margin-top:30px; font-size:18px; font-weight:bold; text-align:right; border-top:2px solid #000; padding-top:10px;">
-        Total Organization Deductions: ${formatMoney(totalOutstanding)}
+        Total Export Deductions: ${formatMoney(overallTotal)}
       </div>
       
       <div style="margin-top:80px; display:flex; justify-content:space-between; font-size:14px;">
@@ -1147,16 +1307,19 @@ window.printHRReport = function() {
       </div>
     </div>
   `;
-  
+  openPrintWindow(printHtml);
+};
+
+function openPrintWindow(html) {
   const printWindow = window.open('', '', 'width=800,height=800');
-  printWindow.document.write(printHtml);
+  printWindow.document.write(html);
   printWindow.document.close();
   printWindow.focus();
   setTimeout(() => {
     printWindow.print();
     printWindow.close();
   }, 250);
-};
+}
 
 function renderReports() {
   const container = document.getElementById('reportsContent');
@@ -1210,21 +1373,33 @@ function renderReports() {
       </div>
     </div>
 
-    <!-- HR Export Banner -->
-    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 mt-4 mb-4">
+        <!-- HR Export Banner -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-4 mb-4">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl">👥</div>
         <div>
-          <h3 class="text-base font-bold text-[#0F172A]">HR Payroll Deductions Export</h3>
-          <p class="text-xs text-[#475569]">Print a grouped department-by-department report of all outstanding staff consumed tabs for salary deductions.</p>
+          <h3 class="text-base font-bold text-[#0F172A]">HR Payroll & Statement Export</h3>
+          <p class="text-xs text-[#475569]">Print grouped department reports or detailed individual staff statements.</p>
         </div>
       </div>
-      <button onclick="printHRReport()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-lg shadow-[#8B5CF6]/20">
-        🖨 Export HR Report
-      </button>
+      <div class="flex flex-col md:flex-row gap-2 items-center w-full md:w-auto">
+        <select id="hrFilterDept" class="bg-[#F8FAFC] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B5CF6] w-full md:w-auto" onchange="window.updateHREmployeeDropdown()">
+          <option value="ALL">All Departments</option>
+          ${state.departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+        </select>
+        <select id="hrFilterEmp" class="bg-[#F8FAFC] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B5CF6] w-full md:w-auto" disabled>
+          <option value="ALL">All Staff</option>
+        </select>
+                <button onclick="exportHRCSV()" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-[#10B981]/20 w-full md:w-auto">
+          📊 CSV
+        </button>
+        <button onclick="printHRReport()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-[#8B5CF6]/20 w-full md:w-auto">
+          🖨 Export
+        </button>
+      </div>
     </div>
 
-    <!-- Department Credit Balances Summary Table -->
+<!-- Department Credit Balances Summary Table -->
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Department Tab Ledger Summary</h3>
