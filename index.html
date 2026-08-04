@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXOBUS MIS & POS — Institution Staff Lounge & Cafeteria</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] min-h-screen antialiased" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;">
+
+  <div id="app">
+
+    <!-- ══════ AUTH SCREENS ══════ -->
+    <div id="authScreen" class="auth-screen">
+
+      <!-- LOGIN FORM -->
+      <div id="loginForm" class="auth-card">
+        <div class="auth-card-header">
+          <div class="auth-logo">☕</div>
+          <h2>EXOBUS MIS & POS</h2>
+          <p>Institution Staff Lounge & Cafeteria Terminal</p>
+        </div>
+        <div class="auth-card-body">
+          <div id="loginError" class="auth-error">
+            <span>❌</span>
+            <span id="loginErrorText">Invalid credentials</span>
+          </div>
+          <div class="auth-field">
+            <label>Username</label>
+            <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')handleLogin()">
+          </div>
+          <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+          </div>
+          <button class="auth-btn" onclick="handleLogin()">🔐 Sign In</button>
+        </div>
+        <div class="auth-footer">
+          <span>Don't have an account? </span>
+          <a onclick="showSignupForm()">Create Account</a>
+        </div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signupForm" class="auth-card" style="display:none;">
+        <div class="auth-card-header">
+          <div class="auth-logo">☕</div>
+          <h2>Create Account</h2>
+          <p>Register a new staff terminal account</p>
+        </div>
+        <div class="auth-card-body">
+          <div id="signupError" class="auth-error">
+            <span>❌</span>
+            <span id="signupErrorText">Error</span>
+          </div>
+          <div class="auth-field">
+            <label>Full Name</label>
+            <input type="text" id="signupFullName" placeholder="e.g. John Doe">
+          </div>
+          <div class="auth-field">
+            <label>Username</label>
+            <input type="text" id="signupUsername" placeholder="Choose a username" autocomplete="username">
+          </div>
+          <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="signupPassword" placeholder="Choose a password" autocomplete="new-password">
+          </div>
+          <div class="auth-field">
+            <label>Confirm Password</label>
+            <input type="password" id="signupConfirmPassword" placeholder="Confirm your password" onkeydown="if(event.key==='Enter')handleSignup()">
+          </div>
+          <div class="auth-field">
+            <label>Role</label>
+            <select id="signupRole">
+              <option value="waiter">Service Waiter</option>
+              <option value="cashier">Staff Cashier</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+          <button class="auth-btn" onclick="handleSignup()">✅ Create Account</button>
+        </div>
+        <div class="auth-footer">
+          <span>Already have an account? </span>
+          <a onclick="showLoginForm()">Sign In</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════ MAIN APP (hidden until authenticated) ══════ -->
+    <div id="mainAppContainer">
+
+    <!-- HEADER -->
+    <header class="topbar bg-[#FFFFFF] h-16 flex items-center justify-between px-4 sm:px-5 border-b border-black/[0.1] sticky top-0 z-50">
+      <!-- Left: Logo & Title -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center text-lg sm:text-xl shadow-lg shadow-amber-500/20">☕</div>
+        <div>
+          <h1 class="text-sm sm:text-base font-extrabold text-[#0F172A] tracking-tight">EXOBUS MIS & POS</h1>
+          <p class="text-[0.6rem] sm:text-[0.65rem] text-[#475569] font-medium uppercase tracking-widest hidden sm:block">Institution Staff Lounge</p>
+        </div>
+      </div>
+
+      <!-- Desktop Nav Tabs (hidden on mobile) -->
+      <nav class="hidden md:flex items-center gap-1 bg-black/[0.04] p-1 rounded-xl">
+        <button class="nav-tab active flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-semibold text-[#475569] border-none cursor-pointer bg-transparent" data-view="pos">🛒 POS Terminal</button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-semibold text-[#475569] border-none cursor-pointer bg-transparent" data-view="dashboard">📊 Dashboard</button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-semibold text-[#475569] border-none cursor-pointer bg-transparent" data-view="ledgers">💳 Ledgers</button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-semibold text-[#475569] border-none cursor-pointer bg-transparent" data-view="products">📦 Inventory</button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-semibold text-[#475569] border-none cursor-pointer bg-transparent" data-view="reports">📄 Reports</button>
+      </nav>
+
+      <!-- Desktop User Actions (hidden on mobile) -->
+      <div class="hidden md:flex items-center gap-3">
+        <div class="text-right">
+          <div id="topbarUserName" class="text-sm font-semibold text-[#0F172A]">Admin User</div>
+          <div id="topbarUserRole" class="text-[0.65rem] text-[#F59E0B] font-bold uppercase tracking-widest">Manager</div>
+        </div>
+        <button id="roleToggleBtn" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-[#F59E0B] cursor-pointer">Switch</button>
+        <button class="btn-logout text-xs px-3.5 py-1.5" id="logoutBtn" onclick="logout()">🚪 Logout</button>
+      </div>
+
+      <!-- Mobile Hamburger Button (visible on mobile only) -->
+      <div class="flex items-center md:hidden gap-2">
+        <button onclick="toggleMobileMenu()" id="hamburgerBtn" class="w-10 h-10 rounded-xl bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] flex items-center justify-center text-xl cursor-pointer hover:bg-[#E2E8F0] transition-colors" aria-label="Toggle menu">
+          ☰
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Slide-Down Dropdown Menu -->
+    <div id="mobileNavMenu" class="hidden md:hidden fixed inset-x-0 top-16 bg-[#FFFFFF] border-b border-black/[0.1] shadow-2xl z-40 p-4 animate-slide-up flex flex-col gap-4">
+      <div class="flex flex-col gap-1.5">
+        <div class="text-[0.65rem] font-bold text-[#475569] uppercase tracking-wider px-2">Navigation Menu</div>
+        <button class="nav-tab active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[#475569] border-none cursor-pointer bg-[#F1F5F9]/40 w-full text-left" data-view="pos" onclick="toggleMobileMenu()">🛒 POS Terminal</button>
+        <button class="nav-tab flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[#475569] border-none cursor-pointer bg-[#F1F5F9]/40 w-full text-left" data-view="dashboard" onclick="toggleMobileMenu()">📊 Dashboard</button>
+        <button class="nav-tab flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[#475569] border-none cursor-pointer bg-[#F1F5F9]/40 w-full text-left" data-view="ledgers" onclick="toggleMobileMenu()">💳 Department Ledgers</button>
+        <button class="nav-tab flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[#475569] border-none cursor-pointer bg-[#F1F5F9]/40 w-full text-left" data-view="products" onclick="toggleMobileMenu()">📦 Inventory Management</button>
+        <button class="nav-tab flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[#475569] border-none cursor-pointer bg-[#F1F5F9]/40 w-full text-left" data-view="reports" onclick="toggleMobileMenu()">📄 End-of-Day Reports</button>
+      </div>
+
+      <div class="border-t border-black/[0.1] pt-3 flex items-center justify-between">
+        <div>
+          <div id="mobileUserName" class="text-sm font-bold text-[#0F172A]">Admin User</div>
+          <div id="mobileUserRole" class="text-[0.65rem] text-[#F59E0B] font-bold uppercase tracking-widest">Manager</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="mobileRoleToggleBtn" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer">Switch</button>
+          <button class="btn-logout text-xs px-3 py-2" onclick="logout()">🚪 Logout</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MAIN -->
+    <main class="max-w-[1600px] w-full mx-auto p-5 relative">
+      
+      <!-- VIEW 1: POS TERMINAL -->
+      <section id="view-pos" class="view-panel active">
+        <div class="flex flex-col lg:grid lg:grid-cols-[1fr_380px] gap-5 min-h-[calc(100vh-84px)] lg:h-[calc(100vh-84px)]">
+          
+          <!-- Left: Products Section -->
+          <div class="flex flex-col gap-4 sm:gap-5 h-full overflow-hidden">
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#475569]">🔍</span>
+              <input type="text" id="productSearchInput" placeholder="Search menu items..." class="w-full bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+            <div id="categoryPillsContainer" class="flex overflow-x-auto gap-2 pb-1.5 no-scrollbar whitespace-nowrap">
+              <!-- Pills will be injected here -->
+            </div>
+            <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3 overflow-y-auto pb-4 pr-1">
+              <!-- Products will be injected here -->
+            </div>
+          </div>
+
+          <!-- Right: Cart Sidebar -->
+          <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl flex flex-col h-full overflow-hidden">
+            <div class="p-4 border-b border-black/[0.1] flex items-center justify-between bg-[#F1F5F9]/30">
+              <h2 class="text-base font-bold text-[#0F172A] tracking-tight">🛒 Current Order</h2>
+              <button onclick="clearCart()" class="text-xs font-medium text-[#F59E0B] hover:text-[#D97706] cursor-pointer bg-transparent border-none">Clear</button>
+            </div>
+            
+            <div id="cartItemsList" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              <!-- Cart items will be injected here -->
+            </div>
+            
+            <div class="p-4 border-t border-black/[0.1] bg-[#F1F5F9]/50 flex flex-col gap-4">
+              <div class="flex flex-col gap-2 text-sm font-medium">
+                <div class="flex justify-between text-[#475569]">
+                  <span>Subtotal</span>
+                  <span id="cartSubtotalText">RWF 0</span>
+                </div>
+                <div class="flex justify-between text-[#475569]">
+                  <span>Tax</span>
+                  <span>RWF 0</span>
+                </div>
+                <div class="flex justify-between items-center mt-2 pt-2 border-t border-black/[0.1]">
+                  <span class="text-[#0F172A] text-base">Total</span>
+                  <span id="cartTotalText" class="text-xl sm:text-2xl font-bold text-[#F59E0B]">RWF 0</span>
+                </div>
+              </div>
+              
+              <div class="flex flex-col gap-2">
+                <button id="btnCheckoutDirect" onclick="openDirectCheckoutModal()" class="w-full bg-[#10B981] hover:bg-[#059669] text-[#0F172A] rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-colors">
+                  <span class="text-sm font-bold">💵 Direct Payment</span>
+                  <span class="text-[0.65rem] opacity-80 uppercase tracking-widest font-semibold mt-0.5">Cash / Card / Mobile</span>
+                </button>
+                <button id="btnCheckoutTab" onclick="openTabCheckoutModal()" class="w-full bg-[#D97706] hover:bg-[#B45309] text-[#0F172A] rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-colors">
+                  <span class="text-sm font-bold">💳 Institutional Tab</span>
+                  <span class="text-[0.65rem] opacity-80 uppercase tracking-widest font-semibold mt-0.5">Payroll Deduction</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: DASHBOARD -->
+      <section id="view-dashboard" class="view-panel hidden">
+        <div class="flex flex-col gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Card 1 -->
+            <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#10B981]/10 text-[#10B981] flex items-center justify-center text-lg">💰</div>
+                <span class="text-xs font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-1 rounded-md">+12%</span>
+              </div>
+              <div>
+                <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Total Revenue</div>
+                <div id="kpiTotalRevenue" class="text-2xl font-extrabold text-[#0F172A]">RWF 0</div>
+              </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center text-lg">💵</div>
+                <span class="text-xs font-bold text-[#3B82F6] bg-[#3B82F6]/10 px-2 py-1 rounded-md">+5%</span>
+              </div>
+              <div>
+                <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Direct Sales</div>
+                <div id="kpiCashRevenue" class="text-2xl font-extrabold text-[#0F172A]">RWF 0</div>
+              </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center text-lg">💳</div>
+                <span class="text-xs font-bold text-[#F59E0B] bg-[#F59E0B]/10 px-2 py-1 rounded-md">+18%</span>
+              </div>
+              <div>
+                <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Tab Credit</div>
+                <div id="kpiCreditRevenue" class="text-2xl font-extrabold text-[#0F172A]">RWF 0</div>
+              </div>
+            </div>
+            <!-- Card 4 -->
+            <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#A855F7]/10 text-[#A855F7] flex items-center justify-center text-lg">📦</div>
+                <span class="text-xs font-bold text-[#A855F7] bg-[#A855F7]/10 px-2 py-1 rounded-md">+8%</span>
+              </div>
+              <div>
+                <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Total Orders</div>
+                <div id="kpiTotalOrders" class="text-2xl font-extrabold text-[#0F172A]">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-base font-bold text-[#0F172A]">Recent Transactions</h2>
+              <button class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2 text-xs font-medium cursor-pointer hover:border-[#F59E0B]">View All Reports</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="data-table w-full text-left text-sm">
+                <thead>
+                  <tr class="text-[#475569] border-b border-black/[0.1]">
+                    <th class="py-3 px-4 font-semibold">Order ID</th>
+                    <th class="py-3 px-4 font-semibold">Time</th>
+                    <th class="py-3 px-4 font-semibold">Mode</th>
+                    <th class="py-3 px-4 font-semibold">Client/Staff</th>
+                    <th class="py-3 px-4 font-semibold">Total</th>
+                    <th class="py-3 px-4 font-semibold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="recentOrdersTbody" class="divide-y divide-black/[0.1]">
+                  <!-- Rows injected here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: LEDGERS -->
+      <section id="view-ledgers" class="view-panel hidden">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Department & Staff Ledgers</h2>
+              <p class="text-xs text-[#475569]">Manage payroll credit limits, staff balances, and department accounts.</p>
+            </div>
+            
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="openAddDepartmentModal()" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
+                <span>➕</span> Add Department
+              </button>
+              <button onclick="openAddEmployeeModal()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5 shadow-lg shadow-amber-500/10">
+                <span>👤</span> Add Staff Account
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="data-table w-full text-left text-sm">
+              <thead>
+                <tr class="text-[#475569] border-b border-black/[0.1]">
+                  <th class="py-3 px-4 font-semibold">Staff ID</th>
+                  <th class="py-3 px-4 font-semibold">Name</th>
+                  <th class="py-3 px-4 font-semibold">Department</th>
+                  <th class="py-3 px-4 font-semibold">Monthly Limit</th>
+                  <th class="py-3 px-4 font-semibold">Unpaid Balance</th>
+                  <th class="py-3 px-4 font-semibold">Usage</th>
+                  <th class="py-3 px-4 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="deptLedgerTbody" class="divide-y divide-black/[0.1]">
+                <!-- Rows injected here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: INVENTORY -->
+      <section id="view-products" class="view-panel hidden">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-bold text-[#0F172A]">📦 Product Catalog & Stock</h2>
+            <button onclick="openAddProductModal()" class="bg-[#F59E0B] text-[#111827] border-none rounded-xl px-4 py-2 text-xs font-bold cursor-pointer hover:bg-[#D97706]">➕ Add Product</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="data-table w-full text-left text-sm">
+              <thead>
+                <tr class="text-[#475569] border-b border-black/[0.1]">
+                  <th class="py-3 px-4 font-semibold">Product</th>
+                  <th class="py-3 px-4 font-semibold">Category</th>
+                  <th class="py-3 px-4 font-semibold">Retail Price</th>
+                  <th class="py-3 px-4 font-semibold">Cost (COGS)</th>
+                  <th class="py-3 px-4 font-semibold">Stock</th>
+                  <th class="py-3 px-4 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="productsTableTbody" class="divide-y divide-black/[0.1]">
+                <!-- Rows injected here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: REPORTS -->
+      <section id="view-reports" class="view-panel hidden">
+        <div id="reportsContent" class="space-y-6">
+          <!-- Dynamic report summary & tables rendered here -->
+        </div>
+      </section>
+
+      
+    </main>
+
+    <!-- MODALS -->
+    
+    <!-- Modal 1: Direct Checkout -->
+    <div id="modalDirectCheckout" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A]">💵 Direct Checkout</h3>
+          <button onclick="closeModal('modalDirectCheckout')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-5">
+          <div class="bg-[#F1F5F9]/50 rounded-xl p-4 flex justify-between items-center border border-[#F59E0B]/20">
+            <span class="text-sm font-semibold text-[#475569]">Order Total</span>
+            <span id="directTotalText" class="text-xl sm:text-2xl font-extrabold text-[#F59E0B]">RWF 0</span>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Payment Method</label>
+            <select id="directPaymentMethod" onchange="handlePaymentMethodChange()" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <option value="CASH">💵 Cash</option>
+              <option value="CARD">💳 Credit/Debit Card</option>
+              <option value="MOBILE_MONEY">📱 Mobile Money (MoMo)</option>
+            </select>
+          </div>
+          
+          <!-- Cash Payment Details -->
+          <div id="paymentDetailsCash" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Cash Tendered</label>
+              <input type="number" id="directCashTendered" oninput="calculateCashChange()" placeholder="0.00" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-lg font-bold focus:outline-none focus:border-[#F59E0B]">
+            </div>
+            
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="setCashPreset(5000)" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-lg py-2 text-xs sm:text-sm font-semibold cursor-pointer transition-colors">5k</button>
+              <button onclick="setCashPreset(10000)" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-lg py-2 text-xs sm:text-sm font-semibold cursor-pointer transition-colors">10k</button>
+              <button onclick="setCashPreset(20000)" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-lg py-2 text-xs sm:text-sm font-semibold cursor-pointer transition-colors">20k</button>
+              <button onclick="setCashPreset(50000)" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-lg py-2 text-xs sm:text-sm font-semibold cursor-pointer transition-colors">50k</button>
+            </div>
+            
+            <div class="flex justify-between items-center mt-1">
+              <span class="text-sm font-semibold text-[#475569]">Change Due:</span>
+              <span id="directChangeDueText" class="text-xl font-bold text-[#0F172A]">RWF 0</span>
+            </div>
+          </div>
+
+          <!-- Card Payment Details -->
+          <div id="paymentDetailsCard" class="hidden flex flex-col gap-3">
+            <div class="bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-xl p-3.5 flex items-center gap-3">
+              <div class="text-2xl">💳</div>
+              <div>
+                <div class="text-sm font-bold text-[#0F172A]">Card Terminal Ready</div>
+                <div class="text-xs text-[#475569]">Tap or insert card on POS card terminal</div>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Card Last 4 Digits / Ref (Optional)</label>
+              <input type="text" id="directCardRef" placeholder="e.g. 4242 or POS-REF-992" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+          </div>
+
+          <!-- Mobile Money Details -->
+          <div id="paymentDetailsMomo" class="hidden flex flex-col gap-3">
+            <div class="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3.5 flex items-center gap-3">
+              <div class="text-2xl">📱</div>
+              <div>
+                <div class="text-sm font-bold text-[#0F172A]">Mobile Money Prompt Sent</div>
+                <div class="text-xs text-[#475569]">Prompting customer phone for PIN verification</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Network Provider</label>
+                <select id="directMomoProvider" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+                  <option value="MTN MoMo">MTN MoMo</option>
+                  <option value="Telecel Cash">Telecel Cash</option>
+                  <option value="AT Money">AT Money</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Customer Phone #</label>
+                <input type="text" id="directMomoNumber" placeholder="055 XXX XXXX" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
+          <button onclick="closeModal('modalDirectCheckout')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+          <button onclick="processDirectPayment()" class="bg-[#10B981] hover:bg-[#059669] text-[#0F172A] rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none shadow-lg shadow-[#10B981]/20">Confirm & Print</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: Tab Checkout -->
+    <div id="modalTabCheckout" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A]">💳 Institutional Tab / Payroll Charge</h3>
+          <button onclick="closeModal('modalTabCheckout')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+          <div class="bg-[#F1F5F9]/50 rounded-xl p-4 flex justify-between items-center border border-[#F59E0B]/20">
+            <span class="text-sm font-semibold text-[#475569]">Order Total</span>
+            <span id="tabTotalText" class="text-xl sm:text-2xl font-extrabold text-[#F59E0B]">RWF 0</span>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department</label>
+            <select id="checkoutDeptSelect" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <option value="">Select Department...</option>
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Employee</label>
+            <select id="checkoutEmpSelect" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <option value="">Select Employee...</option>
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+          
+          <div id="tabEmpCreditBadge" class="hidden rounded-xl p-3 text-sm font-medium border">
+            <!-- Dynamic credit info -->
+          </div>
+          
+          <div class="flex flex-col gap-2 mt-2">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Digital Signature</label>
+              <button onclick="clearSignature()" class="text-[0.65rem] text-[#F59E0B] hover:text-[#D97706] bg-transparent border-none cursor-pointer">Clear</button>
+            </div>
+            <div class="signature-wrap bg-white rounded-xl overflow-hidden border border-black/[0.1]">
+              <canvas id="signatureCanvas" width="480" height="140" class="w-full cursor-crosshair"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
+          <button onclick="closeModal('modalTabCheckout')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+          <button onclick="processTabPayment()" class="bg-[#D97706] hover:bg-[#B45309] text-[#0F172A] rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none shadow-lg shadow-[#D97706]/20">Approve & Process</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 3: Add Product -->
+    <div id="modalAddProduct" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 id="modalAddProductTitle" class="text-lg font-bold text-[#0F172A]">➕ Add Product</h3>
+          <button onclick="closeModal('modalAddProduct')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Product Name</label>
+            <input type="text" id="addProdName" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Category</label>
+            <select id="addProdCategory" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <option value="Coffee & Espresso">Coffee & Espresso</option>
+              <option value="Snacks & Bites">Snacks & Bites</option>
+              <option value="Soft Drinks & Soda">Soft Drinks & Soda</option>
+              <option value="Fresh Juice">Fresh Juice</option>
+              <option value="Pastries & Bakery">Pastries & Bakery</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Retail Price (RWF)</label>
+              <input type="number" step="0.01" id="addProdPrice" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Cost Price (RWF)</label>
+              <input type="number" step="0.01" id="addProdCostPrice" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Initial Stock</label>
+            <input type="number" id="addProdStock" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Emoji Icon</label>
+              <span id="addProdIconPreview" class="text-xl">☕</span>
+            </div>
+            <div id="addProdIcon" class="grid grid-cols-10 gap-2 bg-[#F1F5F9] p-3 rounded-xl border border-black/[0.1]">
+              <!-- Emoji buttons -->
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('☕')">☕</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🥤')">🥤</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🧃')">🧃</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🥐')">🥐</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🧁')">🧁</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🥪')">🥪</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🌯')">🌯</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🍫')">🍫</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🥣')">🥣</button>
+              <button type="button" class="text-xl hover:bg-[#E2E8F0] rounded cursor-pointer border-none bg-transparent p-1" onclick="selectProductIcon('🍹')">🍹</button>
+            </div>
+          </div>
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
+          <button onclick="closeModal('modalAddProduct')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+          <button onclick="saveNewProduct()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none">Save Product</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 4: Settle Tab -->
+    <div id="modalSettleTab" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-sm w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A]">💳 Settle Staff Tab</h3>
+          <button onclick="closeModal('modalSettleTab')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-5">
+          <div id="settleEmpInfo" class="text-center">
+            <div class="text-base font-bold text-[#0F172A]">John Doe</div>
+            <div class="text-xs text-[#475569]">Engineering Dept</div>
+          </div>
+          
+          <div class="bg-[#F1F5F9]/50 rounded-xl p-4 flex flex-col items-center justify-center gap-1 border border-black/[0.1]">
+            <span class="text-xs font-semibold text-[#475569] uppercase tracking-wider">Outstanding Balance</span>
+            <span id="settleBalance" class="text-3xl font-extrabold text-[#EF4444]">RWF 0</span>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Partial Payment Amount (RWF)</label>
+            <div class="flex gap-2">
+              <input type="number" id="settlePartialAmount" placeholder="0.00" class="flex-1 bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <button onclick="applyPartialSettle()" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] hover:border-[#F59E0B] rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer">Apply</button>
+            </div>
+          </div>
+          
+          <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-black/[0.1]"></div>
+            <span class="flex-shrink-0 mx-4 text-[#475569] text-xs uppercase font-bold tracking-widest">OR</span>
+            <div class="flex-grow border-t border-black/[0.1]"></div>
+          </div>
+          
+          <button onclick="applyFullSettle()" class="w-full bg-[#10B981] hover:bg-[#059669] text-[#0F172A] rounded-xl py-3 px-4 flex justify-center items-center cursor-pointer border-none shadow-lg shadow-[#10B981]/20 font-bold">
+            Clear Full Balance
+          </button>
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-3 border-t border-black/[0.1] flex justify-center">
+          <button onclick="closeModal('modalSettleTab')" class="text-sm font-medium text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 5: Receipt Preview -->
+    <div id="modalReceipt" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-sm w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A] flex items-center gap-2"><span class="text-[#10B981]">✅</span> Order Completed</h3>
+          <button onclick="closeModal('modalReceipt')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 bg-gray-100 flex justify-center overflow-y-auto max-h-[60vh]">
+          <!-- The receipt itself should look like paper -->
+          <div id="receiptPreviewContent" class="bg-white text-black p-5 w-full max-w-[300px] shadow-md text-sm font-mono leading-tight">
+            <!-- Receipt rendered here -->
+          </div>
+        </div>
+        <div class="bg-[#F1F5F9] px-5 py-4 border-t border-black/[0.1] flex justify-between items-center gap-3">
+          <button onclick="closeModal('modalReceipt')" class="px-4 py-2 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Close</button>
+          <button onclick="triggerPrintReceipt()" class="bg-[#3B82F6] hover:bg-[#2563EB] text-[#0F172A] rounded-xl px-5 py-2 text-sm font-bold cursor-pointer border-none flex items-center gap-2 shadow-lg shadow-[#3B82F6]/20">
+            <span>🖨️</span> Print Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 6: Add Department -->
+    <div id="modalAddDepartment" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Add New Department</h3>
+          <button onclick="closeModal('modalAddDepartment')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department Name</label>
+            <input type="text" id="addDeptName" placeholder="e.g. Laboratory & Pathology" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Dept Code</label>
+              <input type="text" id="addDeptCode" placeholder="e.g. LAB" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B] uppercase">
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Monthly Limit (RWF)</label>
+              <input type="number" id="addDeptLimit" placeholder="e.g. 2000000" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+          </div>
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
+          <button onclick="closeModal('modalAddDepartment')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+          <button onclick="saveNewDepartment()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-6 py-2.5 text-sm font-extrabold cursor-pointer border-none shadow-lg shadow-[#F59E0B]/20">Save Department</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 7: Add Employee -->
+    <div id="modalAddEmployee" class="modal-overlay hidden fixed inset-0 bg-[#F8FAFC]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-[#F1F5F9] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
+          <h3 class="text-lg font-bold text-[#0F172A] flex items-center gap-2"><span>👤</span> Add Staff Account</h3>
+          <button onclick="closeModal('modalAddEmployee')" class="text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer text-xl">×</button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Full Name</label>
+            <input type="text" id="addEmpFullName" placeholder="e.g. Jean-Paul Habimana" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department</label>
+            <select id="addEmpDeptSelect" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Staff ID</label>
+              <input type="text" id="addEmpStaffId" placeholder="EMP-9021" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B] font-mono">
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Initial Unpaid Tab (RWF)</label>
+              <input type="number" id="addEmpInitialBalance" placeholder="0" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            </div>
+          </div>
+        </div>
+        <div class="bg-[#F1F5F9]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
+          <button onclick="closeModal('modalAddEmployee')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:text-[#0F172A] bg-transparent border-none cursor-pointer">Cancel</button>
+          <button onclick="saveNewEmployee()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-6 py-2.5 text-sm font-extrabold cursor-pointer border-none shadow-lg shadow-[#F59E0B]/20">Save Staff Account</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container fixed bottom-5 right-5 z-[200] flex flex-col gap-2"></div>
+    
+    <!-- Print Container (hidden visually but used for window.print) -->
+    <div id="print-container" class="hidden"></div>
+
+    </div><!-- end mainAppContainer -->
+    
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
