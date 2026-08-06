@@ -81,6 +81,8 @@ let state = {
   categories: [],
   auditLogs: [],
   archives: [],
+  tabReceipts: [],
+  lastActiveDate: null,
   selectedCategory: 'cat-all',
   searchQuery: '',
   currentTabEmployee: null,
@@ -151,6 +153,19 @@ function formatMoney(amount) {
 }
 window.formatMoney = formatMoney;
 
+function addAuditLog(action, details) {
+  if (!state.auditLogs) state.auditLogs = [];
+  state.auditLogs.unshift({
+    id: generateId('log'),
+    timestamp: new Date().toISOString(),
+    action: action,
+    details: details,
+    user: state.currentSession ? state.currentSession.username : 'System'
+  });
+}
+window.addAuditLog = addAuditLog;
+
+
 function loadStorageData() {
   const d = localStorage.getItem('posData');
   if (d) {
@@ -161,10 +176,6 @@ function loadStorageData() {
       state.departments = (parsed.departments && parsed.departments.length) ? parsed.departments : DEFAULT_DEPARTMENTS;
       state.employees = (parsed.employees && parsed.employees.length) ? parsed.employees : DEFAULT_EMPLOYEES;
       state.orders = (parsed.orders && parsed.orders.length) ? parsed.orders : DEFAULT_ORDERS;
-      state.auditLogs = parsed.auditLogs ? parsed.auditLogs : [];
-      state.archives = parsed.archives ? parsed.archives : [];
-      state.tabReceipts = parsed.tabReceipts ? parsed.tabReceipts : [];
-      state.lastActiveDate = parsed.lastActiveDate || new Date().toLocaleDateString();
       state.auditLogs = parsed.auditLogs ? parsed.auditLogs : [];
       state.archives = parsed.archives ? parsed.archives : [];
       state.tabReceipts = parsed.tabReceipts ? parsed.tabReceipts : [];
@@ -188,10 +199,6 @@ function loadStorageData() {
       state.archives = [];
       state.tabReceipts = [];
       state.lastActiveDate = new Date().toLocaleDateString();
-      state.auditLogs = [];
-      state.archives = [];
-      state.tabReceipts = [];
-      state.lastActiveDate = new Date().toLocaleDateString();
     }
   } else {
     state.categories = [...DEFAULT_CATEGORIES];
@@ -203,21 +210,7 @@ function loadStorageData() {
     state.archives = [];
     state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
-    state.auditLogs = [];
-    state.archives = [];
-    state.tabReceipts = [];
-    state.lastActiveDate = new Date().toLocaleDateString();
   }
-}
-
-function saveData() {
-  localStorage.setItem('posData', JSON.stringify({
-    categories: state.categories,
-    products: state.products,
-    departments: state.departments,
-    employees: state.employees,
-    orders: state.orders
-  }));
 }
 
 
@@ -235,6 +228,33 @@ window.saveData = function() {
     lastActiveDate: state.lastActiveDate
   }));
 }
+
+
+window.checkAutoRollover = function() {
+  const today = new Date().toLocaleDateString();
+  if (state.lastActiveDate && state.lastActiveDate !== today) {
+    if (state.orders.length > 0) {
+      const revDirect = state.orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s,o)=>s+o.total,0);
+      const revTab = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s,o)=>s+o.total,0);
+      const totalRev = revDirect + revTab;
+      
+      state.archives.push({
+        id: generateId('shift'),
+        timestamp: new Date().toISOString(),
+        ordersCount: state.orders.length,
+        totalRevenue: totalRev,
+        directSales: revDirect,
+        tabCredits: revTab,
+        closedBy: 'System Auto-Rollover'
+      });
+      
+      addAuditLog("Auto-Shift Closed", "System auto-archived " + state.orders.length + " orders for " + state.lastActiveDate);
+      state.orders = [];
+    }
+    state.lastActiveDate = today;
+    saveData();
+  }
+};
 
 // Navigation & Initialization
 function switchView(viewName) {
@@ -318,9 +338,10 @@ window.selectCategory = function(catId) {
 function renderProductGrid() {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
+  const query = state.searchQuery.toLowerCase();
   const filtered = state.products.filter(p => {
     const matchCat = state.selectedCategory === 'cat-all' || p.categoryId === state.selectedCategory;
-    const matchQuery = p.name.toLowerCase().includes(state.searchQuery.toLowerCase());
+    const matchQuery = p.name.toLowerCase().includes(query);
     return matchCat && matchQuery;
   });
   
@@ -388,7 +409,6 @@ window.updateCartQty = function(productId, delta) {
   }
   renderCart();
 };
-
 
 
 window.clearCart = function() {
@@ -1063,31 +1083,6 @@ window.saveNewProduct = function() {
   saveData();
   window.closeModal('modalAddProduct');
   renderAllViews();
-};
-
-
-window.closeShift = function() {
-  if (confirm("Are you sure you want to close the shift? This will archive all current orders and reset the dashboard totals to RWF 0.")) {
-    const revDirect = state.orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s,o)=>s+o.total,0);
-    const revTab = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s,o)=>s+o.total,0);
-    const totalRev = revDirect + revTab;
-    
-    state.archives.push({
-      id: generateId('shift'),
-      timestamp: new Date().toISOString(),
-      ordersCount: state.orders.length,
-      totalRevenue: totalRev,
-      directSales: revDirect,
-      tabCredits: revTab,
-      closedBy: state.currentSession ? state.currentSession.username : 'Admin'
-    });
-    
-    addAuditLog("Shift Closed", `Closed shift with ${state.orders.length} orders totaling ${formatMoney(totalRev)}`);
-    state.orders = []; // Clear current orders
-    saveData();
-    window.showToast('Shift closed successfully. Sales archived.', 'success');
-    renderAllViews();
-  }
 };
 
 // Reports View Renderer
