@@ -150,11 +150,11 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const DEFAULT_DEPARTMENTS = [
-  { id: 'dept-fin', code: 'FIN', name: 'Finance & Accounting', monthlyCreditLimit: 1500000 },
-  { id: 'dept-hr', code: 'HR', name: 'Human Resources', monthlyCreditLimit: 1200000 },
-  { id: 'dept-it', code: 'IT', name: 'IT & Digital Systems', monthlyCreditLimit: 1800000 },
-  { id: 'dept-med', code: 'MED', name: 'Clinical Services', monthlyCreditLimit: 2500000 },
-  { id: 'dept-exec', code: 'EXEC', name: 'Executive Suite', monthlyCreditLimit: 3000000 }
+  { id: 'dept-fin', code: 'FIN', name: 'Finance & Accounting' },
+  { id: 'dept-hr', code: 'HR', name: 'Human Resources' },
+  { id: 'dept-it', code: 'IT', name: 'IT & Digital Systems' },
+  { id: 'dept-med', code: 'MED', name: 'Clinical Services' },
+  { id: 'dept-exec', code: 'EXEC', name: 'Executive Suite' }
 ];
 
 const DEFAULT_EMPLOYEES = [
@@ -298,35 +298,22 @@ function loadStorageData() {
   if (d) {
     try {
       const parsed = JSON.parse(d);
-      if (parsed.menuVersion !== '6.0') {
-        state.categories = DEFAULT_CATEGORIES;
-        state.products = DEFAULT_PRODUCTS;
-      } else {
-        state.categories = (parsed.categories && parsed.categories.length) ? parsed.categories : DEFAULT_CATEGORIES;
-        state.products = (parsed.products && parsed.products.length) ? parsed.products : DEFAULT_PRODUCTS;
-      }
-      state.departments = (parsed.departments && parsed.departments.length) ? parsed.departments : DEFAULT_DEPARTMENTS;
-      state.employees = (parsed.employees && parsed.employees.length) ? parsed.employees : DEFAULT_EMPLOYEES;
-      state.orders = (parsed.orders && parsed.orders.length) ? parsed.orders : DEFAULT_ORDERS;
-      state.auditLogs = parsed.auditLogs ? parsed.auditLogs : [];
-      state.archives = parsed.archives ? parsed.archives : [];
-      state.tabReceipts = parsed.tabReceipts ? parsed.tabReceipts : [];
+      state.categories = Array.isArray(parsed.categories) ? parsed.categories : DEFAULT_CATEGORIES;
+      state.products = Array.isArray(parsed.products) ? parsed.products : DEFAULT_PRODUCTS;
+      state.departments = Array.isArray(parsed.departments) ? parsed.departments : DEFAULT_DEPARTMENTS;
+      state.employees = Array.isArray(parsed.employees) ? parsed.employees : DEFAULT_EMPLOYEES;
+      state.orders = Array.isArray(parsed.orders) ? parsed.orders : [];
+      state.auditLogs = Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [];
+      state.archives = Array.isArray(parsed.archives) ? parsed.archives : [];
+      state.tabReceipts = Array.isArray(parsed.tabReceipts) ? parsed.tabReceipts : [];
       state.lastActiveDate = parsed.lastActiveDate || new Date().toLocaleDateString();
-      
-      // Auto-migrate old USD data to RWF
-      if (state.products.some(p => p.price < 500)) {
-        state.products = DEFAULT_PRODUCTS;
-        state.departments = DEFAULT_DEPARTMENTS;
-        state.employees = DEFAULT_EMPLOYEES;
-        state.orders = DEFAULT_ORDERS;
-        saveData();
-      }
     } catch(e) {
+      console.error("Failed to parse storage data:", e);
       state.categories = [...DEFAULT_CATEGORIES];
       state.products = [...DEFAULT_PRODUCTS];
       state.departments = [...DEFAULT_DEPARTMENTS];
       state.employees = [...DEFAULT_EMPLOYEES];
-      state.orders = [...DEFAULT_ORDERS];
+      state.orders = [];
       state.auditLogs = [];
       state.archives = [];
       state.tabReceipts = [];
@@ -337,11 +324,12 @@ function loadStorageData() {
     state.products = [...DEFAULT_PRODUCTS];
     state.departments = [...DEFAULT_DEPARTMENTS];
     state.employees = [...DEFAULT_EMPLOYEES];
-    state.orders = [...DEFAULT_ORDERS];
+    state.orders = [];
     state.auditLogs = [];
     state.archives = [];
     state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
+    saveData();
   }
 }
 
@@ -740,15 +728,8 @@ window.updateEmployeeTabPreview = function(empId) {
     return;
   }
   
-  const dept = state.departments.find(d => d.id === state.currentTabEmployee.departmentId);
-  const limit = dept ? dept.monthlyCreditLimit : 0;
   const totalAfter = state.currentTabEmployee.currentBalance + calculateCartTotals().total;
-  
-  if (totalAfter > limit) {
-    badge.innerHTML = `<span class="bg-[#EF4444]/20 text-[#EF4444] px-3 py-1 rounded-full text-xs font-bold border border-[#EF4444]/30">Limit Exceeded (${formatMoney(totalAfter)} / ${formatMoney(limit)})</span>`;
-  } else {
-    badge.innerHTML = `<span class="bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full text-xs font-bold border border-[#10B981]/30">Approved (${formatMoney(totalAfter)} / ${formatMoney(limit)})</span>`;
-  }
+  badge.innerHTML = `<span class="bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full text-xs font-bold border border-[#10B981]/30">Approved (New Balance: ${formatMoney(totalAfter)})</span>`;
 };
 
 let signatureCtx = null;
@@ -828,13 +809,6 @@ window.processTabPayment = function() {
   
   const totals = calculateCartTotals();
   const dept = state.departments.find(d => d.id === state.currentTabEmployee.departmentId);
-  const limit = dept ? dept.monthlyCreditLimit : 0;
-  const totalAfter = state.currentTabEmployee.currentBalance + totals.total;
-
-  if (totalAfter > limit && !['admin', 'cashier'].includes(state.currentUser.role)) {
-    window.showToast(`Credit limit exceeded! (${formatMoney(totalAfter)} / ${formatMoney(limit)}). Admin authorization required.`, 'error');
-    return;
-  }
 
   const canvas = document.getElementById('signatureCanvas');
   const signatureDataUrl = canvas ? canvas.toDataURL() : '';
@@ -886,31 +860,655 @@ function animateValue(obj, start, end, duration, prefix, decimals) {
   window.requestAnimationFrame(step);
 }
 
-function renderDashboard() {
-  const revDirect = state.orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s,o)=>s+o.total,0);
-  const revTab = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s,o)=>s+o.total,0);
-  const totalRev = revDirect + revTab;
-  
-  animateValue(document.getElementById('kpiTotalRevenue'), 0, totalRev, 600, 'RWF ', 0);
-  animateValue(document.getElementById('kpiCashRevenue'), 0, revDirect, 600, 'RWF ', 0);
-  animateValue(document.getElementById('kpiCreditRevenue'), 0, revTab, 600, 'RWF ', 0);
-  animateValue(document.getElementById('kpiTotalOrders'), 0, state.orders.length, 600, '', 0);
+// ── Sales Timeframe & Subfolder Logic ──
+window.openDashboardFolder = function(folder, subfolder = 'all') {
+  state.dashboardFolder = folder; // 'daily', 'weekly', 'monthly', 'yearly'
+  state.dashboardTimeSubfolder = null; // reset specific date/week/month filter
+  state.dashboardSubfolder = subfolder; // 'all', 'direct', 'tab', 'items'
+  renderDashboard();
+};
 
+window.closeDashboardFolder = function() {
+  state.dashboardFolder = null;
+  state.dashboardTimeSubfolder = null;
+  state.dashboardSubfolder = 'all';
+  renderDashboard();
+};
+
+window.setDashboardSubfolder = function(subfolder) {
+  state.dashboardSubfolder = subfolder;
+  renderDashboard();
+};
+
+window.setDashboardTimeSubfolder = function(timeSubfolder) {
+  state.dashboardTimeSubfolder = (state.dashboardTimeSubfolder === timeSubfolder) ? null : timeSubfolder;
+  renderDashboard();
+};
+
+window.filterDashboardOrders = function(query) {
+  state.dashboardSearchQuery = query;
   const tbody = document.getElementById('recentOrdersTbody');
-  if (!tbody) return;
-  tbody.innerHTML = state.orders.slice(0, 50).map(o => {
-    const time = new Date(o.timestamp).toLocaleString();
+  if (tbody) {
+    const periodOrders = getOrdersForPeriod(state.dashboardFolder || 'all', state.dashboardTimeSubfolder);
+    if (state.dashboardSubfolder === 'items') {
+      tbody.innerHTML = renderItemizedProductRows(periodOrders);
+    } else {
+      tbody.innerHTML = renderDashboardOrderRows();
+    }
+  }
+};
+
+function getOrdersForPeriod(period, timeSubfolder = null) {
+  if (!state.orders || !Array.isArray(state.orders)) return [];
+  
+  let periodOrders = state.orders;
+  if (period !== 'all') {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    const dayOfWeek = now.getDay();
+    const distanceToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + distanceToMon).getTime();
+    
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+
+    periodOrders = state.orders.filter(o => {
+      if (!o.timestamp) return false;
+      const t = new Date(o.timestamp).getTime();
+      if (isNaN(t)) return false;
+
+      if (period === 'daily' || period === 'today') return t >= startOfDay;
+      if (period === 'weekly' || period === 'week') return t >= startOfWeek;
+      if (period === 'monthly' || period === 'month') return t >= startOfMonth;
+      if (period === 'yearly' || period === 'year') return t >= startOfYear;
+      return true;
+    });
+  }
+
+  if (!timeSubfolder) return periodOrders;
+
+  // Filter by specific subfolder key (Date, Week, Month, or Year)
+  return periodOrders.filter(o => {
+    if (!o.timestamp) return false;
+    const d = new Date(o.timestamp);
+    if (isNaN(d.getTime())) return false;
+
+    if (period === 'daily') {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return key === timeSubfolder;
+    }
+    if (period === 'weekly') {
+      const key = `${d.getFullYear()}-W${getWeekNum(d)}`;
+      return key === timeSubfolder;
+    }
+    if (period === 'monthly') {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return key === timeSubfolder;
+    }
+    if (period === 'yearly') {
+      return String(d.getFullYear()) === timeSubfolder;
+    }
+    return true;
+  });
+}
+
+function getWeekNum(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function getSubfolderCategories(folder) {
+  const allOrders = state.orders || [];
+  const groups = {};
+
+  if (folder === 'daily') {
+    // Group by Date YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    allOrders.forEach(o => {
+      if (!o.timestamp) return;
+      const d = new Date(o.timestamp);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      let label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (key === todayStr) label = `Today (${label})`;
+
+      if (!groups[key]) groups[key] = { key, label, count: 0, totalRev: 0 };
+      groups[key].count++;
+      groups[key].totalRev += (o.total || 0);
+    });
+  } else if (folder === 'weekly') {
+    // Group by Week
+    allOrders.forEach(o => {
+      if (!o.timestamp) return;
+      const d = new Date(o.timestamp);
+      if (isNaN(d.getTime())) return;
+      const wNum = getWeekNum(d);
+      const key = `${d.getFullYear()}-W${wNum}`;
+      const label = `Week ${wNum}`;
+
+      if (!groups[key]) groups[key] = { key, label, count: 0, totalRev: 0 };
+      groups[key].count++;
+      groups[key].totalRev += (o.total || 0);
+    });
+  } else if (folder === 'monthly') {
+    // Group by Month (Jan, Feb, Mar, etc.)
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    allOrders.forEach(o => {
+      if (!o.timestamp) return;
+      const d = new Date(o.timestamp);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = `${months[d.getMonth()]} ${d.getFullYear()}`;
+
+      if (!groups[key]) groups[key] = { key, label, count: 0, totalRev: 0 };
+      groups[key].count++;
+      groups[key].totalRev += (o.total || 0);
+    });
+  } else if (folder === 'yearly') {
+    // Group by Year
+    allOrders.forEach(o => {
+      if (!o.timestamp) return;
+      const d = new Date(o.timestamp);
+      if (isNaN(d.getTime())) return;
+      const key = String(d.getFullYear());
+      const label = `Year ${key}`;
+
+      if (!groups[key]) groups[key] = { key, label, count: 0, totalRev: 0 };
+      groups[key].count++;
+      groups[key].totalRev += (o.total || 0);
+    });
+  }
+
+  return Object.values(groups).sort((a, b) => b.key.localeCompare(a.key));
+}
+
+function calculateDashboardStats(orders) {
+  const directRev = orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s, o) => s + (o.total || 0), 0);
+  const tabRev = orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s, o) => s + (o.total || 0), 0);
+  const totalRev = directRev + tabRev;
+  const itemsCount = orders.reduce((s, o) => s + (Array.isArray(o.items) ? o.items.reduce((iS, item) => iS + (item.qty || 1), 0) : 0), 0);
+  return {
+    orders,
+    count: orders.length,
+    directRev,
+    tabRev,
+    totalRev,
+    itemsCount
+  };
+}
+
+function renderItemizedProductRows(periodOrders) {
+  const search = (state.dashboardSearchQuery || '').toLowerCase().trim();
+  const productMap = {};
+
+  periodOrders.forEach(o => {
+    if (Array.isArray(o.items)) {
+      o.items.forEach(item => {
+        const key = item.productId || item.name;
+        if (!productMap[key]) {
+          productMap[key] = {
+            name: item.name || 'Unknown Product',
+            qty: 0,
+            revenue: 0
+          };
+        }
+        productMap[key].qty += (item.qty || 1);
+        productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+      });
+    }
+  });
+
+  let productList = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+
+  if (search) {
+    productList = productList.filter(p => p.name.toLowerCase().includes(search));
+  }
+
+  if (productList.length === 0) {
     return `
       <tr>
-        <td><span class="font-mono font-bold text-[#F59E0B] text-xs">${o.id}</span></td>
-        <td class="text-[#475569]">${time}</td>
-        <td><span class="badge ${o.checkoutMode === 'DIRECT_PAYMENT' ? 'badge-cash' : 'badge-tab'}">${o.checkoutMode === 'DIRECT_PAYMENT' ? '💵 Direct' : '💳 Tab'}</span></td>
-        <td>${o.employeeName ? `${o.employeeName} (${o.staffId})` : 'Walk-in Customer'}</td>
-        <td class="font-bold">${formatMoney(o.total)}</td>
-        <td><button class="text-xs font-semibold text-[#F59E0B] hover:underline cursor-pointer bg-transparent border-none" onclick="reprintReceipt('${o.id}')">View Receipt</button></td>
+        <td colspan="4" class="py-8 text-center text-[#475569] italic">
+          No product sales recorded in this timeframe${search ? ' matching search' : ''}.
+        </td>
+      </tr>
+    `;
+  }
+
+  return productList.map(p => `
+    <tr>
+      <td class="font-bold text-slate-900">${p.name}</td>
+      <td class="font-mono text-slate-600 font-bold">${p.qty} units sold</td>
+      <td class="font-mono font-extrabold text-amber-600">${formatMoney(p.revenue)}</td>
+      <td class="text-right whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">📦 Item Log</span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderDashboardOrderRows() {
+  const currentPeriod = state.dashboardFolder || 'all';
+  const timeSubfolder = state.dashboardTimeSubfolder;
+  const subfolder = state.dashboardSubfolder || 'all';
+  let periodOrders = getOrdersForPeriod(currentPeriod, timeSubfolder);
+
+  if (subfolder === 'direct') {
+    periodOrders = periodOrders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT');
+  } else if (subfolder === 'tab') {
+    periodOrders = periodOrders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB');
+  }
+
+  const search = (state.dashboardSearchQuery || '').toLowerCase().trim();
+
+  const filteredOrders = periodOrders.filter(o => {
+    if (!search) return true;
+    const empName = (o.employeeName || '').toLowerCase();
+    const staffId = (o.staffId || '').toLowerCase();
+    const orderId = (o.id || '').toLowerCase();
+    const mode = (o.checkoutMode || '').toLowerCase();
+    return empName.includes(search) || staffId.includes(search) || orderId.includes(search) || mode.includes(search);
+  });
+
+  if (filteredOrders.length === 0) {
+    return `
+      <tr>
+        <td colspan="6" class="py-8 text-center text-[#475569] italic">
+          No transactions found for subfolder (${subfolder.toUpperCase()})${search ? ' matching search' : ''}.
+        </td>
+      </tr>
+    `;
+  }
+
+  return filteredOrders.slice(0, 50).map(o => {
+    const time = new Date(o.timestamp).toLocaleString();
+    const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
+    return `
+      <tr>
+        <td>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">${o.id}</span>
+        </td>
+        <td class="text-xs text-slate-500 font-medium">${time}</td>
+        <td>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${isDirect ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : 'bg-amber-50 text-amber-700 border border-amber-200/80'}">
+            ${isDirect ? '💵 Direct' : '💳 Tab'}
+          </span>
+        </td>
+        <td>
+          <span class="text-sm font-semibold text-slate-800">${o.employeeName ? `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>` : 'Walk-in Customer'}</span>
+        </td>
+        <td>
+          <span class="font-mono font-extrabold text-slate-900">${formatMoney(o.total)}</span>
+        </td>
+        <td class="text-right whitespace-nowrap">
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all cursor-pointer shadow-xs active:scale-95">
+              <span>📄</span> View Receipt
+            </button>
+            <button onclick="deleteOrder('${o.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">
+              <span>🗑️</span> Delete
+            </button>
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
+}
+
+function renderDashboard() {
+  const container = document.getElementById('dashboardOSContainer');
+  if (!container) return;
+
+  const todayStats = calculateDashboardStats(getOrdersForPeriod('daily'));
+  const weekStats = calculateDashboardStats(getOrdersForPeriod('weekly'));
+  const monthStats = calculateDashboardStats(getOrdersForPeriod('monthly'));
+  const yearStats = calculateDashboardStats(getOrdersForPeriod('yearly'));
+  const allStats = calculateDashboardStats(getOrdersForPeriod('all'));
+
+  // ─────────────────────────────────────────────
+  // VIEW MODE 1: ROOT SALES TIMEFRAMES EXPLORER
+  // ─────────────────────────────────────────────
+  if (!state.dashboardFolder) {
+    container.innerHTML = `
+      <div class="flex flex-col gap-6">
+        <!-- Dashboard Top Header Banner -->
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-[#0F172A] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📈</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-500/30">Sales & Revenue</span>
+                <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Live Dashboard</span>
+              </div>
+              <h2 class="text-xl font-extrabold text-[#0F172A] mt-1">Cafeteria Sales Overview</h2>
+              <p class="text-xs text-[#475569]">Select any sales timeframe below to view detailed transactions, cash sales, and credit logs.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap w-full md:w-auto">
+            <button onclick="switchView('pos')" class="bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-md transition-colors flex items-center gap-1.5">
+              <span>➕</span> New Sale (F2)
+            </button>
+            <button onclick="switchView('reports')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
+              <span>📊</span> Reports Center
+            </button>
+          </div>
+        </div>
+
+        <!-- Sales Timeframe Cards Grid (40% Smaller & Compact) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- Card 1: Daily Sales -->
+          <div onclick="openDashboardFolder('daily')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-amber-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
+            <div class="flex items-start justify-between gap-2">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">
+                📁
+              </div>
+              <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-md border border-amber-500/20">
+                Today
+              </span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-amber-600 transition-colors flex items-center gap-1">
+                Daily Sales
+              </h3>
+              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Today's transactions & receipts</p>
+            </div>
+            <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
+              <span class="font-medium text-[#0F172A] text-[0.7rem]">${todayStats.count} Orders</span>
+              <span class="font-mono font-bold text-amber-600 text-[0.75rem]">${formatMoney(todayStats.totalRev)}</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Weekly Sales -->
+          <div onclick="openDashboardFolder('weekly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-blue-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
+            <div class="flex items-start justify-between gap-2">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">
+                📁
+              </div>
+              <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-700 px-2 py-0.5 rounded-md border border-blue-500/20">
+                7 Days
+              </span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                Weekly Sales
+              </h3>
+              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Current week revenue logs</p>
+            </div>
+            <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
+              <span class="font-medium text-[#0F172A] text-[0.7rem]">${weekStats.count} Orders</span>
+              <span class="font-mono font-bold text-blue-600 text-[0.75rem]">${formatMoney(weekStats.totalRev)}</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Monthly Sales -->
+          <div onclick="openDashboardFolder('monthly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-purple-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
+            <div class="flex items-start justify-between gap-2">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">
+                📁
+              </div>
+              <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-700 px-2 py-0.5 rounded-md border border-purple-500/20">
+                30 Days
+              </span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors flex items-center gap-1">
+                Monthly Sales
+              </h3>
+              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Month payroll deductions & sales</p>
+            </div>
+            <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
+              <span class="font-medium text-[#0F172A] text-[0.7rem]">${monthStats.count} Orders</span>
+              <span class="font-mono font-bold text-purple-600 text-[0.75rem]">${formatMoney(monthStats.totalRev)}</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Yearly Sales -->
+          <div onclick="openDashboardFolder('yearly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-emerald-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
+            <div class="flex items-start justify-between gap-2">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">
+                📁
+              </div>
+              <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-200">
+                Fiscal Year
+              </span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-emerald-600 transition-colors flex items-center gap-1">
+                Yearly Sales
+              </h3>
+              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Annual sales & archived logs</p>
+            </div>
+            <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
+              <span class="font-medium text-[#0F172A] text-[0.7rem]">${yearStats.count} Orders</span>
+              <span class="font-mono font-bold text-emerald-600 text-[0.75rem]">${formatMoney(yearStats.totalRev)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions Live Table -->
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+            <div>
+              <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>🕒</span> Recent System Transactions</h3>
+              <p class="text-xs text-[#475569]">All-time real-time transaction history</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <input type="text" placeholder="Search order ID or staff..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#F59E0B] w-full sm:w-64">
+              <button onclick="switchView('reports')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap">View All Reports →</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="data-table w-full text-left text-sm">
+              <thead>
+                <tr class="text-[#475569] border-b border-black/[0.1]">
+                  <th class="py-3 px-4 font-semibold">Order ID</th>
+                  <th class="py-3 px-4 font-semibold">Time</th>
+                  <th class="py-3 px-4 font-semibold">Mode</th>
+                  <th class="py-3 px-4 font-semibold">Client/Staff</th>
+                  <th class="py-3 px-4 font-semibold">Total</th>
+                  <th class="py-3 px-4 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersTbody" class="divide-y divide-black/[0.1]">
+                ${renderDashboardOrderRows()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // ─────────────────────────────────────────────
+  // VIEW MODE 2: INSIDE SPECIFIC TIMEFRAME VIEW
+  // ─────────────────────────────────────────────
+  const folder = state.dashboardFolder; // 'daily', 'weekly', 'monthly', 'yearly'
+  const timeSubfolder = state.dashboardTimeSubfolder;
+  const subfolder = state.dashboardSubfolder || 'all';
+
+  const periodOrders = getOrdersForPeriod(folder, timeSubfolder);
+  const folderStats = calculateDashboardStats(periodOrders);
+  const subfolderCats = getSubfolderCategories(folder);
+
+  let folderTitle = "Daily Sales";
+  if (folder === 'weekly') folderTitle = "Weekly Sales";
+  else if (folder === 'monthly') folderTitle = "Monthly Sales";
+  else if (folder === 'yearly') folderTitle = "Yearly Sales";
+
+  container.innerHTML = `
+    <div class="flex flex-col gap-6">
+      <!-- Navigation Bar -->
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <button onclick="closeDashboardFolder()" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <span>←</span> All Timeframes
+          </button>
+          <div class="h-5 w-px bg-black/10"></div>
+          <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <span>Sales Dashboard</span>
+            <span>/</span>
+            <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>📁</span> ${folderTitle}</span>
+            ${timeSubfolder ? `<span>/</span><span class="font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">📁 ${timeSubfolder}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input type="text" placeholder="Search in this view..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#F59E0B] w-full sm:w-64">
+        </div>
+      </div>
+
+      <!-- Banner Header -->
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/30 flex items-center justify-center text-3xl font-extrabold shadow-sm">📁</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded uppercase">${folder} Records</span>
+              <span class="text-xs text-[#475569] font-medium">${folderStats.count} Receipts & Orders</span>
+            </div>
+            <h2 class="text-xl font-bold text-[#0F172A] mt-1">${folderTitle} ${timeSubfolder ? `- Subfolder: ${timeSubfolder}` : ''}</h2>
+            <p class="text-xs text-[#475569] mt-0.5">Total Revenue: <strong class="text-amber-600 font-mono font-bold">${formatMoney(folderStats.totalRev)}</strong></p>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-black/[0.08] flex-wrap w-full md:w-auto">
+          <button onclick="setDashboardSubfolder('all')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+            🗂️ All Receipts
+          </button>
+          <button onclick="setDashboardSubfolder('direct')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'direct' ? 'bg-[#10B981] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+            💵 Direct Sales
+          </button>
+          <button onclick="setDashboardSubfolder('tab')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'tab' ? 'bg-[#D97706] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+            💳 Tab Receipts
+          </button>
+          <button onclick="setDashboardSubfolder('items')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'items' ? 'bg-[#8B5CF6] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+            📦 Product Log
+          </button>
+        </div>
+      </div>
+
+      <!-- Timeframe Subfolders Explorer Grid -->
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+            <span>📂</span> ${folderTitle} Subfolders (${subfolderCats.length} Available)
+          </h3>
+          ${timeSubfolder ? `
+            <button onclick="setDashboardTimeSubfolder(null)" class="text-xs font-bold text-amber-600 hover:underline cursor-pointer bg-transparent border-none">
+              View All Subfolders
+            </button>
+          ` : ''}
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          ${subfolderCats.length > 0 ? subfolderCats.map(sf => `
+            <div onclick="setDashboardTimeSubfolder('${sf.key}')" class="p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2 group ${timeSubfolder === sf.key ? 'bg-amber-500/10 border-amber-500 shadow-md ring-2 ring-amber-500/30' : 'bg-slate-50/70 hover:bg-slate-100 border-black/[0.08]'}">
+              <div class="flex items-center justify-between">
+                <span class="text-xl group-hover:scale-110 transition-transform">📁</span>
+                <span class="text-[0.6rem] font-bold text-slate-500 font-mono">${sf.count} orders</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-slate-900 group-hover:text-amber-600 transition-colors truncate">${sf.label}</h4>
+                <div class="text-[0.7rem] font-mono font-extrabold text-amber-600 mt-0.5">${formatMoney(sf.totalRev)}</div>
+              </div>
+            </div>
+          `).join('') : `
+            <div class="col-span-full py-4 text-center text-xs text-slate-500 italic">No time subfolders available for this period yet.</div>
+          `}
+        </div>
+      </div>
+
+      <!-- Folder Detailed KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl">💰</div>
+            <span class="text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Revenue</span>
+          </div>
+          <div>
+            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Total Revenue</div>
+            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.totalRev)}</div>
+          </div>
+        </div>
+
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl">💵</div>
+            <span class="text-[0.7rem] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Cash / Mobile</span>
+          </div>
+          <div>
+            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Direct Sales</div>
+            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.directRev)}</div>
+          </div>
+        </div>
+
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl">💳</div>
+            <span class="text-[0.7rem] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Payroll Deduction</span>
+          </div>
+          <div>
+            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Tab Credit</div>
+            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.tabRev)}</div>
+          </div>
+        </div>
+
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-xl">📦</div>
+            <span class="text-[0.7rem] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">${folderStats.itemsCount} Items</span>
+          </div>
+          <div>
+            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Receipts Logged</div>
+            <div class="text-2xl font-extrabold text-[#0F172A]">${folderStats.count}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subfolder Contents Data Table -->
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2">
+            <span>${subfolder === 'items' ? '📦' : '📜'}</span>
+            ${subfolder === 'items' ? 'Itemized Product Sales Log' : subfolder === 'direct' ? 'Direct Cash/Mobile Receipts' : subfolder === 'tab' ? 'Institutional Tab Credit Receipts' : 'All Folder Receipts'}
+          </h3>
+          <span class="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">Subfolder: ${subfolder.toUpperCase()}</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="data-table w-full text-left text-sm">
+            <thead>
+              <tr class="text-[#475569] border-b border-black/[0.1]">
+                ${subfolder === 'items' ? `
+                  <th class="py-3 px-4 font-semibold">Product Name</th>
+                  <th class="py-3 px-4 font-semibold">Quantity Sold</th>
+                  <th class="py-3 px-4 font-semibold">Total Revenue</th>
+                  <th class="py-3 px-4 font-semibold text-right">Type</th>
+                ` : `
+                  <th class="py-3 px-4 font-semibold">Order ID</th>
+                  <th class="py-3 px-4 font-semibold">Time</th>
+                  <th class="py-3 px-4 font-semibold">Mode</th>
+                  <th class="py-3 px-4 font-semibold">Client/Staff</th>
+                  <th class="py-3 px-4 font-semibold">Total</th>
+                  <th class="py-3 px-4 font-semibold text-right">Action</th>
+                `}
+              </tr>
+            </thead>
+            <tbody id="recentOrdersTbody" class="divide-y divide-black/[0.1]">
+              ${subfolder === 'items' ? renderItemizedProductRows(periodOrders) : renderDashboardOrderRows()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Ledgers
@@ -1036,6 +1634,7 @@ function renderDepartmentLedgers() {
             <div class="flex items-center justify-between mb-3">
               <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-1 rounded-lg">${d.code}</span>
               <div class="flex items-center gap-1">
+                <button onclick="event.stopPropagation(); openAddEmployeeModal('${d.id}')" title="Add Staff to ${d.code}" class="p-1.5 text-xs text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">👤 +Staff</button>
                 <button onclick="event.stopPropagation(); pullDepartmentConsumedList('${d.id}')" title="Print Consumed List" class="p-1.5 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Report</button>
                 <button onclick="event.stopPropagation(); exportDepartmentExcel('${d.id}')" title="Export Excel" class="p-1.5 text-xs text-[#10B981] hover:bg-[#10B981]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Excel</button>
                 <button onclick="event.stopPropagation(); deleteDepartment('${d.id}')" title="Delete Department" class="p-1.5 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️</button>
@@ -1111,22 +1710,20 @@ function renderDepartmentLedgers() {
     const totalConsumed = staffList.reduce((s, e) => s + e.currentBalance, 0);
 
     const staffRowsHtml = staffList.map(emp => {
-      const limit = dept.monthlyCreditLimit || 1;
-      const usagePct = limit > 0 ? Math.min((emp.currentBalance / limit) * 100, 100) : 0;
       return `
         <tr>
-          <td><span class="font-mono font-bold text-xs bg-[#F1F5F9] px-2 py-1 rounded border border-black/[0.08]">${emp.staffId}</span></td>
-          <td class="font-semibold text-[#0F172A]">${emp.fullName}</td>
-          <td>${limit > 0 ? formatMoney(limit) : 'No Limit'}</td>
-          <td><span class="font-bold" style="color:${emp.currentBalance > 0 ? '#F59E0B' : '#10B981'}">${formatMoney(emp.currentBalance)}</span></td>
           <td>
-            <div class="progress-bar" style="width:100px; height:6px; background:#E2E8F0; border-radius:3px; overflow:hidden;">
-              <div class="progress-fill" style="height:100%; width:${usagePct}%;background:${usagePct > 80 ? '#EF4444' : '#F59E0B'}"></div>
-            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/80 shadow-xs">${emp.staffId}</span>
+          </td>
+          <td class="font-bold text-slate-900">${emp.fullName}</td>
+          <td>
+            <span class="font-mono font-extrabold ${emp.currentBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatMoney(emp.currentBalance)}</span>
           </td>
           <td class="text-right whitespace-nowrap">
-            <button class="text-xs font-bold text-[#10B981] hover:underline cursor-pointer bg-transparent border-none mr-2" onclick="openSettleModal('${emp.id}')">Settle Tab</button>
-            <button class="text-xs font-bold text-[#EF4444] hover:underline cursor-pointer bg-transparent border-none" onclick="deleteEmployee('${emp.id}')">Delete</button>
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
+              <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+            </div>
           </td>
         </tr>
       `;
@@ -1159,11 +1756,14 @@ function renderDepartmentLedgers() {
                 <span class="text-xs text-[#475569] font-medium">${staffList.length} Assigned Staff Member${staffList.length !== 1 ? 's' : ''}</span>
               </div>
               <h2 class="text-xl font-bold text-[#0F172A] mt-1">${dept.name}</h2>
-              <p class="text-xs text-[#475569] mt-0.5">Monthly Credit Limit: <strong>${dept.monthlyCreditLimit > 0 ? formatMoney(dept.monthlyCreditLimit) : 'No Limit'}</strong></p>
+              <p class="text-xs text-[#475569] mt-0.5">Total Unpaid Balance: <strong class="text-amber-600 font-mono font-bold">${formatMoney(totalConsumed)}</strong></p>
             </div>
           </div>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+            <button onclick="openAddEmployeeModal('${dept.id}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
+              <span>👤</span> Add Staff Account
+            </button>
             <button onclick="pullDepartmentConsumedList('${dept.id}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
               <span>📊</span> Pull Consumed List
             </button>
@@ -1180,7 +1780,7 @@ function renderDepartmentLedgers() {
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>👤</span> Staff Accounts in ${dept.name}</h3>
-            <button onclick="openAddEmployeeModal()" class="text-xs font-bold text-[#F59E0B] hover:underline cursor-pointer bg-transparent border-none">+ Add Staff Account</button>
+            <button onclick="openAddEmployeeModal('${dept.id}')" class="text-xs font-bold text-[#F59E0B] hover:underline cursor-pointer bg-transparent border-none">+ Add Staff Account</button>
           </div>
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
@@ -1188,16 +1788,14 @@ function renderDepartmentLedgers() {
                 <tr class="text-[#475569] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Staff ID</th>
                   <th class="py-3 px-4 font-semibold">Employee Name</th>
-                  <th class="py-3 px-4 font-semibold">Monthly Limit</th>
                   <th class="py-3 px-4 font-semibold">Unpaid Balance</th>
-                  <th class="py-3 px-4 font-semibold">Usage</th>
                   <th class="py-3 px-4 font-semibold text-right">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-black/[0.1]">
                 ${staffList.length > 0 ? staffRowsHtml : `
                   <tr>
-                    <td colspan="6" class="py-8 text-center text-[#475569] italic">No staff assigned to this department yet. Click "+ Add Staff Account" to assign employees.</td>
+                    <td colspan="4" class="py-8 text-center text-[#475569] italic">No staff assigned to this department yet. Click "+ Add Staff Account" to assign employees.</td>
                   </tr>
                 `}
               </tbody>
@@ -1222,24 +1820,24 @@ function renderDepartmentLedgers() {
 
     const staffRowsHtml = filteredStaff.map(emp => {
       const dept = state.departments.find(d => d.id === emp.departmentId);
-      const limit = dept ? dept.monthlyCreditLimit : 1;
-      const usagePct = limit > 0 ? Math.min((emp.currentBalance / limit) * 100, 100) : 0;
       const deptName = dept ? dept.name : 'Unassigned';
       return `
         <tr>
-          <td><span class="font-mono font-bold text-xs bg-[#F1F5F9] px-2 py-1 rounded border border-black/[0.08]">${emp.staffId}</span></td>
-          <td class="font-semibold text-[#0F172A]">${emp.fullName}</td>
-          <td class="text-[#475569]">${deptName}</td>
-          <td>${limit > 0 ? formatMoney(limit) : 'No Limit'}</td>
-          <td><span class="font-bold" style="color:${emp.currentBalance > 0 ? '#F59E0B' : '#10B981'}">${formatMoney(emp.currentBalance)}</span></td>
           <td>
-            <div class="progress-bar" style="width:100px; height:6px; background:#E2E8F0; border-radius:3px; overflow:hidden;">
-              <div class="progress-fill" style="height:100%; width:${usagePct}%;background:${usagePct > 80 ? '#EF4444' : '#F59E0B'}"></div>
-            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/80 shadow-xs">${emp.staffId}</span>
+          </td>
+          <td class="font-bold text-slate-900">${emp.fullName}</td>
+          <td>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200/80">${deptName}</span>
+          </td>
+          <td>
+            <span class="font-mono font-extrabold ${emp.currentBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatMoney(emp.currentBalance)}</span>
           </td>
           <td class="text-right whitespace-nowrap">
-            <button class="text-xs font-bold text-[#10B981] hover:underline cursor-pointer bg-transparent border-none mr-2" onclick="openSettleModal('${emp.id}')">Settle Tab</button>
-            <button class="text-xs font-bold text-[#EF4444] hover:underline cursor-pointer bg-transparent border-none" onclick="deleteEmployee('${emp.id}')">Delete</button>
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
+              <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+            </div>
           </td>
         </tr>
       `;
@@ -1278,16 +1876,14 @@ function renderDepartmentLedgers() {
                   <th class="py-3 px-4 font-semibold">Staff ID</th>
                   <th class="py-3 px-4 font-semibold">Employee Name</th>
                   <th class="py-3 px-4 font-semibold">Department</th>
-                  <th class="py-3 px-4 font-semibold">Monthly Limit</th>
                   <th class="py-3 px-4 font-semibold">Unpaid Balance</th>
-                  <th class="py-3 px-4 font-semibold">Usage</th>
                   <th class="py-3 px-4 font-semibold text-right">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-black/[0.1]">
                 ${filteredStaff.length > 0 ? staffRowsHtml : `
                   <tr>
-                    <td colspan="7" class="py-8 text-center text-[#475569] italic">No staff accounts found matching your search.</td>
+                    <td colspan="5" class="py-8 text-center text-[#475569] italic">No staff accounts found matching your search.</td>
                   </tr>
                 `}
               </tbody>
@@ -1346,6 +1942,34 @@ window.deleteEmployee = function(empId) {
     addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
     saveData();
     window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
+    renderAllViews();
+  }
+};
+
+window.deleteOrder = function(orderId) {
+  const currentRole = state.currentSession ? state.currentSession.role : state.currentUser.role;
+  if (currentRole !== 'admin' && currentRole !== 'cashier') {
+    window.showToast('Only authorized staff can delete transactions.', 'warning');
+    return;
+  }
+
+  const order = state.orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  if (confirm(`Are you sure you want to delete order "${order.id}" (${formatMoney(order.total)})?`)) {
+    if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
+      const emp = state.employees.find(e => e.id === order.employeeId || e.staffId === order.staffId);
+      if (emp) {
+        emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+      }
+    }
+
+    state.orders = state.orders.filter(o => o.id !== orderId);
+    state.tabReceipts = state.tabReceipts.filter(r => r.orderId !== orderId && r.id !== orderId);
+
+    addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
+    saveData();
+    window.showToast(`Transaction "${order.id}" deleted successfully.`, 'success');
     renderAllViews();
   }
 };
@@ -1430,8 +2054,10 @@ window.pullDepartmentConsumedList = function(deptId) {
 
   if (receipts.length > 0) {
     let receiptsTotal = 0;
+    let receiptsTotalProducts = 0;
     receipts.slice().reverse().forEach(r => {
       receiptsTotal += r.total;
+      receiptsTotalProducts += r.items.reduce((s, i) => s + (i.qty || 1), 0);
       const itemsStr = r.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ');
       printHtml += `
         <tr style="border-bottom:1px solid #eee;">
@@ -1444,9 +2070,10 @@ window.pullDepartmentConsumedList = function(deptId) {
       `;
     });
     printHtml += `
-        <tr style="font-weight:bold; background-color:#f1f5f9;">
-          <td colspan="4" style="padding:8px; text-align:right;">Total Itemized Receipts:</td>
-          <td style="text-align:right; padding:8px;">${formatMoney(receiptsTotal)}</td>
+        <tr style="font-weight:bold; background-color:#FEF3C7; color:#92400E; font-size:14px; border-top:2px solid #F59E0B;">
+          <td colspan="3" style="padding:10px 8px;">GRAND TOTAL (${receipts.length} Receipts)</td>
+          <td style="padding:10px 8px;">${receiptsTotalProducts} Total Products Consumed</td>
+          <td style="text-align:right; padding:10px 8px; font-size:15px; color:#D97706;">${formatMoney(receiptsTotal)}</td>
         </tr>
     `;
   } else {
@@ -1563,7 +2190,6 @@ window.openAddDepartmentModal = function() {
   }
   document.getElementById('addDeptName').value = '';
   document.getElementById('addDeptCode').value = '';
-  document.getElementById('addDeptLimit').value = '';
   window.openModal('modalAddDepartment');
 };
 
@@ -1573,7 +2199,6 @@ window.saveNewDepartment = function() {
   if (!code && name) {
     code = window.generateDepartmentCode(name);
   }
-  const limit = parseFloat(document.getElementById('addDeptLimit').value) || 0;
 
   if (!name || !code) {
     window.showToast('Department name and code are required.', 'error');
@@ -1583,8 +2208,7 @@ window.saveNewDepartment = function() {
   const newDept = {
     id: generateId('dept'),
     code: code,
-    name: name,
-    monthlyCreditLimit: limit
+    name: name
   };
 
   state.departments.push(newDept);
@@ -1595,16 +2219,21 @@ window.saveNewDepartment = function() {
   renderAllViews();
 };
 
-window.openAddEmployeeModal = function() {
+window.openAddEmployeeModal = function(defaultDeptId = null) {
   const currentRole = state.currentSession ? state.currentSession.role : state.currentUser.role;
   if (currentRole !== 'admin' && currentRole !== 'cashier') {
     window.showToast('Only authorized staff can add staff accounts.', 'warning');
     return;
   }
 
+  const deptIdToUse = defaultDeptId || (state.ledgerMode === 'dept_detail' ? state.selectedLedgerDeptId : null);
+
   const deptSelect = document.getElementById('addEmpDeptSelect');
   if (deptSelect) {
-    deptSelect.innerHTML = state.departments.map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join('');
+    deptSelect.innerHTML = state.departments.map(d => `<option value="${d.id}" ${d.id === deptIdToUse ? 'selected' : ''}>${d.name} (${d.code})</option>`).join('');
+    if (deptIdToUse) {
+      deptSelect.value = deptIdToUse;
+    }
   }
 
   document.getElementById('addEmpFullName').value = '';
@@ -1651,12 +2280,23 @@ function renderProductManagement() {
   tbody.innerHTML = state.products.map(p => {
     return `
       <tr>
-        <td>${p.icon} <strong>${p.name}</strong></td>
-        <td class="text-[#475569]">${getCategoryName(p.categoryId)}</td>
-        <td class="font-bold">${formatMoney(p.price)}</td>
-        <td class="text-right">
-          <button onclick="editProduct('${p.id}')" class="text-xs font-semibold text-[#F59E0B] hover:underline cursor-pointer bg-transparent border-none mr-2">Edit</button>
-          <button onclick="deleteProduct('${p.id}')" class="text-xs font-semibold text-[#EF4444] hover:underline cursor-pointer bg-transparent border-none">Delete</button>
+        <td>
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg shrink-0">${p.icon}</span>
+            <span class="font-bold text-slate-900">${p.name}</span>
+          </div>
+        </td>
+        <td>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200/80">${getCategoryName(p.categoryId)}</span>
+        </td>
+        <td>
+          <span class="font-mono font-extrabold text-slate-900">${formatMoney(p.price)}</span>
+        </td>
+        <td class="text-right whitespace-nowrap">
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="editProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">✏️ Edit</button>
+            <button onclick="deleteProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+          </div>
         </td>
       </tr>
     `;
@@ -1839,6 +2479,11 @@ window.printHRReport = function() {
     const emp = state.employees.find(e => e.id === empId);
     const dept = state.departments.find(d => d.id === emp.departmentId);
     const receipts = state.tabReceipts.filter(r => r.employeeId === empId);
+    let totalProducts = 0;
+
+    receipts.forEach(r => {
+      totalProducts += r.items.reduce((s, i) => s + (i.qty || 1), 0);
+    });
     
     let printHtml = `
       <div style="font-family:sans-serif; color:#000; padding:20px; max-width:850px; margin:0 auto;">
@@ -1854,16 +2499,21 @@ window.printHRReport = function() {
           </div>
         </div>
         
-        <div style="background-color:#f1f5f9; padding:15px; margin:20px 0; border-radius:8px;">
-          <h2 style="margin:0 0 10px 0; font-size:18px;">${emp.fullName}</h2>
-          <p style="margin:0 0 5px 0;"><strong>Staff ID:</strong> ${emp.staffId || 'N/A'}</p>
-          <p style="margin:0 0 5px 0;"><strong>Department:</strong> ${dept ? dept.name : 'Unknown'}</p>
-          <p style="margin:0; font-size:16px; color:#EF4444;"><strong>Total Outstanding: ${formatMoney(emp.currentBalance)}</strong></p>
+        <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:15px; margin:20px 0; border-radius:8px; display:flex; justify-content:space-between;">
+          <div>
+            <h2 style="margin:0 0 6px 0; font-size:18px; color:#0F172A;">${emp.fullName}</h2>
+            <p style="margin:0 0 4px 0; font-size:13px;"><strong>Staff ID:</strong> ${emp.staffId || 'N/A'}</p>
+            <p style="margin:0; font-size:13px;"><strong>Department:</strong> ${dept ? dept.name : 'Unknown'}</p>
+          </div>
+          <div style="text-align:right;">
+            <p style="margin:0 0 4px 0; font-size:13px;"><strong>Total Products Consumed:</strong> ${totalProducts} items</p>
+            <p style="margin:0; font-size:18px; color:#D97706;"><strong>Grand Total to Deduct: ${formatMoney(emp.currentBalance)}</strong></p>
+          </div>
         </div>
         
         <h3 style="margin-top:30px; border-bottom:1px solid #ccc; padding-bottom:5px;">Itemized Receipt History</h3>
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
-          <tr style="border-bottom:2px solid #000;">
+          <tr style="border-bottom:2px solid #000; background-color:#f8fafc;">
             <th style="text-align:left; padding:8px;">Date & Time</th>
             <th style="text-align:left; padding:8px;">Order ID</th>
             <th style="text-align:left; padding:8px;">Items Consumed</th>
@@ -1886,13 +2536,14 @@ window.printHRReport = function() {
         `;
       });
       printHtml += `
-          <tr style="font-weight:bold; background-color:#f8fafc;">
-            <td colspan="3" style="padding:8px; text-align:right;">Calculated Total of Receipts:</td>
-            <td style="text-align:right; padding:8px;">${formatMoney(sum)}</td>
+          <tr style="font-weight:bold; background-color:#FEF3C7; color:#92400E; font-size:14px; border-top:2px solid #F59E0B;">
+            <td colspan="2" style="padding:10px 8px;">GRAND TOTAL (${receipts.length} Orders)</td>
+            <td style="padding:10px 8px;">${totalProducts} Total Products Consumed</td>
+            <td style="text-align:right; padding:10px 8px; font-size:15px; color:#D97706;">${formatMoney(sum)}</td>
           </tr>
       `;
     } else {
-      printHtml += `<tr><td colspan="4" style="padding:20px; text-align:center; font-style:italic;">No detailed receipts found for this balance (may have been accumulated before archiving was enabled).</td></tr>`;
+      printHtml += `<tr><td colspan="4" style="padding:20px; text-align:center; font-style:italic;">No detailed receipts found for this balance.</td></tr>`;
     }
     
     printHtml += `
@@ -1937,6 +2588,7 @@ window.printHRReport = function() {
   
   let hasData = false;
   let overallTotal = 0;
+  let overallStaffCount = 0;
   deptsToPrint.forEach(d => {
     const emps = state.employees.filter(e => e.departmentId === d.id && e.currentBalance > 0);
     if (emps.length > 0) {
@@ -1954,6 +2606,7 @@ window.printHRReport = function() {
       emps.forEach(e => {
         deptTotal += e.currentBalance;
         overallTotal += e.currentBalance;
+        overallStaffCount++;
         printHtml += `
           <tr style="border-bottom:1px solid #ccc;">
             <td style="padding:8px;">${e.staffId || 'N/A'}</td>
@@ -1977,11 +2630,12 @@ window.printHRReport = function() {
   }
 
   printHtml += `
-      <div style="margin-top:30px; font-size:18px; font-weight:bold; text-align:right; border-top:2px solid #000; padding-top:10px;">
-        Total Export Deductions: ${formatMoney(overallTotal)}
+      <div style="margin-top:30px; font-size:16px; font-weight:bold; background-color:#FEF3C7; border:1px solid #F59E0B; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+        <span>GRAND TOTAL PAYROLL DEDUCTIONS (${overallStaffCount} Staff Members):</span>
+        <span style="font-size:20px; color:#D97706;">${formatMoney(overallTotal)}</span>
       </div>
       
-      <div style="margin-top:80px; display:flex; justify-content:space-between; font-size:14px;">
+      <div style="margin-top:60px; display:flex; justify-content:space-between; font-size:14px;">
         <div style="width: 45%;">
           <p style="margin-bottom:40px;">Prepared By (Manager):</p>
           <p style="border-top:1px solid #000; padding-top:5px;">Name & Signature</p>
@@ -2092,26 +2746,37 @@ function renderReports() {
         <span class="text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/10 px-3 py-1 rounded-full border border-[#F59E0B]/20">Total Outstanding: ${formatMoney(totalOutstanding)}</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+        <table class="data-table w-full text-left text-sm">
           <thead>
-            <tr class="text-[#475569] border-b border-black/[0.1] text-xs uppercase tracking-wider">
-              <th class="py-2.5 px-3">Staff ID</th>
-              <th class="py-2.5 px-3">Employee Name</th>
-              <th class="py-2.5 px-3">Department</th>
-              <th class="py-2.5 px-3">Monthly Limit</th>
-              <th class="py-2.5 px-3">Current Balance</th>
+            <tr>
+              <th>Staff ID</th>
+              <th>Employee Name</th>
+              <th>Department</th>
+              <th>Current Balance</th>
+              <th class="text-right">Action</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-black/[0.1]">
+          <tbody>
             ${state.employees.map(e => {
               const dept = state.departments.find(d => d.id === e.departmentId);
               return `
                 <tr>
-                  <td class="py-3 px-3 font-mono text-xs text-[#F59E0B]">${e.staffId}</td>
-                  <td class="py-3 px-3 font-semibold text-[#0F172A]">${e.fullName}</td>
-                  <td class="py-3 px-3 text-[#475569]">${dept ? dept.name : e.departmentId}</td>
-                  <td class="py-3 px-3 text-[#475569]">${formatMoney(dept ? dept.monthlyCreditLimit : 0)}</td>
-                  <td class="py-3 px-3 font-bold ${e.currentBalance > 0 ? 'text-[#F59E0B]' : 'text-[#10B981]'}">${formatMoney(e.currentBalance)}</td>
+                  <td>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/80 shadow-xs">${e.staffId}</span>
+                  </td>
+                  <td class="font-bold text-slate-900">${e.fullName}</td>
+                  <td>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200/80">${dept ? dept.name : e.departmentId}</span>
+                  </td>
+                  <td>
+                    <span class="font-mono font-extrabold ${e.currentBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatMoney(e.currentBalance)}</span>
+                  </td>
+                  <td class="text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-2">
+                      <button onclick="openSettleModal('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
+                      <button onclick="deleteEmployee('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+                    </div>
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -2229,6 +2894,10 @@ window.printDailyA4Report = function() {
               <td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(e.currentBalance)}</td>
             </tr>
           `).join('')}
+          <tr style="font-weight:bold; background:#FEF3C7; color:#92400E;">
+            <td colspan="2" style="border:1px solid #000; padding:10px; text-align:right;">GRAND TOTAL TO BE DEDUCTED FROM PAYROLL:</td>
+            <td style="border:1px solid #000; padding:10px; text-align:right; font-size:15px; color:#D97706;">${formatMoney(state.employees.reduce((s, e) => s + e.currentBalance, 0))}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -2338,6 +3007,7 @@ function checkExistingSession() {
 }
 
 function showAuthScreen() {
+  document.documentElement.classList.remove('authenticated-session');
   const authScreen = document.getElementById('authScreen');
   const mainApp = document.getElementById('mainAppContainer');
   if (authScreen) authScreen.classList.remove('hidden');
@@ -2345,6 +3015,7 @@ function showAuthScreen() {
 }
 
 function showMainApp() {
+  document.documentElement.classList.add('authenticated-session');
   const authScreen = document.getElementById('authScreen');
   const mainApp = document.getElementById('mainAppContainer');
   if (authScreen) authScreen.classList.add('hidden');
@@ -2502,6 +3173,7 @@ window.showSignupForm = function() {
 };
 
 window.logout = function() {
+  document.documentElement.classList.remove('authenticated-session');
   sessionStorage.removeItem('dmch_resto_session');
   sessionStorage.removeItem('coffeeshop_session');
   state.currentSession = null;
@@ -2575,10 +3247,24 @@ async function exportExcelWithLogo(workbookTitle, headers, rows, filename) {
     // Data Rows
     rows.forEach(r => {
       const row = worksheet.addRow(r);
+      const isGrandTotal = r[0] === 'GRAND TOTAL';
       row.eachCell(cell => {
-        cell.border = {
-          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
+        if (isGrandTotal) {
+          cell.font = { bold: true, color: { argb: 'FF92400E' }, size: 11 };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFEF3C7' }
+          };
+          cell.border = {
+            top: { style: 'medium', color: { argb: 'FFF59E0B' } },
+            bottom: { style: 'double', color: { argb: 'FFF59E0B' } }
+          };
+        } else {
+          cell.border = {
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
       });
     });
 
@@ -2620,12 +3306,21 @@ window.exportHRExcel = function() {
 
     const headers = ["Date & Time", "Order ID", "Items Consumed", "Amount (RWF)"];
     const rows = [];
+    let totalProducts = 0;
+    let totalAmount = 0;
+
     if (receipts.length > 0) {
       receipts.slice().reverse().forEach(r => {
+        const itemsCount = r.items.reduce((s, i) => s + (i.qty || 1), 0);
+        totalProducts += itemsCount;
+        totalAmount += r.total;
         const itemsStr = r.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join('; ');
         rows.push([new Date(r.timestamp).toLocaleString(), r.id, itemsStr, r.total]);
       });
     }
+
+    // Add GRAND TOTAL Row
+    rows.push(["GRAND TOTAL", `${receipts.length} Orders`, `${totalProducts} Products Consumed`, totalAmount]);
 
     exportExcelWithLogo(
       `Detailed Statement - ${emp.fullName} (${emp.staffId || 'N/A'}) - Dept: ${dept ? dept.name : 'Unknown'}`,
@@ -2641,12 +3336,20 @@ window.exportHRExcel = function() {
 
     const headers = ["Department Code", "Department Name", "Staff ID", "Employee Name", "Amount to Deduct (RWF)"];
     const rows = [];
+    let totalDeductions = 0;
+    let staffCount = 0;
+
     deptsToExport.forEach(d => {
       const emps = state.employees.filter(e => e.departmentId === d.id && e.currentBalance > 0);
       emps.forEach(e => {
+        staffCount++;
+        totalDeductions += e.currentBalance;
         rows.push([d.code, d.name, e.staffId || 'N/A', e.fullName, e.currentBalance]);
       });
     });
+
+    // Add GRAND TOTAL Row
+    rows.push(["GRAND TOTAL", `${deptsToExport.length} Depts`, `${staffCount} Staff Accounts`, "Total Deductions:", totalDeductions]);
 
     exportExcelWithLogo(
       'HR Payroll Deductions Summary Report',
@@ -2667,10 +3370,19 @@ window.exportDepartmentExcel = function(deptId) {
 
   const headers = ["Date & Time", "Staff ID", "Employee Name", "Order ID", "Items Consumed", "Amount (RWF)"];
   const rows = [];
+  let totalProducts = 0;
+  let totalAmount = 0;
+
   receipts.slice().reverse().forEach(r => {
+    const itemsCount = r.items.reduce((s, i) => s + (i.qty || 1), 0);
+    totalProducts += itemsCount;
+    totalAmount += r.total;
     const itemsStr = r.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join('; ');
     rows.push([new Date(r.timestamp).toLocaleString(), r.staffId || 'N/A', r.employeeName || 'Staff', r.id, itemsStr, r.total]);
   });
+
+  // Add GRAND TOTAL Row
+  rows.push(["GRAND TOTAL", `${staffList.length} Staff`, `${receipts.length} Receipts`, "", `${totalProducts} Products Consumed`, totalAmount]);
 
   exportExcelWithLogo(
     `Department Consumption - ${dept.name} (${dept.code})`,
