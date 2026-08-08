@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EXOBUS MIS & POS — Institution Staff Lounge & Cafeteria</title>
+  <title>DMCH Resto MIS & POS — Institution Staff Lounge & Cafeteria</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,7 +22,7 @@
       <div id="loginForm" class="auth-card">
         <div class="auth-card-header">
           <div class="auth-logo">☕</div>
-          <h2>EXOBUS MIS & POS</h2>
+          <h2>DMCH Resto MIS & POS</h2>
           <p>Institution Staff Lounge & Cafeteria Terminal</p>
         </div>
         <div class="auth-card-body">
@@ -100,7 +101,7 @@
       <div class="flex items-center gap-2.5">
         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center text-lg sm:text-xl shadow-lg shadow-amber-500/20">☕</div>
         <div>
-          <h1 class="text-sm sm:text-base font-extrabold text-[#0F172A] tracking-tight">EXOBUS MIS & POS</h1>
+          <h1 class="text-sm sm:text-base font-extrabold text-[#0F172A] tracking-tight">DMCH Resto MIS & POS</h1>
           <p class="text-[0.6rem] sm:text-[0.65rem] text-[#475569] font-medium uppercase tracking-widest hidden sm:block">Institution Staff Lounge</p>
         </div>
       </div>
@@ -169,7 +170,7 @@
               <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#475569]">🔍</span>
               <input type="text" id="productSearchInput" placeholder="Search menu items..." class="w-full bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
             </div>
-            <div id="categoryPillsContainer" class="flex overflow-x-auto gap-2 pb-1.5 no-scrollbar whitespace-nowrap">
+            <div id="categoryPillsContainer" class="flex flex-wrap items-center gap-1.5 sm:gap-2 py-1 w-full shrink-0">
               <!-- Pills will be injected here -->
             </div>
             <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3 overflow-y-auto pb-4 pr-1">
@@ -295,42 +296,10 @@
         </div>
       </section>
 
-      <!-- VIEW 3: LEDGERS -->
+      <!-- VIEW 3: LEDGERS (OS Folder Navigation) -->
       <section id="view-ledgers" class="view-panel hidden">
-        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-            <div>
-              <h2 class="text-base sm:text-lg font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Department & Staff Ledgers</h2>
-              <p class="text-xs text-[#475569]">Manage payroll credit limits, staff balances, and department accounts.</p>
-            </div>
-            
-            <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="openAddDepartmentModal()" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
-                <span>➕</span> Add Department
-              </button>
-              <button onclick="openAddEmployeeModal()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5 shadow-lg shadow-amber-500/10">
-                <span>👤</span> Add Staff Account
-              </button>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="data-table w-full text-left text-sm">
-              <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
-                  <th class="py-3 px-4 font-semibold">Staff ID</th>
-                  <th class="py-3 px-4 font-semibold">Name</th>
-                  <th class="py-3 px-4 font-semibold">Department</th>
-                  <th class="py-3 px-4 font-semibold">Monthly Limit</th>
-                  <th class="py-3 px-4 font-semibold">Unpaid Balance</th>
-                  <th class="py-3 px-4 font-semibold">Usage</th>
-                  <th class="py-3 px-4 font-semibold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="deptLedgerTbody" class="divide-y divide-black/[0.1]">
-                <!-- Rows injected here -->
-              </tbody>
-            </table>
-          </div>
+        <div id="ledgersOSContainer">
+          <!-- Dynamic OS Desktop / Folder View injected by renderDepartmentLedgers() -->
         </div>
       </section>
 
@@ -338,7 +307,7 @@
       <section id="view-products" class="view-panel hidden">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-base font-bold text-[#0F172A]">📦 Product Catalog & Stock</h2>
+            <h2 class="text-base font-bold text-[#0F172A]">📦 Product Catalog</h2>
             <button onclick="openAddProductModal()" class="bg-[#F59E0B] text-[#111827] border-none rounded-xl px-4 py-2 text-xs font-bold cursor-pointer hover:bg-[#D97706]">➕ Add Product</button>
           </div>
           <div class="overflow-x-auto">
@@ -347,9 +316,7 @@
                 <tr class="text-[#475569] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Product</th>
                   <th class="py-3 px-4 font-semibold">Category</th>
-                  <th class="py-3 px-4 font-semibold">Retail Price</th>
-                  <th class="py-3 px-4 font-semibold">Cost (COGS)</th>
-                  <th class="py-3 px-4 font-semibold">Stock</th>
+                  <th class="py-3 px-4 font-semibold">Price (RWF)</th>
                   <th class="py-3 px-4 font-semibold text-right">Action</th>
                 </tr>
               </thead>
@@ -538,21 +505,12 @@
             </select>
           </div>
           
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Retail Price (RWF)</label>
-              <input type="number" step="0.01" id="addProdPrice" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Cost Price (RWF)</label>
-              <input type="number" step="0.01" id="addProdCostPrice" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
-            </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Price (RWF)</label>
+            <input type="number" step="0.01" id="addProdPrice" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
           </div>
           
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Initial Stock</label>
-            <input type="number" id="addProdStock" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
-          </div>
+
           
           <div class="flex flex-col gap-2">
             <div class="flex justify-between items-center">
@@ -655,7 +613,7 @@
         <div class="p-5 flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department Name</label>
-            <input type="text" id="addDeptName" placeholder="e.g. LABORATORY & PATHOLOGY" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B] uppercase">
+            <input type="text" id="addDeptName" oninput="window.autoGenerateDeptCode()" placeholder="e.g. LABORATORY & PATHOLOGY" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B] uppercase">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-2">
@@ -689,7 +647,7 @@
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department</label>
-            <select id="addEmpDeptSelect" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            <select id="addEmpDeptSelect" onchange="window.updateAutoStaffId()" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
               <!-- Options populated dynamically -->
             </select>
           </div>
