@@ -534,7 +534,7 @@ window.renderReports = function() {
   `;
 }
 
-function showReceiptModal(order) {
+window.showReceiptModal = function(order) {
   state.lastReceiptOrder = order;
   const preview = document.getElementById('receiptPreviewContent');
   if (!preview) return;
@@ -576,25 +576,25 @@ function showReceiptModal(order) {
     </div>
   `;
   window.openModal('modalReceipt');
-}
+};
 
 window.reprintReceipt = function(orderId) {
   const order = state.orders.find(o => o.id === orderId);
-  if (order) showReceiptModal(order);
+  if (order) window.showReceiptModal(order);
 };
 
 window.triggerPrintReceipt = function() {
   if (state.lastReceiptOrder) {
-    print80mmReceipt(state.lastReceiptOrder);
+    window.print80mmReceipt(state.lastReceiptOrder);
   }
 };
 
-function print80mmReceipt(order) {
+window.print80mmReceipt = function(order) {
   const container = document.getElementById('print-container');
   if (!container) return;
   container.innerHTML = document.getElementById('receiptPreviewContent').innerHTML;
   window.print();
-}
+};
 
 window.printDailyA4Report = function() {
   const container = document.getElementById('print-container');

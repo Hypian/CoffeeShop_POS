@@ -235,7 +235,7 @@ window.processDirectPayment = function() {
     window.closeModal('modalDirectCheckout');
     window.showToast(`Payment approved via ${method.replace('_', ' ')}`, 'success');
     renderAllViews();
-    showReceiptModal(order);
+    if (window.showReceiptModal) window.showReceiptModal(order);
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 1000);
   }
@@ -413,7 +413,7 @@ window.processTabPayment = function() {
     window.closeModal('modalTabCheckout');
     window.showToast(`Tab order authorized for ${state.currentTabEmployee.fullName}`, 'success');
     renderAllViews();
-    showReceiptModal(order);
+    if (window.showReceiptModal) window.showReceiptModal(order);
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 1000);
   }
@@ -489,7 +489,7 @@ window.processPatientPayment = function() {
     window.closeModal('modalPatientCheckout');
     window.showToast(`Catering order for ${roomNumber} (${roomTier} - ${mealType}) processed!`, 'success');
     renderAllViews();
-    showReceiptModal(order);
+    if (window.showReceiptModal) window.showReceiptModal(order);
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 1000);
   }
