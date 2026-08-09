@@ -600,9 +600,9 @@ window.renderDepartmentLedgers = function() {
 }
 
 window.deleteDepartment = function(deptId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can delete departments.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete departments.', 'error');
     return;
   }
 
@@ -623,6 +623,7 @@ window.deleteDepartment = function(deptId) {
         if (e.departmentId === deptId) e.departmentId = '';
       });
       state.departments = state.departments.filter(d => d.id !== deptId);
+      if (window.cloudDeleteDepartment) window.cloudDeleteDepartment(deptId);
       addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
       saveData();
       window.showToast(`Department "${dept.name}" deleted`, 'success');
@@ -632,9 +633,9 @@ window.deleteDepartment = function(deptId) {
 };
 
 window.deleteEmployee = function(empId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can delete staff accounts.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete staff accounts.', 'error');
     return;
   }
 
@@ -648,6 +649,14 @@ window.deleteEmployee = function(empId) {
     onConfirm: () => {
       state.employees = state.employees.filter(e => e.id !== empId);
       state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== empId);
+      if (window.cloudDeleteEmployee) window.cloudDeleteEmployee(empId);
+      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
+      saveData();
+      window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
+      renderAllViews();
+    }
+  });
+};
       addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
       saveData();
       window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');

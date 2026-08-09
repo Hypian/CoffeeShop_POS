@@ -88,9 +88,9 @@ window.saveRoom = function() {
 };
 
 window.deleteRoom = function(roomId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can delete room listings.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete room listings.', 'error');
     return;
   }
 
@@ -103,6 +103,7 @@ window.deleteRoom = function(roomId) {
     confirmText: "Yes, Delete Room",
     onConfirm: () => {
       state.rooms = state.rooms.filter(r => r.id !== roomId);
+      if (window.cloudDeleteRoom) window.cloudDeleteRoom(roomId);
       addAuditLog("Room Deleted", `Deleted room ${room.roomNumber}`);
       saveData();
       window.populateRoomDropdown();
@@ -113,9 +114,9 @@ window.deleteRoom = function(roomId) {
 };
 
 window.clearAllRooms = function() {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can clear room listings.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to clear room listings.', 'error');
     return;
   }
 
@@ -125,6 +126,7 @@ window.clearAllRooms = function() {
     confirmText: "Yes, Clear All Rooms",
     onConfirm: () => {
       state.rooms = [];
+      if (window.cloudClearAllRooms) window.cloudClearAllRooms();
       addAuditLog("All Rooms Cleared", "Cleared all room listings");
       saveData();
       window.populateRoomDropdown();

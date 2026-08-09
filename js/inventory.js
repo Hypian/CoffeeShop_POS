@@ -75,9 +75,9 @@ window.editProduct = function(id) {
 };
 
 window.deleteProduct = function(id) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can delete inventory products.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete products.', 'error');
     return;
   }
 
@@ -91,6 +91,7 @@ window.deleteProduct = function(id) {
     onConfirm: () => {
       if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
       state.products = state.products.filter(p => p.id !== id);
+      if (window.cloudDeleteProduct) window.cloudDeleteProduct(id);
       saveData();
       window.showToast(`Product "${prodName}" deleted`, 'success');
       renderAllViews();

@@ -204,3 +204,57 @@ window.syncStateToCloud = async function() {
     console.error('Error pushing data to cloud:', err);
   }
 };
+
+window.cloudDeleteOrder = async function(orderId) {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('orders').delete().eq('id', orderId);
+  } catch (err) {
+    console.error('Cloud delete order error:', err);
+  }
+};
+
+window.cloudDeleteProduct = async function(productId) {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('products').delete().eq('id', productId);
+  } catch (err) {
+    console.error('Cloud delete product error:', err);
+  }
+};
+
+window.cloudDeleteDepartment = async function(deptId) {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('departments').delete().eq('id', deptId);
+  } catch (err) {
+    console.error('Cloud delete department error:', err);
+  }
+};
+
+window.cloudDeleteEmployee = async function(empId) {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('employees').delete().eq('id', empId);
+  } catch (err) {
+    console.error('Cloud delete employee error:', err);
+  }
+};
+
+window.cloudDeleteRoom = async function(roomId) {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('rooms').delete().eq('id', roomId);
+  } catch (err) {
+    console.error('Cloud delete room error:', err);
+  }
+};
+
+window.cloudClearAllRooms = async function() {
+  if (!supabaseClient) return;
+  try {
+    await supabaseClient.from('rooms').delete().neq('id', '___none___');
+  } catch (err) {
+    console.error('Cloud clear all rooms error:', err);
+  }
+};

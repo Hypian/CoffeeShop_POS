@@ -67,9 +67,9 @@ window.confirmVoidOrder = function() {
 };
 
 window.deleteOrder = function(orderId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
-  if (currentRole !== 'admin') {
-    window.showToast('🔒 Row Level Security: Only Administrator can delete financial transactions.', 'error');
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager') {
+    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete financial transactions.', 'error');
     return;
   }
 
@@ -90,6 +90,7 @@ window.deleteOrder = function(orderId) {
 
       state.orders = state.orders.filter(o => o.id !== orderId);
       state.tabReceipts = state.tabReceipts.filter(r => r.orderId !== orderId && r.id !== orderId);
+      if (window.cloudDeleteOrder) window.cloudDeleteOrder(orderId);
 
       addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
       saveData();
