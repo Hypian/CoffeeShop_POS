@@ -1,0 +1,19 @@
+{
+  "name": "dmch-resto-pos",
+  "version": "1.0.0",
+  "description": "DMCH Resto MIS & POS — Dream Medical Center Hospital Staff Lounge & Cafeteria",
+  "main": "app.js",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "pos",
+    "hospital",
+    "cafeteria",
+    "mis",
+    "rwanda"
+  ],
+  "author": "DMCH IT Team",
+  "license": "MIT"
+}
