@@ -657,13 +657,8 @@ window.deleteEmployee = function(empId) {
     }
   });
 };
-      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
-      saveData();
-      window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
-      renderAllViews();
-    }
-  });
-};
+
+
 
 window.openSettleModal = function(empId) {
   const emp = state.employees.find(e => e.id === empId);
@@ -747,8 +742,8 @@ window.updateAutoStaffId = function() {
 };
 
 window.openAddDepartmentModal = function() {
-  const currentRole = state.currentSession ? state.currentSession.role : state.currentUser.role;
-  if (currentRole !== 'admin' && currentRole !== 'cashier') {
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager' && currentRole !== 'cashier') {
     window.showToast('Only authorized staff can add departments.', 'warning');
     return;
   }
@@ -784,8 +779,8 @@ window.saveNewDepartment = function() {
 };
 
 window.openAddEmployeeModal = function(defaultDeptId = null) {
-  const currentRole = state.currentSession ? state.currentSession.role : state.currentUser.role;
-  if (currentRole !== 'admin' && currentRole !== 'cashier') {
+  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
+  if (currentRole !== 'admin' && currentRole !== 'manager' && currentRole !== 'cashier') {
     window.showToast('Only authorized staff can add staff accounts.', 'warning');
     return;
   }
