@@ -35,6 +35,14 @@ const DEFAULT_DEPARTMENTS = [
   { id: "dept-6", code: "ADMIN", name: "EXECUTIVE & ADMINISTRATION", monthlyCreditLimit: 250000 }
 ];
 
+const DEFAULT_EMPLOYEES = [
+  { id: "emp-1", staffId: "NURS-001", fullName: "ALICE MUKAMANA", departmentId: "dept-1", currentBalance: 25000 },
+  { id: "emp-2", staffId: "NURS-002", fullName: "PATRICK BIZIMANA", departmentId: "dept-1", currentBalance: 0 },
+  { id: "emp-3", staffId: "SURG-001", fullName: "DR. ERIC NWOSU", departmentId: "dept-2", currentBalance: 42000 },
+  { id: "emp-4", staffId: "LAB-001", fullName: "CLAUDE NSHIMIYIMANA", departmentId: "dept-3", currentBalance: 12000 },
+  { id: "emp-5", staffId: "ADMIN-001", fullName: "JEANNETTE UWIMANA", departmentId: "dept-6", currentBalance: 0 }
+];
+
 const DEFAULT_ROOMS = [
   { id: "room-101", roomNumber: "Room 101", tier: "Normal Room", status: "Occupied" },
   { id: "room-102", roomNumber: "Room 102", tier: "Normal Room", status: "Available" },
