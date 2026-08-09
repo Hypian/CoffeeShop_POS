@@ -2,9 +2,11 @@
   "name": "dmch-resto-pos",
   "version": "1.0.0",
   "description": "DMCH Resto MIS & POS — Dream Medical Center Hospital Staff Lounge & Cafeteria",
-  "main": "app.js",
+  "main": "index.html",
   "scripts": {
     "start": "npx serve .",
+    "build": "echo 'Static build ready'",
+    "vercel-build": "echo 'Vercel build complete'",
     "dev": "npx serve ."
   },
   "keywords": [

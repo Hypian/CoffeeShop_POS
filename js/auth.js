@@ -1,23 +1,22 @@
-/* ==========================================================================
-   DMCH Resto POS & MIS — Authentication, Roles & Session Inactivity Timeout
-   ========================================================================== */
+async function hashPassword(str) {
+  if (!str) return '';
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 function seedDefaultUsers() {
-  let existingUsers = JSON.parse(localStorage.getItem('dmch_resto_users') || localStorage.getItem('coffeeshop_users'));
-  if (!existingUsers) {
+  let existingUsers = JSON.parse(localStorage.getItem('dmch_resto_users'));
+  if (!existingUsers || existingUsers.length === 0) {
     existingUsers = [...DEFAULT_USERS];
-  } else {
-    DEFAULT_USERS.forEach(defU => {
-      if (!existingUsers.some(u => u.username === defU.username)) {
-        existingUsers.push(defU);
-      }
-    });
+    localStorage.setItem('dmch_resto_users', JSON.stringify(existingUsers));
   }
-  localStorage.setItem('dmch_resto_users', JSON.stringify(existingUsers));
 }
 
 function getUsers() {
-  return JSON.parse(localStorage.getItem('dmch_resto_users') || localStorage.getItem('coffeeshop_users')) || DEFAULT_USERS;
+  return JSON.parse(localStorage.getItem('dmch_resto_users')) || DEFAULT_USERS;
 }
 
 function saveUsers(users) {
@@ -25,7 +24,7 @@ function saveUsers(users) {
 }
 
 function checkExistingSession() {
-  const session = JSON.parse(sessionStorage.getItem('dmch_resto_session') || sessionStorage.getItem('coffeeshop_session'));
+  const session = JSON.parse(sessionStorage.getItem('dmch_resto_session'));
   if (session) {
     state.currentSession = session;
     state.currentUser = { name: session.fullName, role: session.role };
@@ -104,7 +103,7 @@ function applyRolePermissions() {
   });
 }
 
-window.handleLogin = function() {
+window.handleLogin = async function() {
   const usernameInput = document.getElementById('loginUsername');
   const passwordInput = document.getElementById('loginPassword');
   const errorDiv = document.getElementById('loginError');
@@ -128,29 +127,34 @@ window.handleLogin = function() {
   }
   
   const users = getUsers();
-  const user = users.find(u => u.username.toLowerCase() === username && u.password === password);
+  const hashedInput = await hashPassword(password);
+
+  const user = users.find(u => 
+    u.username.toLowerCase() === username && 
+    (u.password === password || u.password === hashedInput || u.passwordHash === hashedInput || u.passwordHash === password)
+  );
   
   if (!user) {
-    errorText.textContent = 'Invalid username or password. Please try again.';
+    errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
     errorDiv.classList.add('visible');
     passwordInput.value = '';
     return;
   }
   
-  const session = { username: user.username, fullName: user.fullName, role: user.role };
+  const session = { username: user.username, fullName: user.fullName || user.name || user.username.toUpperCase(), role: user.role };
   sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
   state.currentSession = session;
-  state.currentUser = { name: user.fullName, role: user.role };
+  state.currentUser = { name: session.fullName, role: session.role };
   
   usernameInput.value = '';
   passwordInput.value = '';
   errorDiv.classList.remove('visible');
   
   showMainApp();
-  showToast(`Welcome back, ${user.fullName}!`, 'success');
+  showToast(`Welcome back, ${session.fullName}!`, 'success');
 };
 
-window.handleSignup = function() {
+window.handleSignup = async function() {
   const fullNameInput = document.getElementById('signupFullName');
   const usernameInput = document.getElementById('signupUsername');
   const passwordInput = document.getElementById('signupPassword');
@@ -191,7 +195,8 @@ window.handleSignup = function() {
     return;
   }
   
-  const newUser = { username, password, fullName: fullName.toUpperCase(), role };
+  const hashedPassword = await hashPassword(password);
+  const newUser = { id: `u-${Date.now()}`, username, password: hashedPassword, passwordHash: hashedPassword, fullName: fullName.toUpperCase(), role };
   users.push(newUser);
   saveUsers(users);
   
