@@ -109,10 +109,18 @@ window.handleLogin = function() {
   const passwordInput = document.getElementById('loginPassword');
   const errorDiv = document.getElementById('loginError');
   const errorText = document.getElementById('loginErrorText');
+  const errorIcon = document.getElementById('loginErrorIcon');
   
   const username = (usernameInput.value || '').trim().toLowerCase();
   const password = (passwordInput.value || '').trim();
   
+  if (errorIcon) errorIcon.textContent = '❌';
+  if (errorDiv) {
+    errorDiv.style.background = '';
+    errorDiv.style.color = '';
+    errorDiv.style.borderColor = '';
+  }
+
   if (!username || !password) {
     errorText.textContent = 'Please enter both username and password.';
     errorDiv.classList.add('visible');
@@ -197,8 +205,10 @@ window.handleSignup = function() {
   setTimeout(() => {
     const loginError = document.getElementById('loginError');
     const loginErrorText = document.getElementById('loginErrorText');
+    const loginErrorIcon = document.getElementById('loginErrorIcon');
     if (loginError && loginErrorText) {
-      loginErrorText.textContent = '✅ Account created! Sign in with your credentials.';
+      if (loginErrorIcon) loginErrorIcon.textContent = '✅';
+      loginErrorText.textContent = 'Account created! Sign in with your credentials.';
       loginError.style.background = 'rgba(16,185,129,0.12)';
       loginError.style.color = '#10B981';
       loginError.style.borderColor = 'rgba(16,185,129,0.2)';
@@ -211,6 +221,8 @@ window.showLoginForm = function() {
   document.getElementById('loginForm').style.display = '';
   document.getElementById('signupForm').style.display = 'none';
   const loginError = document.getElementById('loginError');
+  const loginErrorIcon = document.getElementById('loginErrorIcon');
+  if (loginErrorIcon) loginErrorIcon.textContent = '❌';
   if (loginError) {
     loginError.classList.remove('visible');
     loginError.style.background = '';
