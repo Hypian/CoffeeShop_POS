@@ -176,6 +176,38 @@ window.exportDepartmentExcel = async function(deptId) {
   await exportExcelWithLogo(workbookTitle, headers, rows, filename);
 };
 
+window.exportPatientCateringExcel = async function(targetRoomNum = null) {
+  let patientOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
+  
+  if (targetRoomNum) {
+    patientOrders = patientOrders.filter(o => (o.roomNumber || '').toLowerCase() === targetRoomNum.toLowerCase());
+  }
+
+  const workbookTitle = targetRoomNum 
+    ? `HOSPITAL INPATIENT CATERING STATEMENT - ${targetRoomNum.toUpperCase()}`
+    : `MONTHLY INPATIENT CATERING & MEAL DELIVERIES REPORT`;
+
+  const headers = ["Order ID", "Date & Time", "Room Number", "Meal Category", "Items Consumed", "Diet / Notes", "Covered Amount (RWF)"];
+  const rows = [];
+  let grandTotal = 0;
+
+  patientOrders.slice().reverse().forEach(o => {
+    const timeStr = new Date(o.timestamp).toLocaleString();
+    const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
+    rows.push([o.id, timeStr, o.roomNumber || 'N/A', o.mealType || 'Meal', itemsStr, o.patientNotes || 'Standard', o.total]);
+    grandTotal += o.total;
+  });
+
+  rows.push([]);
+  rows.push(["GRAND TOTAL COVERED PERKS", "", "", "", "", "", grandTotal]);
+
+  const filename = targetRoomNum 
+    ? `Patient_Catering_${targetRoomNum.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`
+    : `Monthly_Patient_Catering_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  await exportExcelWithLogo(workbookTitle, headers, rows, filename);
+};
+
 window.updateHREmployeeDropdown = function() {
   const deptSelect = document.getElementById('hrFilterDept');
   const empSelect = document.getElementById('hrFilterEmp');

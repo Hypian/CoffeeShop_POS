@@ -360,6 +360,243 @@ function renderDepartmentLedgers() {
     `;
     return;
   }
+
+  // MODE 5: PATIENT ROOM CATERING EXPLORER & DIRECTORY
+  if (state.ledgerMode === 'patients') {
+    const patientOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
+    const search = (state.ledgerSearchQuery || '').toLowerCase();
+    const selectedTierFilter = state.selectedRoomTierFilter || 'ALL';
+
+    if (!state.rooms) {
+      state.rooms = [];
+    }
+
+    const roomCards = state.rooms.map(roomObj => {
+      const roomOrders = patientOrders.filter(o => (o.roomNumber || '').toLowerCase() === roomObj.roomNumber.toLowerCase());
+      const totalRev = roomOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const breakfastCount = roomOrders.filter(o => o.mealType === 'Breakfast').length;
+      const lunchCount = roomOrders.filter(o => o.mealType === 'Lunch').length;
+      const dinnerCount = roomOrders.filter(o => o.mealType === 'Dinner').length;
+      const teaCount = roomOrders.filter(o => o.mealType === 'Tea & Snack' || o.mealType === 'Tea/Snack' || o.mealType === 'Tea').length;
+
+      return {
+        ...roomObj,
+        count: roomOrders.length,
+        totalRev,
+        breakfastCount,
+        lunchCount,
+        dinnerCount,
+        teaCount,
+        orders: roomOrders
+      };
+    });
+
+    let filteredRooms = roomCards;
+
+    if (selectedTierFilter !== 'ALL') {
+      filteredRooms = filteredRooms.filter(r => r.tier === selectedTierFilter);
+    }
+
+    if (search) {
+      filteredRooms = filteredRooms.filter(r => 
+        r.roomNumber.toLowerCase().includes(search) || (r.tier || '').toLowerCase().includes(search)
+      );
+    }
+
+    const tierBadgeClass = (tier) => {
+      if (tier === 'VVIP Room') return 'bg-amber-500/15 text-amber-700 border-amber-300';
+      if (tier === 'VIP Room') return 'bg-purple-500/15 text-purple-700 border-purple-300';
+      if (tier === 'Private Room') return 'bg-blue-500/15 text-blue-700 border-blue-300';
+      return 'bg-slate-100 text-slate-700 border-slate-200';
+    };
+
+    const tierIcon = (tier) => {
+      if (tier === 'VVIP Room') return '🌟';
+      if (tier === 'VIP Room') return '👑';
+      if (tier === 'Private Room') return '🔒';
+      return '🏨';
+    };
+
+    const roomCardsHtml = filteredRooms.map(r => `
+      <div class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#8B5CF6] rounded-2xl p-5 transition-all hover:shadow-lg flex flex-col justify-between gap-4 group">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-mono font-extrabold text-[0.7rem] px-2 py-0.5 rounded border ${tierBadgeClass(r.tier)}">${tierIcon(r.tier)} ${r.tier}</span>
+            <div class="flex items-center gap-1">
+              <button onclick="event.stopPropagation(); exportPatientCateringExcel('${r.roomNumber}')" title="Export Excel for ${r.roomNumber}" class="p-1 text-xs text-[#10B981] hover:bg-[#10B981]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Excel</button>
+              <button onclick="event.stopPropagation(); openAddRoomModal('${r.id}')" title="Edit Room" class="p-1 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">✏️ Edit</button>
+              <button onclick="event.stopPropagation(); deleteRoom('${r.id}')" title="Delete Room" class="p-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️</button>
+            </div>
+          </div>
+          
+          <div onclick="setLedgerMode('patient_room_detail', '${r.roomNumber}')" class="cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="text-3xl group-hover:scale-110 transition-transform">${tierIcon(r.tier)}</div>
+              <div>
+                <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#8B5CF6] transition-colors line-clamp-1">${r.roomNumber}</h3>
+                <p class="text-xs text-[#475569] mt-0.5">${r.count} Catering Deliveries</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-wrap mt-3 text-[0.65rem] font-bold">
+              <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">🌅 ${r.breakfastCount} Bkfast</span>
+              <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">☀️ ${r.lunchCount} Lunch</span>
+              <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">🌙 ${r.dinnerCount} Dinner</span>
+              <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">☕ ${r.teaCount} Tea</span>
+            </div>
+          </div>
+        </div>
+
+        <div onclick="setLedgerMode('patient_room_detail', '${r.roomNumber}')" class="cursor-pointer pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs">
+          <span class="text-[#475569]">Total Covered Perks:</span>
+          <span class="font-mono font-extrabold text-[#8B5CF6]">${formatMoney(r.totalRev)}</span>
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="flex flex-col gap-6">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <button onclick="setLedgerMode('home')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+              <span>←</span> Overview
+            </button>
+            <div class="h-5 w-px bg-black/10"></div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+              <span>Ledgers</span>
+              <span>/</span>
+              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>🏥</span> Patient Room Directory</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <input type="text" placeholder="Search room number or tier..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8B5CF6] w-full sm:w-64">
+            <button onclick="openAddRoomModal()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
+              ➕ Add Room
+            </button>
+            <button onclick="exportPatientCateringExcel()" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
+              📊 Monthly Excel
+            </button>
+            <button onclick="clearAllRooms()" title="Delete All Rooms" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl px-3 py-2 text-xs font-bold cursor-pointer transition-colors whitespace-nowrap">
+              🧹 Clear All
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
+          <button onclick="state.selectedRoomTierFilter='ALL'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='ALL'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🏢 All Rooms (${roomCards.length})</button>
+          <button onclick="state.selectedRoomTierFilter='Normal Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='Normal Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🏨 Normal Room</button>
+          <button onclick="state.selectedRoomTierFilter='Private Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='Private Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🔒 Private Room</button>
+          <button onclick="state.selectedRoomTierFilter='VIP Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='VIP Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">👑 VIP Room</button>
+          <button onclick="state.selectedRoomTierFilter='VVIP Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='VVIP Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🌟 VVIP Room</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          ${filteredRooms.length > 0 ? roomCardsHtml : `
+            <div class="col-span-full bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-12 text-center text-[#475569]">
+              <div class="text-4xl mb-2">🏥</div>
+              <p class="font-bold text-sm">No hospital rooms found matching your filter.</p>
+              <p class="text-xs mt-1">Click "+ Add Room" to register a new room (Normal, Private, VIP, VVIP).</p>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // MODE 6: PATIENT ROOM DETAIL EXPLORER
+  if (state.ledgerMode === 'patient_room_detail') {
+    const roomNum = state.selectedLedgerDeptId;
+    const roomOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && o.roomNumber === roomNum);
+    const totalRev = roomOrders.reduce((s, o) => s + (o.total || 0), 0);
+
+    const orderRowsHtml = roomOrders.map(o => {
+      const timeStr = new Date(o.timestamp).toLocaleString();
+      const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name}`).join(', ') : 'N/A';
+      return `
+        <tr>
+          <td><span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200/80 shadow-xs">${o.id}</span></td>
+          <td class="text-xs text-slate-500 font-medium">${timeStr}</td>
+          <td>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+              ${o.mealType === 'Breakfast' ? '🌅 Breakfast' : o.mealType === 'Lunch' ? '☀️ Lunch' : o.mealType === 'Dinner' ? '🌙 Dinner' : '☕ Tea/Snack'}
+            </span>
+          </td>
+          <td class="text-xs font-semibold text-slate-800">${itemsStr}</td>
+          <td class="text-xs text-slate-600">${o.patientNotes || 'Standard Diet'}</td>
+          <td class="font-mono font-extrabold text-slate-900">${formatMoney(o.total)}</td>
+          <td class="text-right whitespace-nowrap">
+            <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">📄 Ticket</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="flex flex-col gap-6">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <button onclick="setLedgerMode('patients')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+              <span>←</span> Patient Rooms
+            </button>
+            <div class="h-5 w-px bg-black/10"></div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+              <span>Patient Catering</span>
+              <span>/</span>
+              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>🏥</span> ${roomNum} Statement</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-3xl font-extrabold">🏥</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded">${roomNum}</span>
+                <span class="text-xs text-[#475569] font-medium">${roomOrders.length} Meal Deliveries</span>
+              </div>
+              <h2 class="text-xl font-bold text-[#0F172A] mt-1">Catering Statement for ${roomNum}</h2>
+              <p class="text-xs text-[#475569] mt-0.5">Total Covered Perk Amount: <strong class="text-purple-600 font-mono font-bold">${formatMoney(totalRev)}</strong></p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportPatientCateringExcel('${roomNum}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center gap-1.5">
+              <span>📊</span> Export Room Excel (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+          <div class="overflow-x-auto">
+            <table class="data-table w-full text-left text-sm">
+              <thead>
+                <tr class="text-[#475569] border-b border-black/[0.1]">
+                  <th class="py-3 px-4 font-semibold">Order ID</th>
+                  <th class="py-3 px-4 font-semibold">Date & Time</th>
+                  <th class="py-3 px-4 font-semibold">Meal Category</th>
+                  <th class="py-3 px-4 font-semibold">Items Consumed</th>
+                  <th class="py-3 px-4 font-semibold">Notes / Diet</th>
+                  <th class="py-3 px-4 font-semibold">Total (RWF)</th>
+                  <th class="py-3 px-4 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-black/[0.1]">
+                ${roomOrders.length > 0 ? orderRowsHtml : `
+                  <tr>
+                    <td colspan="7" class="py-8 text-center text-[#475569] italic">No catering orders found for ${roomNum}.</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
 }
 
 window.deleteDepartment = function(deptId) {
