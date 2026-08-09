@@ -119,8 +119,8 @@ function addAuditLog(action, details) {
 }
 window.addAuditLog = addAuditLog;
 
-// Storage Data Persistence
-function loadStorageData() {
+// Storage Data Persistence & Cloud Synchronization
+window.loadStorageData = function() {
   const d = localStorage.getItem('dmch_resto_posData') || localStorage.getItem('posData');
   if (d) {
     try {
@@ -161,7 +161,20 @@ function loadStorageData() {
     state.lastActiveDate = new Date().toLocaleDateString();
     saveData();
   }
-}
+
+  // Initialize Unified Cloud Sync & Start 10s Fallback Sync Polling
+  if (window.initCloudDatabase) {
+    window.initCloudDatabase();
+  }
+  
+  if (!window._cloudPollTimer) {
+    window._cloudPollTimer = setInterval(() => {
+      if (window.pullCloudDataToState) {
+        window.pullCloudDataToState();
+      }
+    }, 10000);
+  }
+};
 
 window.saveData = function() {
   if (!state.lastActiveDate) state.lastActiveDate = new Date().toLocaleDateString();
@@ -178,6 +191,10 @@ window.saveData = function() {
     tabReceipts: state.tabReceipts,
     lastActiveDate: state.lastActiveDate
   }));
+
+  if (window.syncStateToCloud) {
+    window.syncStateToCloud();
+  }
 };
 
 window.checkAutoRollover = function() {
