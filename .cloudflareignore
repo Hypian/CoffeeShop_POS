@@ -1,0 +1,8 @@
+node_modules
+.git
+.gemini
+.vscode
+*.log
+.vercel
+package-lock.json
+bun.lock
