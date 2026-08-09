@@ -76,22 +76,27 @@ window.deleteOrder = function(orderId) {
   const order = state.orders.find(o => o.id === orderId);
   if (!order) return;
 
-  if (confirm(`Are you sure you want to delete order "${order.id}" (${formatMoney(order.total)})?`)) {
-    if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
-      const emp = state.employees.find(e => e.id === order.employeeId || e.staffId === order.staffId);
-      if (emp) {
-        emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+  showConfirmModal({
+    title: "🗑️ Delete Order Transaction",
+    message: `Are you sure you want to delete order "${order.id}" (${formatMoney(order.total)})?`,
+    confirmText: "Yes, Delete Order",
+    onConfirm: () => {
+      if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
+        const emp = state.employees.find(e => e.id === order.employeeId || e.staffId === order.staffId);
+        if (emp) {
+          emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+        }
       }
+
+      state.orders = state.orders.filter(o => o.id !== orderId);
+      state.tabReceipts = state.tabReceipts.filter(r => r.orderId !== orderId && r.id !== orderId);
+
+      addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
+      saveData();
+      window.showToast(`Transaction "${order.id}" deleted successfully.`, 'success');
+      renderAllViews();
     }
-
-    state.orders = state.orders.filter(o => o.id !== orderId);
-    state.tabReceipts = state.tabReceipts.filter(r => r.orderId !== orderId && r.id !== orderId);
-
-    addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
-    saveData();
-    window.showToast(`Transaction "${order.id}" deleted successfully.`, 'success');
-    renderAllViews();
-  }
+  });
 };
 
 window.openShiftSettlementModal = function() {

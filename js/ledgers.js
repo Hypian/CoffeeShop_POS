@@ -374,19 +374,24 @@ window.deleteDepartment = function(deptId) {
 
   const staffCount = state.employees.filter(e => e.departmentId === deptId).length;
   const confirmMsg = staffCount > 0 
-    ? `Are you sure you want to delete department "${dept.name}" (${dept.code})?\n\nNotice: ${staffCount} staff member(s) will be set as Unassigned.`
+    ? `Are you sure you want to delete department "${dept.name}" (${dept.code})? ${staffCount} staff member(s) will be set as Unassigned.`
     : `Are you sure you want to delete department "${dept.name}" (${dept.code})?`;
 
-  if (confirm(confirmMsg)) {
-    state.employees.forEach(e => {
-      if (e.departmentId === deptId) e.departmentId = '';
-    });
-    state.departments = state.departments.filter(d => d.id !== deptId);
-    addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
-    saveData();
-    window.showToast(`Department "${dept.name}" deleted`, 'success');
-    renderAllViews();
-  }
+  showConfirmModal({
+    title: "🏛️ Delete Department",
+    message: confirmMsg,
+    confirmText: "Yes, Delete Department",
+    onConfirm: () => {
+      state.employees.forEach(e => {
+        if (e.departmentId === deptId) e.departmentId = '';
+      });
+      state.departments = state.departments.filter(d => d.id !== deptId);
+      addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
+      saveData();
+      window.showToast(`Department "${dept.name}" deleted`, 'success');
+      renderAllViews();
+    }
+  });
 };
 
 window.deleteEmployee = function(empId) {
@@ -399,14 +404,19 @@ window.deleteEmployee = function(empId) {
   const emp = state.employees.find(e => e.id === empId);
   if (!emp) return;
 
-  if (confirm(`Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`)) {
-    state.employees = state.employees.filter(e => e.id !== empId);
-    state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== empId);
-    addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
-    saveData();
-    window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
-    renderAllViews();
-  }
+  showConfirmModal({
+    title: "👤 Delete Staff Account",
+    message: `Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`,
+    confirmText: "Yes, Delete Staff Account",
+    onConfirm: () => {
+      state.employees = state.employees.filter(e => e.id !== empId);
+      state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== empId);
+      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
+      saveData();
+      window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
+      renderAllViews();
+    }
+  });
 };
 
 window.openSettleModal = function(empId) {

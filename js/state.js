@@ -67,6 +67,30 @@ window.closeModal = function(id) {
   }
 };
 
+window.showConfirmModal = function({ title = '⚠️ Confirm Action', message = 'Are you sure?', confirmText = 'Yes, Delete', isDanger = true, onConfirm = null }) {
+  const titleEl = document.getElementById('confirmDialogTitle');
+  const msgEl = document.getElementById('confirmDialogMessage');
+  const btnEl = document.getElementById('confirmDialogBtn');
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+
+  if (btnEl) {
+    btnEl.textContent = confirmText;
+    if (isDanger) {
+      btnEl.className = 'bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-xl px-5 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-rose-500/20';
+    } else {
+      btnEl.className = 'bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-5 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-amber-500/20';
+    }
+    btnEl.onclick = function() {
+      window.closeModal('modalConfirmDialog');
+      if (typeof onConfirm === 'function') onConfirm();
+    };
+  }
+
+  window.openModal('modalConfirmDialog');
+};
+
 // Category Name Helper
 function getCategoryName(catId) {
   const cat = state.categories.find(c => c.id === catId);

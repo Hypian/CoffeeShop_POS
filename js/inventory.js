@@ -81,14 +81,21 @@ window.deleteProduct = function(id) {
     return;
   }
 
-  if (confirm("Are you sure you want to delete this product?")) {
-    const product = state.products.find(p => p.id === id);
-    if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
-    state.products = state.products.filter(p => p.id !== id);
-    saveData();
-    window.showToast('Product deleted', 'success');
-    renderAllViews();
-  }
+  const product = state.products.find(p => p.id === id);
+  const prodName = product ? product.name : 'this product';
+
+  showConfirmModal({
+    title: "📦 Delete Product",
+    message: `Are you sure you want to delete product "${prodName}" from menu inventory?`,
+    confirmText: "Yes, Delete Product",
+    onConfirm: () => {
+      if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
+      state.products = state.products.filter(p => p.id !== id);
+      saveData();
+      window.showToast(`Product "${prodName}" deleted`, 'success');
+      renderAllViews();
+    }
+  });
 };
 
 window.selectProductIcon = function(emoji) {

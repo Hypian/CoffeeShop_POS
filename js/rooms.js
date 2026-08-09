@@ -97,14 +97,19 @@ window.deleteRoom = function(roomId) {
   const room = state.rooms.find(r => r.id === roomId);
   if (!room) return;
 
-  if (confirm(`Are you sure you want to delete room "${room.roomNumber}" (${room.tier})?`)) {
-    state.rooms = state.rooms.filter(r => r.id !== roomId);
-    addAuditLog("Room Deleted", `Deleted room ${room.roomNumber}`);
-    saveData();
-    window.populateRoomDropdown();
-    window.showToast(`Room "${room.roomNumber}" deleted.`, 'success');
-    renderAllViews();
-  }
+  showConfirmModal({
+    title: "🗑️ Delete Hospital Room",
+    message: `Are you sure you want to delete room "${room.roomNumber}" (${room.tier})?`,
+    confirmText: "Yes, Delete Room",
+    onConfirm: () => {
+      state.rooms = state.rooms.filter(r => r.id !== roomId);
+      addAuditLog("Room Deleted", `Deleted room ${room.roomNumber}`);
+      saveData();
+      window.populateRoomDropdown();
+      window.showToast(`Room "${room.roomNumber}" deleted.`, 'success');
+      renderAllViews();
+    }
+  });
 };
 
 window.clearAllRooms = function() {
@@ -114,12 +119,17 @@ window.clearAllRooms = function() {
     return;
   }
 
-  if (confirm("Are you sure you want to delete ALL hospital room listings?")) {
-    state.rooms = [];
-    addAuditLog("All Rooms Cleared", "Cleared all room listings");
-    saveData();
-    window.populateRoomDropdown();
-    window.showToast("All room listings deleted successfully.", "success");
-    renderAllViews();
-  }
+  showConfirmModal({
+    title: "🧹 Clear All Hospital Rooms",
+    message: "Are you sure you want to delete ALL hospital room listings?",
+    confirmText: "Yes, Clear All Rooms",
+    onConfirm: () => {
+      state.rooms = [];
+      addAuditLog("All Rooms Cleared", "Cleared all room listings");
+      saveData();
+      window.populateRoomDropdown();
+      window.showToast("All room listings deleted successfully.", "success");
+      renderAllViews();
+    }
+  });
 };
