@@ -2,7 +2,7 @@
    DMCH Resto POS & MIS — POS Interface, Cart & Payment Checkout Handlers
    ========================================================================== */
 
-function renderCategoryPills() {
+window.renderCategoryPills = function() {
   const container = document.getElementById('categoryPillsContainer');
   if (!container) return;
   container.innerHTML = state.categories.map(cat => `
@@ -11,7 +11,7 @@ function renderCategoryPills() {
       <span>${cat.name}</span>
     </button>
   `).join('');
-}
+};
 
 window.selectCategory = function(catId) {
   state.selectedCategory = catId;
@@ -19,7 +19,7 @@ window.selectCategory = function(catId) {
   renderProductGrid();
 };
 
-function renderProductGrid() {
+window.renderProductGrid = function() {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
   const query = state.searchQuery.toLowerCase();
@@ -45,7 +45,7 @@ function renderProductGrid() {
       </div>
     </div>
   `).join('');
-}
+};
 
 window.addToCart = function(productId) {
   const p = state.products.find(x => x.id === productId);
@@ -91,7 +91,7 @@ function calculateCartTotals() {
   return { subtotal, tax, total };
 }
 
-function renderCart() {
+window.renderCart = function() {
   const list = document.getElementById('cartItemsList');
   const subtotalEl = document.getElementById('cartSubtotalText');
   const totalEl = document.getElementById('cartTotalText');

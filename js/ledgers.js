@@ -8,7 +8,7 @@ window.setLedgerMode = function(mode, deptId = null) {
   renderDepartmentLedgers();
 };
 
-function renderDepartmentLedgers() {
+window.renderDepartmentLedgers = function() {
   const container = document.getElementById('ledgersOSContainer');
   if (!container) return;
 

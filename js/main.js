@@ -2,7 +2,7 @@
    DMCH Resto POS & MIS — Application Router & Main Bootstrapper
    ========================================================================== */
 
-function switchView(viewName) {
+window.switchView = function(viewName) {
   state.activeTab = viewName;
   document.querySelectorAll('.nav-tab').forEach(el => {
     if (el.dataset.view === viewName) {
@@ -20,8 +20,8 @@ function switchView(viewName) {
       el.classList.remove('active');
     }
   });
-  renderAllViews();
-}
+  window.renderAllViews();
+};
 
 window.toggleMobileMenu = function() {
   const menu = document.getElementById('mobileNavMenu');
@@ -37,17 +37,17 @@ window.toggleMobileMenu = function() {
   }
 };
 
-function renderAllViews() {
-  renderCategoryPills();
-  renderProductGrid();
-  renderCart();
-  renderDashboard();
-  renderDepartmentLedgers();
-  renderProductManagement();
-  renderReports();
-}
+window.renderAllViews = function() {
+  if (window.renderCategoryPills) window.renderCategoryPills();
+  if (window.renderProductGrid) window.renderProductGrid();
+  if (window.renderCart) window.renderCart();
+  if (window.renderDashboard) window.renderDashboard();
+  if (window.renderDepartmentLedgers) window.renderDepartmentLedgers();
+  if (window.renderProductManagement) window.renderProductManagement();
+  if (window.renderReports) window.renderReports();
+};
 
-function setupEventListeners() {
+window.setupEventListeners = function() {
   document.querySelectorAll('.nav-tab').forEach(el => {
     el.addEventListener('click', () => switchView(el.dataset.view));
   });

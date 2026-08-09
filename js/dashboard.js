@@ -322,7 +322,7 @@ function renderDashboardOrderRows() {
   }).join('');
 }
 
-function renderDashboard() {
+window.renderDashboard = function() {
   const container = document.getElementById('dashboardOSContainer');
   if (!container) return;
 

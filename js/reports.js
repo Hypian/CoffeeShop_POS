@@ -412,7 +412,7 @@ function openPrintWindow(html) {
   }, 250);
 }
 
-function renderReports() {
+window.renderReports = function() {
   const container = document.getElementById('reportsContent');
   if (!container) return;
 

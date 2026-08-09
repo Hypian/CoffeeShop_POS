@@ -2,7 +2,7 @@
    DMCH Resto POS & MIS — Inventory & Product Management
    ========================================================================== */
 
-function renderProductManagement() {
+window.renderProductManagement = function() {
   const tbody = document.getElementById('productsTableTbody');
   if (!tbody) return;
   tbody.innerHTML = state.products.map(p => {
