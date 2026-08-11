@@ -67,20 +67,16 @@ window.confirmVoidOrder = function() {
 };
 
 window.deleteOrder = function(orderId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  const roleLower = (currentRole || '').toLowerCase();
-  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
-    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete financial transactions.', 'error');
-    return;
-  }
-
   const order = (state.orders || []).find(o => o && (o.id === orderId || String(o.id) === String(orderId)));
   if (!order) return;
 
-  showConfirmModal({
-    title: "🗑️ Delete Order Transaction",
-    message: `Are you sure you want to delete order "${order.id}" (${formatMoney(order.total)})?`,
-    confirmText: "Yes, Delete Order",
+  window.showConfirmModal({
+    title: "🗑️ Delete Transaction",
+    message: `Are you sure you want to delete financial transaction "${order.id}" (${formatMoney(order.total)})?`,
+    confirmText: "Yes, Delete Transaction",
+    icon: "🧾",
+    badgeText: "Financial Audit Ledger",
+    isDanger: true,
     onConfirm: async () => {
       if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
         const emp = (state.employees || []).find(e => e && (e.id === order.employeeId || e.staffId === order.staffId));
@@ -91,15 +87,15 @@ window.deleteOrder = function(orderId) {
 
       state.orders = (state.orders || []).filter(o => o && String(o.id) !== String(orderId));
       state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.orderId) !== String(orderId) && String(r.id) !== String(orderId));
-      
+
+      addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Transaction "${order.id}" was successfully deleted.`, 'success');
+
       if (window.cloudDeleteOrder) {
         await window.cloudDeleteOrder(orderId);
       }
-
-      addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
       saveData();
-      window.showToast(`Transaction "${order.id}" deleted successfully.`, 'success');
-      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };

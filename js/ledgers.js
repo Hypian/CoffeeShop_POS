@@ -600,14 +600,6 @@ window.renderDepartmentLedgers = function() {
 }
 
 window.deleteDepartment = function(deptId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  const roleLower = (currentRole || '').toLowerCase();
-  
-  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
-    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete departments.', 'error');
-    return;
-  }
-
   const dept = (state.departments || []).find(d => d && (d.id === deptId || String(d.id) === String(deptId)));
   if (!dept) return;
 
@@ -620,31 +612,28 @@ window.deleteDepartment = function(deptId) {
     title: "🏛️ Delete Department",
     message: confirmMsg,
     confirmText: "Yes, Delete Department",
+    icon: "🏛️",
+    badgeText: "Department Ledger",
+    isDanger: true,
     onConfirm: async () => {
       (state.employees || []).forEach(e => {
         if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
       });
       state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
+      addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
+      
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
+
       if (window.cloudDeleteDepartment) {
         await window.cloudDeleteDepartment(deptId);
       }
-      addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
       saveData();
-      window.showToast(`Department "${dept.name}" deleted`, 'success');
-      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };
 
 window.deleteEmployee = function(empId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  const roleLower = (currentRole || '').toLowerCase();
-  
-  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
-    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete staff accounts.', 'error');
-    return;
-  }
-
   const emp = (state.employees || []).find(e => e && (e.id === empId || String(e.id) === String(empId)));
   if (!emp) return;
 
@@ -652,16 +641,21 @@ window.deleteEmployee = function(empId) {
     title: "👤 Delete Staff Account",
     message: `Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`,
     confirmText: "Yes, Delete Staff Account",
+    icon: "👤",
+    badgeText: "Staff Account",
+    isDanger: true,
     onConfirm: async () => {
       state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
       state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
+      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
+      
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
+
       if (window.cloudDeleteEmployee) {
         await window.cloudDeleteEmployee(empId);
       }
-      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
       saveData();
-      window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
-      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };

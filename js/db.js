@@ -245,7 +245,7 @@ window.cloudDeleteOrder = async function(orderId) {
   } catch (err) {
     console.error('Cloud delete order error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 
@@ -258,7 +258,7 @@ window.cloudDeleteProduct = async function(productId) {
   } catch (err) {
     console.error('Cloud delete product error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 
@@ -271,7 +271,7 @@ window.cloudDeleteDepartment = async function(deptId) {
   } catch (err) {
     console.error('Cloud delete department error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 
@@ -284,7 +284,7 @@ window.cloudDeleteEmployee = async function(empId) {
   } catch (err) {
     console.error('Cloud delete employee error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 
@@ -299,7 +299,7 @@ window.cloudDeleteRoom = async function(roomId) {
   } catch (err) {
     console.error('Cloud delete room error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 
@@ -312,7 +312,7 @@ window.cloudClearAllRooms = async function() {
   } catch (err) {
     console.error('Cloud clear all rooms error:', err);
   } finally {
-    _isSyncingFromCloud = false;
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
   }
 };
 

@@ -92,14 +92,6 @@ window.saveRoom = function() {
 };
 
 window.deleteRoom = function(roomId) {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  const roleLower = (currentRole || '').toLowerCase();
-  
-  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
-    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete room listings.', 'error');
-    return;
-  }
-
   if (!state.rooms) state.rooms = [];
 
   const room = state.rooms.find(r => r && (r.id === roomId || r.roomNumber === roomId || String(r.id) === String(roomId) || String(r.roomNumber) === String(roomId)));
@@ -115,43 +107,49 @@ window.deleteRoom = function(roomId) {
     title: "🗑️ Delete Hospital Room",
     message: `Are you sure you want to delete room "${targetName}" (${room.tier || 'Room'})?`,
     confirmText: "Yes, Delete Room",
+    icon: "🏥",
+    badgeText: "Room Directory",
+    isDanger: true,
     onConfirm: async () => {
-      state.rooms = state.rooms.filter(r => r && String(r.id) !== String(targetId) && String(r.roomNumber) !== String(targetName));
+      state.rooms = state.rooms.filter(r => {
+        if (!r) return false;
+        const matchId = (r.id && String(r.id) === String(targetId)) || (roomId && String(r.id) === String(roomId));
+        const matchNum = (r.roomNumber && String(r.roomNumber) === String(targetName)) || (roomId && String(r.roomNumber) === String(roomId));
+        return !matchId && !matchNum;
+      });
+
+      addAuditLog("Room Deleted", `Deleted room ${targetName}`);
+      if (window.populateRoomDropdown) window.populateRoomDropdown();
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Hospital room "${targetName}" was successfully deleted.`, 'success');
+
       if (window.cloudDeleteRoom) {
         await window.cloudDeleteRoom(targetId);
       }
-      addAuditLog("Room Deleted", `Deleted room ${targetName}`);
       saveData();
-      if (window.populateRoomDropdown) window.populateRoomDropdown();
-      window.showToast(`Room "${targetName}" deleted successfully.`, 'success');
-      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };
 
 window.clearAllRooms = function() {
-  const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  const roleLower = (currentRole || '').toLowerCase();
-  
-  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
-    window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to clear room listings.', 'error');
-    return;
-  }
-
   window.showConfirmModal({
     title: "🧹 Clear All Hospital Rooms",
     message: "Are you sure you want to delete ALL hospital room listings?",
     confirmText: "Yes, Clear All Rooms",
+    icon: "🧹",
+    badgeText: "Bulk Directory Reset",
+    isDanger: true,
     onConfirm: async () => {
       state.rooms = [];
+      addAuditLog("All Rooms Cleared", "Cleared all room listings");
+      if (window.populateRoomDropdown) window.populateRoomDropdown();
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast("All room listings were successfully cleared.", 'success');
+
       if (window.cloudClearAllRooms) {
         await window.cloudClearAllRooms();
       }
-      addAuditLog("All Rooms Cleared", "Cleared all room listings");
       saveData();
-      if (window.populateRoomDropdown) window.populateRoomDropdown();
-      window.showToast("All room listings deleted successfully.", "success");
-      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };

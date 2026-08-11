@@ -25,23 +25,52 @@ let state = {
   isProcessingPayment: false
 };
 
-// Toast Notifications
-window.showToast = function(message, type = 'success', duration = 3500) {
+// Toast Notifications & Action Verification Popups
+window.showToast = function(message, type = 'success', duration = 4000) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const toast = document.createElement('div');
   
   let bgClass = '';
   let icon = '';
+  let borderClass = '';
+  let badgeTitle = 'Action Verified';
+
   switch(type) {
-    case 'success': bgClass = 'bg-[#10B981]'; icon = '✅'; break;
-    case 'warning': bgClass = 'bg-[#F59E0B] text-black'; icon = '⚠️'; break;
-    case 'error': bgClass = 'bg-[#EF4444]'; icon = '❌'; break;
-    case 'info': bgClass = 'bg-[#3B82F6]'; icon = 'ℹ️'; break;
+    case 'success': 
+      bgClass = 'bg-[#0F172A] text-white'; 
+      icon = '✅'; 
+      borderClass = 'border-emerald-500/40 shadow-emerald-500/20';
+      badgeTitle = 'Action Verified';
+      break;
+    case 'warning': 
+      bgClass = 'bg-[#F59E0B] text-slate-950'; 
+      icon = '⚠️'; 
+      borderClass = 'border-amber-600/40 shadow-amber-500/20';
+      badgeTitle = 'System Alert';
+      break;
+    case 'error': 
+      bgClass = 'bg-[#EF4444] text-white'; 
+      icon = '❌'; 
+      borderClass = 'border-rose-600/40 shadow-rose-500/20';
+      badgeTitle = 'Action Error';
+      break;
+    case 'info': 
+      bgClass = 'bg-[#0F172A] text-white'; 
+      icon = 'ℹ️'; 
+      borderClass = 'border-blue-500/40 shadow-blue-500/20';
+      badgeTitle = 'Information';
+      break;
   }
   
-  toast.className = `toast animate-toast-in flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl border border-black/[0.1] min-w-[300px] max-w-[420px] ${bgClass}`;
-  toast.innerHTML = `<span class="text-lg">${icon}</span><span class="text-sm font-semibold flex-1">${message}</span>`;
+  toast.className = `toast animate-toast-in flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border ${borderClass} min-w-[320px] max-w-[440px] ${bgClass} backdrop-blur-md z-[400]`;
+  toast.innerHTML = `
+    <span class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-lg shrink-0">${icon}</span>
+    <div class="flex flex-col flex-1 gap-0.5">
+      <span class="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-75">${badgeTitle}</span>
+      <span class="text-xs font-bold leading-snug">${message}</span>
+    </div>
+  `;
   container.appendChild(toast);
   
   setTimeout(() => {
@@ -56,6 +85,10 @@ window.openModal = function(id) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+    modal.style.visibility = 'visible';
   }
 };
 
@@ -64,37 +97,31 @@ window.closeModal = function(id) {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.style.opacity = '0';
+    modal.style.pointerEvents = 'none';
   }
 };
 
-window.showConfirmModal = function({ title = '⚠️ Confirm Action', message = 'Are you sure?', confirmText = 'Yes, Delete', isDanger = true, onConfirm = null }) {
-  const titleEl = document.getElementById('confirmDialogTitle');
-  const msgEl = document.getElementById('confirmDialogMessage');
-  const btnEl = document.getElementById('confirmDialogBtn');
-
-  if (titleEl) titleEl.textContent = title;
-  if (msgEl) msgEl.textContent = message;
-
-  if (btnEl) {
-    btnEl.textContent = confirmText;
-    if (isDanger) {
-      btnEl.className = 'bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-xl px-5 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-rose-500/20';
-    } else {
-      btnEl.className = 'bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-5 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-amber-500/20';
-    }
-    btnEl.onclick = async function() {
-      window.closeModal('modalConfirmDialog');
-      if (typeof onConfirm === 'function') {
-        try {
-          await onConfirm();
-        } catch (e) {
-          console.error('Error executing confirm action:', e);
-        }
+window.showConfirmModal = function({
+  title = '⚠️ Confirm Action',
+  message = 'Are you sure?',
+  confirmText = 'Yes, Confirm Action',
+  isDanger = true,
+  icon = '🗑️',
+  badgeText = 'Irreversible Action',
+  onConfirm = null
+}) {
+  const promptText = `${title}\n\n${message}`;
+  if (window.confirm(promptText)) {
+    if (typeof onConfirm === 'function') {
+      try {
+        onConfirm();
+      } catch (err) {
+        console.error('Error executing confirm action:', err);
       }
-    };
+    }
   }
-
-  window.openModal('modalConfirmDialog');
 };
 
 // Category Name Helper
