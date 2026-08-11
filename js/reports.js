@@ -12,19 +12,25 @@ async function exportExcelWithLogo(workbookTitle, headers, rows, filename) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Report');
 
+    const isJpeg = APP_LOGO_DATA_URI.startsWith('data:image/jpeg') || APP_LOGO_DATA_URI.startsWith('data:image/jpg');
+    const imageExt = isJpeg ? 'jpeg' : 'png';
     const b64Data = APP_LOGO_DATA_URI.split(',')[1];
     const imageId = workbook.addImage({
       base64: b64Data,
-      extension: 'png'
+      extension: imageExt
     });
+
+    worksheet.getColumn(1).width = 14;
+    worksheet.getColumn(2).width = 14;
 
     worksheet.addImage(imageId, {
       tl: { col: 0, row: 0 },
-      ext: { width: 150, height: 40 }
+      ext: { width: 140, height: 45 }
     });
 
-    worksheet.getRow(1).height = 25;
-    worksheet.getRow(2).height = 22;
+    worksheet.getRow(1).height = 20;
+    worksheet.getRow(2).height = 20;
+    worksheet.getRow(3).height = 18;
 
     worksheet.getCell('C1').value = 'DMCH RESTO - DREAM MEDICAL CENTER HOSPITAL';
     worksheet.getCell('C1').font = { bold: true, size: 13, color: { argb: 'FF0F172A' } };
