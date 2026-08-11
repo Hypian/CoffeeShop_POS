@@ -8,14 +8,19 @@ let cloudSyncActive = false;
 window.initCloudDatabase = function() {
   if (typeof supabase === 'undefined') {
     console.warn('Supabase JS SDK not loaded. Running in local mode.');
+    updateCloudStatusBadge(false);
     return false;
   }
 
-  const url = window.SUPABASE_URL || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '');
-  const key = window.SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '');
+  const storedUrl = localStorage.getItem('dmch_supabase_url');
+  const storedKey = localStorage.getItem('dmch_supabase_key');
+
+  const url = storedUrl || window.SUPABASE_URL || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '');
+  const key = storedKey || window.SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '');
 
   if (!url || !key || url.includes('your-supabase-project-id') || key.includes('your-supabase-anon-key')) {
     console.log('Supabase cloud credentials not configured yet. Running in offline/local storage mode.');
+    updateCloudStatusBadge(false);
     return false;
   }
 
@@ -23,13 +28,76 @@ window.initCloudDatabase = function() {
     supabaseClient = supabase.createClient(url, key);
     cloudSyncActive = true;
     console.log('⚡ Unified Cloud Database Sync Connected via Supabase!');
+    updateCloudStatusBadge(true);
     setupRealtimeListeners();
     pullCloudDataToState();
     return true;
   } catch (err) {
     console.error('Error initializing Supabase client:', err);
+    updateCloudStatusBadge(false);
     return false;
   }
+};
+
+function updateCloudStatusBadge(isConnected) {
+  const btn = document.getElementById('cloudSyncStatusBtn');
+  const txt = document.getElementById('cloudSyncStatusText');
+  if (!btn || !txt) return;
+
+  if (isConnected) {
+    btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/20 transition-all";
+    txt.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span> ⚡ Sync Live`;
+  } else {
+    btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/30 cursor-pointer hover:bg-amber-500/20 transition-all";
+    txt.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block"></span> ☁️ Local Mode`;
+  }
+}
+window.updateCloudStatusBadge = updateCloudStatusBadge;
+
+window.openCloudSyncModal = function() {
+  const urlInput = document.getElementById('cfgSupabaseUrl');
+  const keyInput = document.getElementById('cfgSupabaseKey');
+
+  const storedUrl = localStorage.getItem('dmch_supabase_url') || (window.SUPABASE_URL && !window.SUPABASE_URL.includes('your-supabase') ? window.SUPABASE_URL : '');
+  const storedKey = localStorage.getItem('dmch_supabase_key') || (window.SUPABASE_ANON_KEY && !window.SUPABASE_ANON_KEY.includes('your-supabase') ? window.SUPABASE_ANON_KEY : '');
+
+  if (urlInput) urlInput.value = storedUrl;
+  if (keyInput) keyInput.value = storedKey;
+
+  window.openModal('modalCloudSync');
+};
+
+window.saveCloudSyncSettings = function() {
+  const url = (document.getElementById('cfgSupabaseUrl')?.value || '').trim();
+  const key = (document.getElementById('cfgSupabaseKey')?.value || '').trim();
+
+  if (!url || !key) {
+    window.showToast('Please enter both your Supabase Project URL and Anon API Key.', 'warning');
+    return;
+  }
+
+  localStorage.setItem('dmch_supabase_url', url);
+  localStorage.setItem('dmch_supabase_key', key);
+
+  window.closeModal('modalCloudSync');
+
+  const success = window.initCloudDatabase();
+  if (success) {
+    window.showToast('⚡ Real-time cloud sync connected! Pushing local data...', 'success');
+    if (window.syncStateToCloud) window.syncStateToCloud();
+  } else {
+    window.showToast('❌ Failed to connect to Supabase. Check URL and Key.', 'error');
+  }
+};
+
+window.disconnectCloudSync = function() {
+  localStorage.removeItem('dmch_supabase_url');
+  localStorage.removeItem('dmch_supabase_key');
+  supabaseClient = null;
+  cloudSyncActive = false;
+  updateCloudStatusBadge(false);
+  window.closeModal('modalCloudSync');
+  window.showToast('Cloud database disconnected. Operating in offline/local storage mode.', 'info');
 };
 
 function setupRealtimeListeners() {

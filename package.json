@@ -5,8 +5,8 @@
   "main": "index.html",
   "scripts": {
     "start": "npx serve .",
-    "build": "echo 'Static build ready'",
-    "vercel-build": "echo 'Vercel build complete'",
+    "build": "node scripts/inject-env.js",
+    "vercel-build": "node scripts/inject-env.js",
     "dev": "npx serve ."
   },
   "keywords": [
