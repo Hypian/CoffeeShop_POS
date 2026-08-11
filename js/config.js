@@ -3,8 +3,8 @@
    ========================================================================== */
 
 // Cloud Database Credentials (Supabase / PostgreSQL Unified Sync across 4 Terminals)
-const SUPABASE_URL = window.SUPABASE_URL || "https://your-supabase-project-id.supabase.co";
-const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "your-supabase-anon-key";
+const SUPABASE_URL = window.SUPABASE_URL || "https://koyzlttkznwrrvndddfy.supabase.co";
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "sb_publishable_eBvPT_1GQErr_WdtTERiyA_EPtn1Y77";
 
 const APP_LOGO_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
