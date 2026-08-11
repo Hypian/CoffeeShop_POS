@@ -173,7 +173,7 @@ window.syncStateToCloud = async function() {
       if (error) console.error('Orders upsert error:', error);
     }
 
-    // Upsert products
+    // Upsert products or clear table if empty
     if (state.products && state.products.length > 0) {
       const dbProds = state.products.map(p => ({
         id: p.id,
@@ -185,9 +185,11 @@ window.syncStateToCloud = async function() {
       }));
       const { error } = await supabaseClient.from('products').upsert(dbProds, { onConflict: 'id' });
       if (error) console.error('Products upsert error:', error);
+    } else if (Array.isArray(state.products) && state.products.length === 0) {
+      await supabaseClient.from('products').delete().neq('id', '___none___');
     }
 
-    // Upsert departments
+    // Upsert departments or clear table if empty
     if (state.departments && state.departments.length > 0) {
       const dbDepts = state.departments.map(d => ({
         id: d.id,
@@ -197,9 +199,11 @@ window.syncStateToCloud = async function() {
       }));
       const { error } = await supabaseClient.from('departments').upsert(dbDepts, { onConflict: 'id' });
       if (error) console.error('Departments upsert error:', error);
+    } else if (Array.isArray(state.departments) && state.departments.length === 0) {
+      await supabaseClient.from('departments').delete().neq('id', '___none___');
     }
 
-    // Upsert employees
+    // Upsert employees or clear table if empty
     if (state.employees && state.employees.length > 0) {
       const dbEmps = state.employees.map(e => ({
         id: e.id,
@@ -211,9 +215,11 @@ window.syncStateToCloud = async function() {
       }));
       const { error } = await supabaseClient.from('employees').upsert(dbEmps, { onConflict: 'id' });
       if (error) console.error('Employees upsert error:', error);
+    } else if (Array.isArray(state.employees) && state.employees.length === 0) {
+      await supabaseClient.from('employees').delete().neq('id', '___none___');
     }
 
-    // Upsert rooms
+    // Upsert rooms or clear table if empty
     if (state.rooms && state.rooms.length > 0) {
       const dbRooms = state.rooms.map(r => ({
         id: r.id,
@@ -222,6 +228,8 @@ window.syncStateToCloud = async function() {
       }));
       const { error } = await supabaseClient.from('rooms').upsert(dbRooms, { onConflict: 'id' });
       if (error) console.error('Rooms upsert error:', error);
+    } else if (Array.isArray(state.rooms) && state.rooms.length === 0) {
+      await supabaseClient.from('rooms').delete().neq('id', '___none___');
     }
   } catch (err) {
     console.error('Error pushing data to cloud:', err);

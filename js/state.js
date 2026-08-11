@@ -131,11 +131,11 @@ window.loadStorageData = function() {
   if (d) {
     try {
       const parsed = JSON.parse(d);
-      state.categories = Array.isArray(parsed.categories) && parsed.categories.length > 0 ? parsed.categories : [...DEFAULT_CATEGORIES];
-      state.products = Array.isArray(parsed.products) && parsed.products.length > 0 ? parsed.products : [...DEFAULT_PRODUCTS];
-      state.departments = Array.isArray(parsed.departments) && parsed.departments.length > 0 ? parsed.departments : [...DEFAULT_DEPARTMENTS];
-      state.employees = Array.isArray(parsed.employees) && parsed.employees.length > 0 ? parsed.employees : [...DEFAULT_EMPLOYEES];
-      state.rooms = Array.isArray(parsed.rooms) && parsed.rooms.length > 0 ? parsed.rooms : [...DEFAULT_ROOMS];
+      state.categories = Array.isArray(parsed.categories) ? parsed.categories : [...DEFAULT_CATEGORIES];
+      state.products = Array.isArray(parsed.products) ? parsed.products : [...DEFAULT_PRODUCTS];
+      state.departments = Array.isArray(parsed.departments) ? parsed.departments : [...DEFAULT_DEPARTMENTS];
+      state.employees = Array.isArray(parsed.employees) ? parsed.employees : [...DEFAULT_EMPLOYEES];
+      state.rooms = Array.isArray(parsed.rooms) ? parsed.rooms : [...DEFAULT_ROOMS];
       state.orders = Array.isArray(parsed.orders) ? parsed.orders : [];
       state.auditLogs = Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [];
       state.archives = Array.isArray(parsed.archives) ? parsed.archives : [];
