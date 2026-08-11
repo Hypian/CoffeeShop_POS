@@ -608,10 +608,10 @@ window.deleteDepartment = function(deptId) {
     return;
   }
 
-  const dept = (state.departments || []).find(d => d.id === deptId);
+  const dept = (state.departments || []).find(d => d && (d.id === deptId || String(d.id) === String(deptId)));
   if (!dept) return;
 
-  const staffCount = (state.employees || []).filter(e => e.departmentId === deptId).length;
+  const staffCount = (state.employees || []).filter(e => e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))).length;
   const confirmMsg = staffCount > 0 
     ? `Are you sure you want to delete department "${dept.name}" (${dept.code})? ${staffCount} staff member(s) will be set as Unassigned.`
     : `Are you sure you want to delete department "${dept.name}" (${dept.code})?`;
@@ -620,12 +620,14 @@ window.deleteDepartment = function(deptId) {
     title: "🏛️ Delete Department",
     message: confirmMsg,
     confirmText: "Yes, Delete Department",
-    onConfirm: () => {
-      state.employees.forEach(e => {
-        if (e.departmentId === deptId) e.departmentId = '';
+    onConfirm: async () => {
+      (state.employees || []).forEach(e => {
+        if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
       });
-      state.departments = state.departments.filter(d => d.id !== deptId);
-      if (window.cloudDeleteDepartment) window.cloudDeleteDepartment(deptId);
+      state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
+      if (window.cloudDeleteDepartment) {
+        await window.cloudDeleteDepartment(deptId);
+      }
       addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
       saveData();
       window.showToast(`Department "${dept.name}" deleted`, 'success');
@@ -643,17 +645,19 @@ window.deleteEmployee = function(empId) {
     return;
   }
 
-  const emp = (state.employees || []).find(e => e.id === empId);
+  const emp = (state.employees || []).find(e => e && (e.id === empId || String(e.id) === String(empId)));
   if (!emp) return;
 
   window.showConfirmModal({
     title: "👤 Delete Staff Account",
     message: `Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`,
     confirmText: "Yes, Delete Staff Account",
-    onConfirm: () => {
-      state.employees = state.employees.filter(e => e.id !== empId);
-      state.tabReceipts = state.tabReceipts.filter(r => r.employeeId !== empId);
-      if (window.cloudDeleteEmployee) window.cloudDeleteEmployee(empId);
+    onConfirm: async () => {
+      state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
+      state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
+      if (window.cloudDeleteEmployee) {
+        await window.cloudDeleteEmployee(empId);
+      }
       addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
       saveData();
       window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');

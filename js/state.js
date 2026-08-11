@@ -82,9 +82,15 @@ window.showConfirmModal = function({ title = '⚠️ Confirm Action', message = 
     } else {
       btnEl.className = 'bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] rounded-xl px-5 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-amber-500/20';
     }
-    btnEl.onclick = function() {
+    btnEl.onclick = async function() {
       window.closeModal('modalConfirmDialog');
-      if (typeof onConfirm === 'function') onConfirm();
+      if (typeof onConfirm === 'function') {
+        try {
+          await onConfirm();
+        } catch (e) {
+          console.error('Error executing confirm action:', e);
+        }
+      }
     };
   }
 

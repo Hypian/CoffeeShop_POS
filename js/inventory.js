@@ -83,17 +83,19 @@ window.deleteProduct = function(id) {
     return;
   }
 
-  const product = (state.products || []).find(p => p.id === id);
+  const product = (state.products || []).find(p => p && (p.id === id || String(p.id) === String(id)));
   const prodName = product ? product.name : 'this product';
 
   window.showConfirmModal({
     title: "📦 Delete Product",
     message: `Are you sure you want to delete product "${prodName}" from menu inventory?`,
     confirmText: "Yes, Delete Product",
-    onConfirm: () => {
+    onConfirm: async () => {
       if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
-      state.products = state.products.filter(p => p.id !== id);
-      if (window.cloudDeleteProduct) window.cloudDeleteProduct(id);
+      state.products = (state.products || []).filter(p => p && String(p.id) !== String(id));
+      if (window.cloudDeleteProduct) {
+        await window.cloudDeleteProduct(id);
+      }
       saveData();
       window.showToast(`Product "${prodName}" deleted`, 'success');
       if (window.renderAllViews) window.renderAllViews();

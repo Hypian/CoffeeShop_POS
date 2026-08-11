@@ -82,44 +82,38 @@ window.pullCloudDataToState = async function() {
     // 2. Fetch Products
     const { data: dbProducts, error: errProds } = await supabaseClient.from('products').select('*');
     if (!errProds && Array.isArray(dbProducts)) {
-      if (dbProducts.length > 0) {
-        state.products = dbProducts.map(p => ({
-          id: p.id,
-          name: p.name,
-          categoryId: p.category_id,
-          price: Number(p.price || 0),
-          icon: p.icon || '☕',
-          stock: Number(p.stock || 100)
-        }));
-      }
+      state.products = dbProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        categoryId: p.category_id,
+        price: Number(p.price || 0),
+        icon: p.icon || '☕',
+        stock: Number(p.stock || 100)
+      }));
     }
 
     // 3. Fetch Departments
     const { data: dbDepts, error: errDepts } = await supabaseClient.from('departments').select('*');
     if (!errDepts && Array.isArray(dbDepts)) {
-      if (dbDepts.length > 0) {
-        state.departments = dbDepts.map(d => ({
-          id: d.id,
-          code: d.code,
-          name: d.name,
-          monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
-        }));
-      }
+      state.departments = dbDepts.map(d => ({
+        id: d.id,
+        code: d.code,
+        name: d.name,
+        monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
+      }));
     }
 
     // 4. Fetch Employees
     const { data: dbEmps, error: errEmps } = await supabaseClient.from('employees').select('*');
     if (!errEmps && Array.isArray(dbEmps)) {
-      if (dbEmps.length > 0) {
-        state.employees = dbEmps.map(e => ({
-          id: e.id,
-          staffId: e.staff_id,
-          fullName: e.full_name,
-          departmentId: e.department_id,
-          monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
-          currentBalance: Number(e.current_balance || 0)
-        }));
-      }
+      state.employees = dbEmps.map(e => ({
+        id: e.id,
+        staffId: e.staff_id,
+        fullName: e.full_name,
+        departmentId: e.department_id,
+        monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
+        currentBalance: Number(e.current_balance || 0)
+      }));
     }
 
     // 5. Fetch Rooms — allow empty list (all rooms deleted)
@@ -236,65 +230,81 @@ window.syncStateToCloud = async function() {
 
 window.cloudDeleteOrder = async function(orderId) {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
     const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
     if (error) console.error('Cloud delete order error:', error);
   } catch (err) {
     console.error('Cloud delete order error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.cloudDeleteProduct = async function(productId) {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
     const { error } = await supabaseClient.from('products').delete().eq('id', productId);
     if (error) console.error('Cloud delete product error:', error);
   } catch (err) {
     console.error('Cloud delete product error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.cloudDeleteDepartment = async function(deptId) {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
     const { error } = await supabaseClient.from('departments').delete().eq('id', deptId);
     if (error) console.error('Cloud delete department error:', error);
   } catch (err) {
     console.error('Cloud delete department error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.cloudDeleteEmployee = async function(empId) {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
     const { error } = await supabaseClient.from('employees').delete().eq('id', empId);
     if (error) console.error('Cloud delete employee error:', error);
   } catch (err) {
     console.error('Cloud delete employee error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.cloudDeleteRoom = async function(roomId) {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
-    // Delete by id AND by room_number to ensure removal regardless of key used
     const { error: e1 } = await supabaseClient.from('rooms').delete().eq('id', roomId);
     if (e1) console.error('Cloud delete room by id error:', e1);
-    // Also try matching by room_number in case the id is actually a room number string
     const { error: e2 } = await supabaseClient.from('rooms').delete().eq('room_number', roomId);
     if (e2) console.error('Cloud delete room by room_number error:', e2);
   } catch (err) {
     console.error('Cloud delete room error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.cloudClearAllRooms = async function() {
   if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
   try {
     const { error } = await supabaseClient.from('rooms').delete().neq('id', '___none___');
     if (error) console.error('Cloud clear all rooms error:', error);
   } catch (err) {
     console.error('Cloud clear all rooms error:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 

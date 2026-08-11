@@ -115,12 +115,14 @@ window.deleteRoom = function(roomId) {
     title: "🗑️ Delete Hospital Room",
     message: `Are you sure you want to delete room "${targetName}" (${room.tier || 'Room'})?`,
     confirmText: "Yes, Delete Room",
-    onConfirm: () => {
-      state.rooms = state.rooms.filter(r => r.id !== targetId && r.roomNumber !== targetName);
-      if (window.cloudDeleteRoom) window.cloudDeleteRoom(targetId);
+    onConfirm: async () => {
+      state.rooms = state.rooms.filter(r => r && String(r.id) !== String(targetId) && String(r.roomNumber) !== String(targetName));
+      if (window.cloudDeleteRoom) {
+        await window.cloudDeleteRoom(targetId);
+      }
       addAuditLog("Room Deleted", `Deleted room ${targetName}`);
       saveData();
-      window.populateRoomDropdown();
+      if (window.populateRoomDropdown) window.populateRoomDropdown();
       window.showToast(`Room "${targetName}" deleted successfully.`, 'success');
       if (window.renderAllViews) window.renderAllViews();
     }
@@ -140,12 +142,14 @@ window.clearAllRooms = function() {
     title: "🧹 Clear All Hospital Rooms",
     message: "Are you sure you want to delete ALL hospital room listings?",
     confirmText: "Yes, Clear All Rooms",
-    onConfirm: () => {
+    onConfirm: async () => {
       state.rooms = [];
-      if (window.cloudClearAllRooms) window.cloudClearAllRooms();
+      if (window.cloudClearAllRooms) {
+        await window.cloudClearAllRooms();
+      }
       addAuditLog("All Rooms Cleared", "Cleared all room listings");
       saveData();
-      window.populateRoomDropdown();
+      if (window.populateRoomDropdown) window.populateRoomDropdown();
       window.showToast("All room listings deleted successfully.", "success");
       if (window.renderAllViews) window.renderAllViews();
     }
