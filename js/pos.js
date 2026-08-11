@@ -97,6 +97,7 @@ window.renderCart = function() {
   const totalEl = document.getElementById('cartTotalText');
   const btnDirect = document.getElementById('btnCheckoutDirect');
   const btnTab = document.getElementById('btnCheckoutTab');
+  const btnPatient = document.getElementById('btnCheckoutPatient');
   
   if (!list) return;
 
@@ -105,13 +106,14 @@ window.renderCart = function() {
       <div class="flex flex-col items-center justify-center h-full text-[#475569] text-center gap-3 py-10">
         <div class="text-5xl opacity-40">🛒</div>
         <p class="font-medium">Your order cart is empty.</p>
-        <span class="text-xs">Tap items on the left to start building an order.</span>
+        <span class="text-xs text-[#64748B]">Tap items on the left to start building an order.</span>
       </div>
     `;
     if (subtotalEl) subtotalEl.textContent = 'RWF 0';
     if (totalEl) totalEl.textContent = 'RWF 0';
     if (btnDirect) btnDirect.disabled = false;
     if (btnTab) btnTab.disabled = false;
+    if (btnPatient) btnPatient.disabled = false;
     return;
   }
 
@@ -135,6 +137,7 @@ window.renderCart = function() {
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
   if (btnDirect) btnDirect.disabled = false;
   if (btnTab) btnTab.disabled = false;
+  if (btnPatient) btnPatient.disabled = false;
 }
 
 // Checkout - Direct Payment

@@ -424,8 +424,8 @@ window.renderDepartmentLedgers = function() {
             <span class="font-mono font-extrabold text-[0.7rem] px-2 py-0.5 rounded border ${tierBadgeClass(r.tier)}">${tierIcon(r.tier)} ${r.tier}</span>
             <div class="flex items-center gap-1">
               <button onclick="event.stopPropagation(); exportPatientCateringExcel('${r.roomNumber}')" title="Export Excel for ${r.roomNumber}" class="p-1 text-xs text-[#10B981] hover:bg-[#10B981]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Excel</button>
-              <button onclick="event.stopPropagation(); openAddRoomModal('${r.id}')" title="Edit Room" class="p-1 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">✏️ Edit</button>
-              <button onclick="event.stopPropagation(); deleteRoom('${r.id}')" title="Delete Room" class="p-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️</button>
+              <button onclick="event.stopPropagation(); openAddRoomModal('${r.id || r.roomNumber}')" title="Edit Room" class="p-1 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">✏️ Edit</button>
+              <button onclick="event.stopPropagation(); deleteRoom('${r.id || r.roomNumber}')" title="Delete Room" class="p-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️ Delete</button>
             </div>
           </div>
           
@@ -601,20 +601,22 @@ window.renderDepartmentLedgers = function() {
 
 window.deleteDepartment = function(deptId) {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  if (currentRole !== 'admin' && currentRole !== 'manager') {
+  const roleLower = (currentRole || '').toLowerCase();
+  
+  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
     window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete departments.', 'error');
     return;
   }
 
-  const dept = state.departments.find(d => d.id === deptId);
+  const dept = (state.departments || []).find(d => d.id === deptId);
   if (!dept) return;
 
-  const staffCount = state.employees.filter(e => e.departmentId === deptId).length;
+  const staffCount = (state.employees || []).filter(e => e.departmentId === deptId).length;
   const confirmMsg = staffCount > 0 
     ? `Are you sure you want to delete department "${dept.name}" (${dept.code})? ${staffCount} staff member(s) will be set as Unassigned.`
     : `Are you sure you want to delete department "${dept.name}" (${dept.code})?`;
 
-  showConfirmModal({
+  window.showConfirmModal({
     title: "🏛️ Delete Department",
     message: confirmMsg,
     confirmText: "Yes, Delete Department",
@@ -627,22 +629,24 @@ window.deleteDepartment = function(deptId) {
       addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
       saveData();
       window.showToast(`Department "${dept.name}" deleted`, 'success');
-      renderAllViews();
+      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };
 
 window.deleteEmployee = function(empId) {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  if (currentRole !== 'admin' && currentRole !== 'manager') {
+  const roleLower = (currentRole || '').toLowerCase();
+  
+  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
     window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete staff accounts.', 'error');
     return;
   }
 
-  const emp = state.employees.find(e => e.id === empId);
+  const emp = (state.employees || []).find(e => e.id === empId);
   if (!emp) return;
 
-  showConfirmModal({
+  window.showConfirmModal({
     title: "👤 Delete Staff Account",
     message: `Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`,
     confirmText: "Yes, Delete Staff Account",
@@ -653,7 +657,7 @@ window.deleteEmployee = function(empId) {
       addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
       saveData();
       window.showToast(`Staff account "${emp.fullName}" deleted`, 'success');
-      renderAllViews();
+      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };

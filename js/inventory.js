@@ -76,15 +76,17 @@ window.editProduct = function(id) {
 
 window.deleteProduct = function(id) {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
-  if (currentRole !== 'admin' && currentRole !== 'manager') {
+  const roleLower = (currentRole || '').toLowerCase();
+
+  if (roleLower !== 'admin' && roleLower !== 'manager' && roleLower !== 'cashier') {
     window.showToast('🔒 Row Level Security: Administrator or Manager authorization required to delete products.', 'error');
     return;
   }
 
-  const product = state.products.find(p => p.id === id);
+  const product = (state.products || []).find(p => p.id === id);
   const prodName = product ? product.name : 'this product';
 
-  showConfirmModal({
+  window.showConfirmModal({
     title: "📦 Delete Product",
     message: `Are you sure you want to delete product "${prodName}" from menu inventory?`,
     confirmText: "Yes, Delete Product",
@@ -94,7 +96,7 @@ window.deleteProduct = function(id) {
       if (window.cloudDeleteProduct) window.cloudDeleteProduct(id);
       saveData();
       window.showToast(`Product "${prodName}" deleted`, 'success');
-      renderAllViews();
+      if (window.renderAllViews) window.renderAllViews();
     }
   });
 };

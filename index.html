@@ -140,11 +140,11 @@
 
 
     <!-- MAIN -->
-    <main class="max-w-[1600px] w-full mx-auto p-5 relative">
+    <main class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 py-4 relative">
       
       <!-- VIEW 1: POS TERMINAL -->
-      <section id="view-pos" class="view-panel active">
-        <div class="flex flex-col md:grid md:grid-cols-[1fr_340px] lg:grid-cols-[1fr_380px] gap-5 min-h-[calc(100vh-84px)] md:h-[calc(100vh-84px)]">
+      <section id="view-pos" class="view-panel active w-full">
+        <div class="w-full flex flex-col lg:grid lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-5 min-h-[calc(100vh-84px)] lg:h-[calc(100vh-84px)]">
           
           <!-- Left: Products Section -->
           <div class="flex flex-col gap-4 sm:gap-5 h-full overflow-hidden">
@@ -187,18 +187,18 @@
                 </div>
               </div>
               
-              <div class="flex flex-col gap-2">
-                <button id="btnCheckoutDirect" onclick="openDirectCheckoutModal()" class="w-full bg-[#10B981] hover:bg-[#059669] text-[#0F172A] rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-colors">
-                  <span class="text-sm font-bold">💵 Direct Payment</span>
-                  <span class="text-[0.65rem] opacity-80 uppercase tracking-widest font-semibold mt-0.5">Cash / Card / Mobile</span>
+              <div class="flex flex-col gap-2.5 w-full">
+                <button id="btnCheckoutDirect" onclick="openDirectCheckoutModal()" class="w-full bg-gradient-to-r from-[#10B981] to-[#059669] hover:from-[#059669] hover:to-[#047857] text-white rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] shadow-md hover:shadow-lg shadow-emerald-500/20">
+                  <span class="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">💵 Direct Payment</span>
+                  <span class="text-[0.62rem] sm:text-[0.68rem] opacity-90 uppercase tracking-wider font-bold mt-0.5">Cash / Card / Mobile</span>
                 </button>
-                <button id="btnCheckoutTab" onclick="openTabCheckoutModal()" class="w-full bg-[#D97706] hover:bg-[#B45309] text-[#0F172A] rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-colors">
-                  <span class="text-sm font-bold">💳 Institutional Tab</span>
-                  <span class="text-[0.65rem] opacity-80 uppercase tracking-widest font-semibold mt-0.5">Payroll Deduction</span>
+                <button id="btnCheckoutTab" onclick="openTabCheckoutModal()" class="w-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#D97706] hover:to-[#B45309] text-white rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] shadow-md hover:shadow-lg shadow-amber-500/20">
+                  <span class="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">💳 Institutional Tab</span>
+                  <span class="text-[0.62rem] sm:text-[0.68rem] opacity-90 uppercase tracking-wider font-bold mt-0.5">Payroll Deduction</span>
                 </button>
-                <button id="btnCheckoutPatient" onclick="openPatientCheckoutModal()" class="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-colors">
-                  <span class="text-sm font-bold">🏥 Patient Room Order</span>
-                  <span class="text-[0.65rem] opacity-90 uppercase tracking-widest font-semibold mt-0.5">Room Perks / Catering</span>
+                <button id="btnCheckoutPatient" onclick="openPatientCheckoutModal()" class="w-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white rounded-xl py-3 px-4 flex flex-col items-center justify-center cursor-pointer border-none transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] shadow-md hover:shadow-lg shadow-purple-500/20">
+                  <span class="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">🏥 Patient Room Order</span>
+                  <span class="text-[0.62rem] sm:text-[0.68rem] opacity-90 uppercase tracking-wider font-bold mt-0.5">Room Perks / Catering</span>
                 </button>
               </div>
             </div>

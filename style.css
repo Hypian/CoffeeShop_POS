@@ -355,16 +355,8 @@ header.topbar {
 
 /* ══════ POS VIEW (#view-pos) ══════ */
 #view-pos.active {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-@media (min-width: 768px) {
-  #view-pos.active {
-    flex-direction: row;
-    align-items: flex-start;
-  }
+  display: block;
+  width: 100%;
 }
 
 /* Category Pills Bar */
@@ -568,7 +560,8 @@ header.topbar {
   background-color: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 90vh;
   box-shadow: var(--shadow-xl);
   max-width: 32rem;
   width: 100%;
