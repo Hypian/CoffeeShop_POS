@@ -2,7 +2,6 @@
   "version": 2,
   "name": "dmch-resto-pos",
   "cleanUrls": true,
-  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
