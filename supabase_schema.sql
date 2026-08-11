@@ -101,5 +101,6 @@ CREATE POLICY "Allow public anon access to audit_logs" ON public.audit_logs FOR 
 -- Enable Supabase Realtime for instant multi-terminal sync
 ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.departments;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.employees;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.rooms;

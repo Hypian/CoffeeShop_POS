@@ -192,6 +192,8 @@ window.saveData = function() {
     lastActiveDate: state.lastActiveDate
   }));
 
+  // Only push to cloud if this save was initiated locally (not from a cloud pull)
+  if (typeof _isSyncingFromCloud !== 'undefined' && _isSyncingFromCloud) return;
   if (window.syncStateToCloud) {
     window.syncStateToCloud();
   }

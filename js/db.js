@@ -4,23 +4,19 @@
 
 let supabaseClient = null;
 let cloudSyncActive = false;
+let _isSyncingFromCloud = false; // prevents re-entrant save loops
 
 window.initCloudDatabase = function() {
   if (typeof supabase === 'undefined') {
     console.warn('Supabase JS SDK not loaded. Running in local mode.');
-    updateCloudStatusBadge(false);
     return false;
   }
 
-  const storedUrl = localStorage.getItem('dmch_supabase_url');
-  const storedKey = localStorage.getItem('dmch_supabase_key');
-
-  const url = storedUrl || window.SUPABASE_URL || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '');
-  const key = storedKey || window.SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '');
+  const url = (typeof SUPABASE_URL !== 'undefined') ? SUPABASE_URL : '';
+  const key = (typeof SUPABASE_ANON_KEY !== 'undefined') ? SUPABASE_ANON_KEY : '';
 
   if (!url || !key || url.includes('your-supabase-project-id') || key.includes('your-supabase-anon-key')) {
-    console.log('Supabase cloud credentials not configured yet. Running in offline/local storage mode.');
-    updateCloudStatusBadge(false);
+    console.log('Supabase cloud credentials not configured. Running in offline/local storage mode.');
     return false;
   }
 
@@ -28,76 +24,13 @@ window.initCloudDatabase = function() {
     supabaseClient = supabase.createClient(url, key);
     cloudSyncActive = true;
     console.log('⚡ Unified Cloud Database Sync Connected via Supabase!');
-    updateCloudStatusBadge(true);
     setupRealtimeListeners();
     pullCloudDataToState();
     return true;
   } catch (err) {
     console.error('Error initializing Supabase client:', err);
-    updateCloudStatusBadge(false);
     return false;
   }
-};
-
-function updateCloudStatusBadge(isConnected) {
-  const btn = document.getElementById('cloudSyncStatusBtn');
-  const txt = document.getElementById('cloudSyncStatusText');
-  if (!btn || !txt) return;
-
-  if (isConnected) {
-    btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/20 transition-all";
-    txt.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span> ⚡ Sync Live`;
-  } else {
-    btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/30 cursor-pointer hover:bg-amber-500/20 transition-all";
-    txt.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block"></span> ☁️ Local Mode`;
-  }
-}
-window.updateCloudStatusBadge = updateCloudStatusBadge;
-
-window.openCloudSyncModal = function() {
-  const urlInput = document.getElementById('cfgSupabaseUrl');
-  const keyInput = document.getElementById('cfgSupabaseKey');
-
-  const storedUrl = localStorage.getItem('dmch_supabase_url') || (window.SUPABASE_URL && !window.SUPABASE_URL.includes('your-supabase') ? window.SUPABASE_URL : '');
-  const storedKey = localStorage.getItem('dmch_supabase_key') || (window.SUPABASE_ANON_KEY && !window.SUPABASE_ANON_KEY.includes('your-supabase') ? window.SUPABASE_ANON_KEY : '');
-
-  if (urlInput) urlInput.value = storedUrl;
-  if (keyInput) keyInput.value = storedKey;
-
-  window.openModal('modalCloudSync');
-};
-
-window.saveCloudSyncSettings = function() {
-  const url = (document.getElementById('cfgSupabaseUrl')?.value || '').trim();
-  const key = (document.getElementById('cfgSupabaseKey')?.value || '').trim();
-
-  if (!url || !key) {
-    window.showToast('Please enter both your Supabase Project URL and Anon API Key.', 'warning');
-    return;
-  }
-
-  localStorage.setItem('dmch_supabase_url', url);
-  localStorage.setItem('dmch_supabase_key', key);
-
-  window.closeModal('modalCloudSync');
-
-  const success = window.initCloudDatabase();
-  if (success) {
-    window.showToast('⚡ Real-time cloud sync connected! Pushing local data...', 'success');
-    if (window.syncStateToCloud) window.syncStateToCloud();
-  } else {
-    window.showToast('❌ Failed to connect to Supabase. Check URL and Key.', 'error');
-  }
-};
-
-window.disconnectCloudSync = function() {
-  localStorage.removeItem('dmch_supabase_url');
-  localStorage.removeItem('dmch_supabase_key');
-  supabaseClient = null;
-  cloudSyncActive = false;
-  updateCloudStatusBadge(false);
-  window.closeModal('modalCloudSync');
-  window.showToast('Cloud database disconnected. Operating in offline/local storage mode.', 'info');
 };
 
 function setupRealtimeListeners() {
@@ -107,10 +40,12 @@ function setupRealtimeListeners() {
     supabaseClient
       .channel('dmch-resto-realtime')
       .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-        console.log('🔔 Realtime Cloud Update Received:', payload);
+        console.log('🔔 Realtime Cloud Update Received:', payload.table, payload.eventType);
         pullCloudDataToState();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
   } catch (err) {
     console.warn('Realtime channel error:', err);
   }
@@ -119,10 +54,12 @@ function setupRealtimeListeners() {
 window.pullCloudDataToState = async function() {
   if (!supabaseClient) return;
 
+  _isSyncingFromCloud = true;
+
   try {
     // 1. Fetch Orders
     const { data: dbOrders, error: errOrders } = await supabaseClient.from('orders').select('*').order('timestamp', { ascending: false });
-    if (!errOrders && Array.isArray(dbOrders) && dbOrders.length > 0) {
+    if (!errOrders && Array.isArray(dbOrders)) {
       state.orders = dbOrders.map(o => ({
         id: o.id,
         timestamp: o.timestamp,
@@ -144,44 +81,50 @@ window.pullCloudDataToState = async function() {
 
     // 2. Fetch Products
     const { data: dbProducts, error: errProds } = await supabaseClient.from('products').select('*');
-    if (!errProds && Array.isArray(dbProducts) && dbProducts.length > 0) {
-      state.products = dbProducts.map(p => ({
-        id: p.id,
-        name: p.name,
-        categoryId: p.category_id,
-        price: Number(p.price || 0),
-        icon: p.icon || '☕',
-        stock: Number(p.stock || 100)
-      }));
+    if (!errProds && Array.isArray(dbProducts)) {
+      if (dbProducts.length > 0) {
+        state.products = dbProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          categoryId: p.category_id,
+          price: Number(p.price || 0),
+          icon: p.icon || '☕',
+          stock: Number(p.stock || 100)
+        }));
+      }
     }
 
     // 3. Fetch Departments
     const { data: dbDepts, error: errDepts } = await supabaseClient.from('departments').select('*');
-    if (!errDepts && Array.isArray(dbDepts) && dbDepts.length > 0) {
-      state.departments = dbDepts.map(d => ({
-        id: d.id,
-        code: d.code,
-        name: d.name,
-        monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
-      }));
+    if (!errDepts && Array.isArray(dbDepts)) {
+      if (dbDepts.length > 0) {
+        state.departments = dbDepts.map(d => ({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
+        }));
+      }
     }
 
     // 4. Fetch Employees
     const { data: dbEmps, error: errEmps } = await supabaseClient.from('employees').select('*');
-    if (!errEmps && Array.isArray(dbEmps) && dbEmps.length > 0) {
-      state.employees = dbEmps.map(e => ({
-        id: e.id,
-        staffId: e.staff_id,
-        fullName: e.full_name,
-        departmentId: e.department_id,
-        monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
-        currentBalance: Number(e.current_balance || 0)
-      }));
+    if (!errEmps && Array.isArray(dbEmps)) {
+      if (dbEmps.length > 0) {
+        state.employees = dbEmps.map(e => ({
+          id: e.id,
+          staffId: e.staff_id,
+          fullName: e.full_name,
+          departmentId: e.department_id,
+          monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
+          currentBalance: Number(e.current_balance || 0)
+        }));
+      }
     }
 
-    // 5. Fetch Rooms
+    // 5. Fetch Rooms — allow empty list (all rooms deleted)
     const { data: dbRooms, error: errRooms } = await supabaseClient.from('rooms').select('*');
-    if (!errRooms && Array.isArray(dbRooms) && dbRooms.length > 0) {
+    if (!errRooms && Array.isArray(dbRooms)) {
       state.rooms = dbRooms.map(r => ({
         id: r.id,
         roomNumber: r.room_number,
@@ -189,7 +132,7 @@ window.pullCloudDataToState = async function() {
       }));
     }
 
-    // Update local storage backup and refresh UI views
+    // Update local storage backup
     localStorage.setItem('dmch_resto_posData', JSON.stringify({
       orders: state.orders,
       products: state.products,
@@ -204,14 +147,16 @@ window.pullCloudDataToState = async function() {
     if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
     console.error('Error pulling cloud data:', err);
+  } finally {
+    _isSyncingFromCloud = false;
   }
 };
 
 window.syncStateToCloud = async function() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || _isSyncingFromCloud) return;
 
   try {
-    // Upsert latest orders
+    // Upsert orders
     if (state.orders && state.orders.length > 0) {
       const dbOrders = state.orders.map(o => ({
         id: o.id,
@@ -222,7 +167,7 @@ window.syncStateToCloud = async function() {
         total: o.total,
         payment_method: o.paymentMethod || null,
         checkout_mode: o.checkoutMode,
-        cashier: o.cashier || null,
+        cashier: o.cashier || o.cashierName || null,
         employee_id: o.employeeId || null,
         department_id: o.departmentId || null,
         room_number: o.roomNumber || null,
@@ -230,7 +175,8 @@ window.syncStateToCloud = async function() {
         patient_notes: o.patientNotes || null,
         status: o.status || 'COMPLETED'
       }));
-      await supabaseClient.from('orders').upsert(dbOrders, { onConflict: 'id' });
+      const { error } = await supabaseClient.from('orders').upsert(dbOrders, { onConflict: 'id' });
+      if (error) console.error('Orders upsert error:', error);
     }
 
     // Upsert products
@@ -241,9 +187,22 @@ window.syncStateToCloud = async function() {
         category_id: p.categoryId,
         price: p.price,
         icon: p.icon,
-        stock: p.stock
+        stock: p.stock || 100
       }));
-      await supabaseClient.from('products').upsert(dbProds, { onConflict: 'id' });
+      const { error } = await supabaseClient.from('products').upsert(dbProds, { onConflict: 'id' });
+      if (error) console.error('Products upsert error:', error);
+    }
+
+    // Upsert departments
+    if (state.departments && state.departments.length > 0) {
+      const dbDepts = state.departments.map(d => ({
+        id: d.id,
+        code: d.code,
+        name: d.name,
+        monthly_credit_limit: d.monthlyCreditLimit || 100000
+      }));
+      const { error } = await supabaseClient.from('departments').upsert(dbDepts, { onConflict: 'id' });
+      if (error) console.error('Departments upsert error:', error);
     }
 
     // Upsert employees
@@ -253,10 +212,11 @@ window.syncStateToCloud = async function() {
         staff_id: e.staffId,
         full_name: e.fullName,
         department_id: e.departmentId || null,
-        monthly_credit_limit: e.monthlyCreditLimit,
-        current_balance: e.currentBalance
+        monthly_credit_limit: e.monthlyCreditLimit || 50000,
+        current_balance: e.currentBalance || 0
       }));
-      await supabaseClient.from('employees').upsert(dbEmps, { onConflict: 'id' });
+      const { error } = await supabaseClient.from('employees').upsert(dbEmps, { onConflict: 'id' });
+      if (error) console.error('Employees upsert error:', error);
     }
 
     // Upsert rooms
@@ -266,7 +226,8 @@ window.syncStateToCloud = async function() {
         room_number: r.roomNumber,
         tier: r.tier
       }));
-      await supabaseClient.from('rooms').upsert(dbRooms, { onConflict: 'id' });
+      const { error } = await supabaseClient.from('rooms').upsert(dbRooms, { onConflict: 'id' });
+      if (error) console.error('Rooms upsert error:', error);
     }
   } catch (err) {
     console.error('Error pushing data to cloud:', err);
@@ -276,7 +237,8 @@ window.syncStateToCloud = async function() {
 window.cloudDeleteOrder = async function(orderId) {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('orders').delete().eq('id', orderId);
+    const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
+    if (error) console.error('Cloud delete order error:', error);
   } catch (err) {
     console.error('Cloud delete order error:', err);
   }
@@ -285,7 +247,8 @@ window.cloudDeleteOrder = async function(orderId) {
 window.cloudDeleteProduct = async function(productId) {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('products').delete().eq('id', productId);
+    const { error } = await supabaseClient.from('products').delete().eq('id', productId);
+    if (error) console.error('Cloud delete product error:', error);
   } catch (err) {
     console.error('Cloud delete product error:', err);
   }
@@ -294,7 +257,8 @@ window.cloudDeleteProduct = async function(productId) {
 window.cloudDeleteDepartment = async function(deptId) {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('departments').delete().eq('id', deptId);
+    const { error } = await supabaseClient.from('departments').delete().eq('id', deptId);
+    if (error) console.error('Cloud delete department error:', error);
   } catch (err) {
     console.error('Cloud delete department error:', err);
   }
@@ -303,7 +267,8 @@ window.cloudDeleteDepartment = async function(deptId) {
 window.cloudDeleteEmployee = async function(empId) {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('employees').delete().eq('id', empId);
+    const { error } = await supabaseClient.from('employees').delete().eq('id', empId);
+    if (error) console.error('Cloud delete employee error:', error);
   } catch (err) {
     console.error('Cloud delete employee error:', err);
   }
@@ -312,7 +277,12 @@ window.cloudDeleteEmployee = async function(empId) {
 window.cloudDeleteRoom = async function(roomId) {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('rooms').delete().eq('id', roomId);
+    // Delete by id AND by room_number to ensure removal regardless of key used
+    const { error: e1 } = await supabaseClient.from('rooms').delete().eq('id', roomId);
+    if (e1) console.error('Cloud delete room by id error:', e1);
+    // Also try matching by room_number in case the id is actually a room number string
+    const { error: e2 } = await supabaseClient.from('rooms').delete().eq('room_number', roomId);
+    if (e2) console.error('Cloud delete room by room_number error:', e2);
   } catch (err) {
     console.error('Cloud delete room error:', err);
   }
@@ -321,8 +291,16 @@ window.cloudDeleteRoom = async function(roomId) {
 window.cloudClearAllRooms = async function() {
   if (!supabaseClient) return;
   try {
-    await supabaseClient.from('rooms').delete().neq('id', '___none___');
+    const { error } = await supabaseClient.from('rooms').delete().neq('id', '___none___');
+    if (error) console.error('Cloud clear all rooms error:', error);
   } catch (err) {
     console.error('Cloud clear all rooms error:', err);
   }
 };
+
+// Stub functions for removed cloud sync modal (keeps app from throwing errors)
+window.openCloudSyncModal = function() {};
+window.saveCloudSyncSettings = function() {};
+window.disconnectCloudSync = function() {};
+window.copySqlSchemaToClipboard = function() {};
+window.updateCloudStatusBadge = function() {};
