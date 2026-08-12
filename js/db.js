@@ -146,6 +146,39 @@ window.pullCloudDataToState = async function() {
       state.rooms = [...fetchedRooms, ...unSyncedRooms].filter(r => r && !/^room-\d+$/.test(String(r.id)));
     }
 
+    // 6. Fetch Users — Smart Merge so user accounts created on live cloud server sync down
+    const { data: dbUsers, error: errUsers } = await supabaseClient.from('users').select('*');
+    if (!errUsers && Array.isArray(dbUsers)) {
+      let localUsers = JSON.parse(localStorage.getItem('dmch_resto_users')) || [];
+      const sampleUserIds = ['u-cashier', 'u-claire', 'u-jean', 'u-grace', 'u-david', 'u-samuel'];
+      
+      const fetchedUsers = dbUsers
+        .filter(u => u && !sampleUserIds.includes(u.id))
+        .map(u => ({
+          id: u.id,
+          username: u.username,
+          fullName: (u.full_name || u.name || u.username).toUpperCase(),
+          role: u.role,
+          status: u.status || 'APPROVED',
+          createdAt: u.created_at || new Date().toISOString()
+        }));
+
+      const mergedUsers = [...localUsers];
+      fetchedUsers.forEach(fUser => {
+        const existingIdx = mergedUsers.findIndex(lUser => lUser.id === fUser.id || (lUser.username && lUser.username.toLowerCase() === fUser.username.toLowerCase()));
+        if (existingIdx >= 0) {
+          mergedUsers[existingIdx].status = fUser.status;
+          mergedUsers[existingIdx].role = fUser.role;
+          if (!mergedUsers[existingIdx].fullName) mergedUsers[existingIdx].fullName = fUser.fullName;
+        } else {
+          mergedUsers.push(fUser);
+        }
+      });
+
+      localStorage.setItem('dmch_resto_users', JSON.stringify(mergedUsers));
+      if (window.renderUsers) window.renderUsers();
+    }
+
     // Update local storage backup
     localStorage.setItem('dmch_resto_posData', JSON.stringify({
       orders: state.orders,
