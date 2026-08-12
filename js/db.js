@@ -60,7 +60,7 @@ window.pullCloudDataToState = async function() {
     // 1. Fetch Orders
     const { data: dbOrders, error: errOrders } = await supabaseClient.from('orders').select('*').order('timestamp', { ascending: false });
     if (!errOrders && Array.isArray(dbOrders)) {
-      state.orders = dbOrders.map(o => ({
+      const fetchedOrders = dbOrders.map(o => ({
         id: o.id,
         timestamp: o.timestamp,
         items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
@@ -77,12 +77,15 @@ window.pullCloudDataToState = async function() {
         patientNotes: o.patient_notes,
         status: o.status
       }));
+      const localOrders = Array.isArray(state.orders) ? state.orders : [];
+      const unSyncedOrders = localOrders.filter(loc => !fetchedOrders.some(rem => rem.id === loc.id));
+      state.orders = [...fetchedOrders, ...unSyncedOrders];
     }
 
     // 2. Fetch Products
     const { data: dbProducts, error: errProds } = await supabaseClient.from('products').select('*');
     if (!errProds && Array.isArray(dbProducts)) {
-      state.products = dbProducts.map(p => ({
+      const fetchedProds = dbProducts.map(p => ({
         id: p.id,
         name: p.name,
         categoryId: p.category_id,
@@ -90,23 +93,29 @@ window.pullCloudDataToState = async function() {
         icon: p.icon || '☕',
         stock: Number(p.stock || 100)
       }));
+      const localProds = Array.isArray(state.products) ? state.products : [];
+      const unSyncedProds = localProds.filter(loc => !fetchedProds.some(rem => rem.id === loc.id));
+      state.products = [...fetchedProds, ...unSyncedProds];
     }
 
     // 3. Fetch Departments
     const { data: dbDepts, error: errDepts } = await supabaseClient.from('departments').select('*');
     if (!errDepts && Array.isArray(dbDepts)) {
-      state.departments = dbDepts.map(d => ({
+      const fetchedDepts = dbDepts.map(d => ({
         id: d.id,
         code: d.code,
         name: d.name,
         monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
       }));
+      const localDepts = Array.isArray(state.departments) ? state.departments : [];
+      const unSyncedDepts = localDepts.filter(loc => !fetchedDepts.some(rem => rem.id === loc.id));
+      state.departments = [...fetchedDepts, ...unSyncedDepts];
     }
 
-    // 4. Fetch Employees
+    // 4. Fetch Employees — Smart Merge so locally created staff NEVER vanish
     const { data: dbEmps, error: errEmps } = await supabaseClient.from('employees').select('*');
     if (!errEmps && Array.isArray(dbEmps)) {
-      state.employees = dbEmps.map(e => ({
+      const fetchedEmps = dbEmps.map(e => ({
         id: e.id,
         staffId: e.staff_id,
         fullName: e.full_name,
@@ -114,16 +123,27 @@ window.pullCloudDataToState = async function() {
         monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
         currentBalance: Number(e.current_balance || 0)
       }));
+
+      const localEmps = Array.isArray(state.employees) ? state.employees : [];
+      const unSyncedEmps = localEmps.filter(loc => 
+        !fetchedEmps.some(rem => rem.id === loc.id || (loc.staffId && rem.staffId === loc.staffId))
+      );
+      state.employees = [...fetchedEmps, ...unSyncedEmps];
     }
 
-    // 5. Fetch Rooms — allow empty list (all rooms deleted)
+    // 5. Fetch Rooms
     const { data: dbRooms, error: errRooms } = await supabaseClient.from('rooms').select('*');
     if (!errRooms && Array.isArray(dbRooms)) {
-      state.rooms = dbRooms.map(r => ({
+      const fetchedRooms = dbRooms.map(r => ({
         id: r.id,
         roomNumber: r.room_number,
         tier: r.tier
       }));
+      const localRooms = Array.isArray(state.rooms) ? state.rooms : [];
+      const unSyncedRooms = localRooms.filter(loc => 
+        !fetchedRooms.some(rem => rem.id === loc.id || (loc.roomNumber && rem.room_number === loc.roomNumber))
+      );
+      state.rooms = [...fetchedRooms, ...unSyncedRooms];
     }
 
     // Update local storage backup

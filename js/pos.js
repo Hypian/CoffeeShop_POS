@@ -497,3 +497,89 @@ window.processPatientPayment = function() {
     setTimeout(() => { state.isProcessingPayment = false; }, 1000);
   }
 };
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RECEIPT PREVIEW, PRINTING & TICKET REPRINT ENGINE
+// ══════════════════════════════════════════════════════════════════════════════
+
+window.showReceiptModal = function(order) {
+  if (!order) return;
+  state.lastReceiptOrder = order;
+
+  const container = document.getElementById('receiptPreviewContent');
+  if (!container) return;
+
+  const dateStr = new Date(order.timestamp || Date.now()).toLocaleString([], {
+    year: 'numeric', month: 'short', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  let checkoutLabel = 'DIRECT CASH / CARD SALE';
+  if (order.checkoutMode === 'INSTITUTIONAL_TAB') {
+    checkoutLabel = `STAFF TAB: ${order.employeeName || 'Staff'} (${order.staffId || ''})`;
+  } else if (order.checkoutMode === 'PATIENT_ROOM_ORDER') {
+    checkoutLabel = `PATIENT PERK: ${order.roomNumber || 'Room'} (${order.mealType || 'Meal'})`;
+  }
+
+  const itemsHtml = Array.isArray(order.items) ? order.items.map(item => `
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+      <span style="flex:1;">${item.qty}x ${item.name}</span>
+      <span style="font-weight:bold;">${formatMoney(item.subtotal)}</span>
+    </div>
+  `).join('') : '<div style="font-size:11px; color:#666;">No items listed</div>';
+
+  const logoSrc = (typeof APP_LOGO_DATA_URI !== 'undefined' && APP_LOGO_DATA_URI) ? APP_LOGO_DATA_URI : 'logo.png';
+
+  container.innerHTML = `
+    <div style="text-align:center; padding-bottom:8px; border-bottom:1px dashed #000; margin-bottom:10px;">
+      <img src="${logoSrc}" style="max-height:48px; width:auto; display:block; margin:0 auto 6px auto; object-fit:contain;" alt="DMCH Logo" onerror="this.style.display='none'">
+      <div style="font-size:15px; font-weight:900; letter-spacing:1px; color:#0F172A;">DMCH RESTO</div>
+      <div style="font-size:10px; text-transform:uppercase; color:#475569; font-weight:700;">Dream Medical Center Hospital</div>
+      <div style="font-size:9px; color:#64748B; margin-top:2px;">Kigali, Rwanda • MIS POS Terminal</div>
+    </div>
+
+    <div style="font-size:11px; margin-bottom:8px; line-height:1.5; color:#0F172A;">
+      <div><strong>Receipt #:</strong> ${order.id}</div>
+      <div><strong>Date:</strong> ${dateStr}</div>
+      <div><strong>Cashier:</strong> ${order.cashierName || order.cashier || 'Staff'}</div>
+      <div><strong>Mode:</strong> ${checkoutLabel}</div>
+      ${order.patientNotes ? `<div><strong>Notes:</strong> ${order.patientNotes}</div>` : ''}
+    </div>
+
+    <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:8px 0; margin-bottom:8px;">
+      ${itemsHtml}
+    </div>
+
+    <div style="font-size:12px; font-weight:bold; display:flex; justify-content:space-between; margin-bottom:4px; color:#0F172A;">
+      <span>TOTAL AMOUNT:</span>
+      <span style="font-size:14px; font-weight:900; color:#D97706;">${formatMoney(order.total)}</span>
+    </div>
+
+    <div style="font-size:10px; color:#475569; text-align:center; margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
+      <div>Thank you for dining at DMCH Resto!</div>
+      <div style="font-size:9px; margin-top:2px; font-weight:700; color:#0F172A;">~ Official Hospital Catering Ticket ~</div>
+    </div>
+  `;
+
+  window.openModal('modalReceipt');
+};
+
+window.reprintReceipt = function(orderId) {
+  const order = (state.orders || []).find(o => o && (o.id === orderId || String(o.id) === String(orderId)));
+  if (!order) {
+    window.showToast('Order receipt not found.', 'error');
+    return;
+  }
+  window.showReceiptModal(order);
+};
+
+window.triggerPrintReceipt = function() {
+  const container = document.getElementById('receiptPreviewContent');
+  if (!container) return;
+
+  const printFrame = document.getElementById('print-container');
+  if (printFrame) {
+    printFrame.innerHTML = container.innerHTML;
+  }
+  window.print();
+};

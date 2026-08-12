@@ -903,10 +903,10 @@ window.renderReports = function() {
         <div>
           <div class="flex items-center gap-2">
             <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-500/30">Official Audit Reports</span>
-            <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Branded PDF, CSV & Excel</span>
+            <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Branded PDF & Excel</span>
           </div>
           <h2 class="text-xl font-bold text-[#0F172A] mt-1">Daily Audit Report & Historical Subfolders</h2>
-          <p class="text-xs text-[#475569]">Select any day subfolder & filter below to view transactions and extract matching CSV, PDF, or Excel downloads.</p>
+          <p class="text-xs text-[#475569]">Select any day subfolder & filter below to view transactions and extract matching PDF or Excel downloads.</p>
         </div>
       </div>
 
@@ -925,9 +925,6 @@ window.renderReports = function() {
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <button onclick="exportDailyReportPDF('${selectedDate}', '${selectedSub}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 w-full sm:w-auto">
             <span>🖨️</span> PDF (A4)
-          </button>
-          <button onclick="exportDailyReportCSV('${selectedDate}', '${selectedSub}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 w-full sm:w-auto">
-            <span>📊</span> CSV
           </button>
           <button onclick="exportDailyReportExcel('${selectedDate}', '${selectedSub}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 w-full sm:w-auto">
             <span>📈</span> Excel
