@@ -289,11 +289,13 @@ function renderDashboardOrderRows() {
       modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🏥 Inpatient</span>';
     }
 
-    let clientText = 'Walk-in Customer';
+    let clientText = o.payerName || o.customerName || 'Walk-in Customer';
     if (isPatient) {
       clientText = `🏥 Inpatient Order (${o.roomNumber}${o.mealType ? ` - ${o.mealType}` : ''})`;
     } else if (o.employeeName) {
       clientText = `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>`;
+    } else if (o.payerName || o.customerName) {
+      clientText = `${o.payerName || o.customerName}`;
     }
 
     const isVoided = o.status === 'VOIDED';

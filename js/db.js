@@ -95,7 +95,7 @@ window.pullCloudDataToState = async function() {
       }));
       const localProds = Array.isArray(state.products) ? state.products : [];
       const unSyncedProds = localProds.filter(loc => !fetchedProds.some(rem => rem.id === loc.id));
-      state.products = [...fetchedProds, ...unSyncedProds];
+      state.products = [...fetchedProds, ...unSyncedProds].filter(p => p && !/^p\d+$/.test(String(p.id)));
     }
 
     // 3. Fetch Departments
@@ -109,7 +109,7 @@ window.pullCloudDataToState = async function() {
       }));
       const localDepts = Array.isArray(state.departments) ? state.departments : [];
       const unSyncedDepts = localDepts.filter(loc => !fetchedDepts.some(rem => rem.id === loc.id));
-      state.departments = [...fetchedDepts, ...unSyncedDepts];
+      state.departments = [...fetchedDepts, ...unSyncedDepts].filter(d => d && !/^dept-\d+$/.test(String(d.id)));
     }
 
     // 4. Fetch Employees — Smart Merge so locally created staff NEVER vanish
@@ -128,7 +128,7 @@ window.pullCloudDataToState = async function() {
       const unSyncedEmps = localEmps.filter(loc => 
         !fetchedEmps.some(rem => rem.id === loc.id || (loc.staffId && rem.staffId === loc.staffId))
       );
-      state.employees = [...fetchedEmps, ...unSyncedEmps];
+      state.employees = [...fetchedEmps, ...unSyncedEmps].filter(e => e && !/^emp-\d+$/.test(String(e.id)));
     }
 
     // 5. Fetch Rooms
@@ -143,7 +143,7 @@ window.pullCloudDataToState = async function() {
       const unSyncedRooms = localRooms.filter(loc => 
         !fetchedRooms.some(rem => rem.id === loc.id || (loc.roomNumber && rem.room_number === loc.roomNumber))
       );
-      state.rooms = [...fetchedRooms, ...unSyncedRooms];
+      state.rooms = [...fetchedRooms, ...unSyncedRooms].filter(r => r && !/^room-\d+$/.test(String(r.id)));
     }
 
     // Update local storage backup

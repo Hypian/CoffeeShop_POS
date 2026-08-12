@@ -519,11 +519,13 @@ window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = n
       if (o.checkoutMode === 'INSTITUTIONAL_TAB') mode = 'Staff Tab';
       else if (o.checkoutMode === 'PATIENT_ROOM_ORDER') mode = 'Inpatient Room Order';
 
-      let client = 'Walk-in Customer';
+      let client = o.payerName || o.customerName || 'Walk-in Customer';
       if (o.checkoutMode === 'PATIENT_ROOM_ORDER') {
         client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}`;
       } else if (o.employeeName) {
         client = `${o.employeeName} (${o.staffId || 'N/A'}) - ${o.departmentName || ''}`;
+      } else if (o.payerName || o.customerName) {
+        client = `${o.payerName || o.customerName}`;
       }
 
       const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join('; ') : 'N/A';
@@ -788,9 +790,10 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
         if (isDirect) modeLabel = '💵 Direct';
         else if (isPatient) modeLabel = '🏥 Room';
 
-        let clientText = 'Walk-in';
+        let clientText = o.payerName || o.customerName || 'Walk-in';
         if (isPatient) clientText = `Room ${o.roomNumber || ''}`;
         else if (o.employeeName) clientText = `${o.employeeName} (${o.staffId || ''})`;
+        else if (o.payerName || o.customerName) clientText = `${o.payerName || o.customerName}`;
 
         const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
         const bgColor = isVoided ? '#FEF2F2' : (index % 2 === 0 ? '#FFFFFF' : '#F8FAFC');
@@ -1060,11 +1063,13 @@ window.renderReports = function() {
                   modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🏥 Inpatient</span>';
                 }
 
-                let clientText = 'Walk-in Customer';
+                let clientText = o.payerName || o.customerName || 'Walk-in Customer';
                 if (isPatient) {
                   clientText = `🏥 Inpatient Order (${o.roomNumber}${o.mealType ? ` - ${o.mealType}` : ''})`;
                 } else if (o.employeeName) {
                   clientText = `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>`;
+                } else if (o.payerName || o.customerName) {
+                  clientText = `${o.payerName || o.customerName}`;
                 }
 
                 const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';

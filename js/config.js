@@ -16,52 +16,11 @@ const DEFAULT_CATEGORIES = [
   { id: "cat-pastry", name: "Breakfast & Pastries", icon: "🥐" }
 ];
 
-const DEFAULT_PRODUCTS = [
-  { id: "p1", name: "Espresso Single", categoryId: "cat-coffee", price: 2000, icon: "☕", stock: 150 },
-  { id: "p2", name: "Café Latte", categoryId: "cat-coffee", price: 3000, icon: "🥛", stock: 120 },
-  { id: "p3", name: "Cappuccino", categoryId: "cat-coffee", price: 3000, icon: "☕", stock: 100 },
-  { id: "p4", name: "African Tea (Pot)", categoryId: "cat-coffee", price: 2500, icon: "🫖", stock: 80 },
-  { id: "p5", name: "Fresh Passion Juice", categoryId: "cat-beverage", price: 2500, icon: "🥤", stock: 60 },
-  { id: "p6", name: "Mineral Water 500ml", categoryId: "cat-beverage", price: 1000, icon: "💧", stock: 300 },
-  { id: "p7", name: "Beef Stroganoff & Rice", categoryId: "cat-[#F59E0B]", price: 6500, icon: "🥩", stock: 40 },
-  { id: "p8", name: "Grilled Chicken Breast", categoryId: "cat-[#F59E0B]", price: 7000, icon: "🍗", stock: 35 },
-  { id: "p9", name: "Hospital Special Diet Soup", categoryId: "cat-[#F59E0B]", price: 4000, icon: "🥣", stock: 50 },
-  { id: "p10", name: "Butter Croissant", categoryId: "cat-pastry", price: 2000, icon: "🥐", stock: 45 },
-  { id: "p11", name: "Omelette & Toast", categoryId: "cat-pastry", price: 3500, icon: "🍳", stock: 50 }
-];
-
-const DEFAULT_DEPARTMENTS = [
-  { id: "dept-1", code: "NURS", name: "NURSING & PATIENT CARE", monthlyCreditLimit: 150000 },
-  { id: "dept-2", code: "SURG", name: "SURGERY & OPERATING THEATRE", monthlyCreditLimit: 200000 },
-  { id: "dept-3", code: "LAB", name: "LABORATORY & PATHOLOGY", monthlyCreditLimit: 120000 },
-  { id: "dept-4", code: "RAD", name: "RADIOLOGY & IMAGING", monthlyCreditLimit: 120000 },
-  { id: "dept-5", code: "PHARM", name: "PHARMACY SERVICES", monthlyCreditLimit: 100000 },
-  { id: "dept-6", code: "ADMIN", name: "EXECUTIVE & ADMINISTRATION", monthlyCreditLimit: 250000 }
-];
-
-const DEFAULT_EMPLOYEES = [
-  { id: "emp-1", staffId: "NURS-001", fullName: "ALICE MUKAMANA", departmentId: "dept-1", currentBalance: 25000 },
-  { id: "emp-2", staffId: "NURS-002", fullName: "PATRICK BIZIMANA", departmentId: "dept-1", currentBalance: 0 },
-  { id: "emp-3", staffId: "SURG-001", fullName: "DR. ERIC NWOSU", departmentId: "dept-2", currentBalance: 42000 },
-  { id: "emp-4", staffId: "LAB-001", fullName: "CLAUDE NSHIMIYIMANA", departmentId: "dept-3", currentBalance: 12000 },
-  { id: "emp-5", staffId: "ADMIN-001", fullName: "JEANNETTE UWIMANA", departmentId: "dept-6", currentBalance: 0 }
-];
-
-const DEFAULT_ROOMS = [
-  { id: "room-101", roomNumber: "Room 101", tier: "Normal Room", status: "Occupied" },
-  { id: "room-102", roomNumber: "Room 102", tier: "Normal Room", status: "Available" },
-  { id: "room-201", roomNumber: "Room 201", tier: "Private Room", status: "Occupied" },
-  { id: "room-202", roomNumber: "Room 202", tier: "Private Room", status: "Available" },
-  { id: "room-301", roomNumber: "VIP 301", tier: "VIP Room", status: "Occupied" },
-  { id: "room-401", roomNumber: "VVIP Suite 401", tier: "VVIP Room", status: "Occupied" }
-];
+const DEFAULT_PRODUCTS = [];
+const DEFAULT_DEPARTMENTS = [];
+const DEFAULT_EMPLOYEES = [];
+const DEFAULT_ROOMS = [];
 
 const DEFAULT_USERS = [
-  { id: "u-admin", username: "admin", password: "Dmc@123", passwordHash: "0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb", role: "admin", name: "System Administrator", fullName: "SYSTEM ADMINISTRATOR", status: "APPROVED", createdAt: "2026-08-01T08:00:00.000Z" },
-  { id: "u-cashier", username: "cashier", password: "cashier123", passwordHash: "9049a04a3901b0b7aa8df6c2763f9157a31b4ab4b6008b8b0932267f8976451e", role: "cashier", name: "Main Cashier", fullName: "ERIC MUGISHA (MAIN CASHIER)", status: "APPROVED", createdAt: "2026-08-01T09:00:00.000Z" },
-  { id: "u-claire", username: "claire", password: "claire123", passwordHash: "37a3e83726aa9d5697d3375d85177360f38254407ac33df03e45db0bff0aea71", role: "cashier", name: "Marie Claire", fullName: "MARIE CLAIRE (SHIFT CASHIER)", status: "APPROVED", createdAt: "2026-08-02T10:00:00.000Z" },
-  { id: "u-jean", username: "jean", password: "jean123", passwordHash: "6f9968f5395fc05c000c078d08f698a37ff9ad619cb799173bc3278022adc219", role: "waiter", name: "Jean Paul", fullName: "JEAN PAUL (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-03T11:00:00.000Z" },
-  { id: "u-grace", username: "grace", password: "grace123", passwordHash: "d53ecaf3fc441a2086dc0cdc26692699dc8e12dd80f329414d605f1cdc4da3df", role: "waiter", name: "Grace Uwase", fullName: "GRACE UWASE (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-04T12:00:00.000Z" },
-  { id: "u-david", username: "david", password: "david123", passwordHash: "0f14089313b20c1723ec1d660b0aaa4f473cf5b321cd370f2d48b7bcf9a7b234", role: "waiter", name: "David Kwizera", fullName: "DAVID KWIZERA (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-05T14:00:00.000Z" },
-  { id: "u-samuel", username: "samuel", password: "samuel123", passwordHash: "58926d6353b450f6555479cb6d1a41495c3704ec5bcb965278e208aff4776d67", role: "waiter", name: "Samuel Habimana", fullName: "SAMUEL HABIMANA", status: "PENDING_APPROVAL", createdAt: "2026-08-11T16:30:00.000Z" }
+  { id: "u-admin", username: "admin", password: "Dmc@123", passwordHash: "0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb", role: "admin", name: "System Administrator", fullName: "SYSTEM ADMINISTRATOR", status: "APPROVED", createdAt: "2026-08-01T08:00:00.000Z" }
 ];

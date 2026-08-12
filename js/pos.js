@@ -198,6 +198,9 @@ window.processDirectPayment = function() {
     if (window.checkAutoRollover) window.checkAutoRollover();
     const method = document.getElementById('directPaymentMethod').value;
     const totals = calculateCartTotals();
+    const rawPayer = (document.getElementById('directPayerName')?.value || document.getElementById('directMomoNumber')?.value || '').trim().toUpperCase();
+    const payerName = rawPayer || 'DIRECT CUSTOMER';
+
     let paymentDetails = '';
 
     if (method === 'CASH') {
@@ -207,14 +210,13 @@ window.processDirectPayment = function() {
         state.isProcessingPayment = false;
         return;
       }
-      paymentDetails = `Cash (${formatMoney(tendered)} tendered, ${formatMoney(tendered - totals.total)} change)`;
+      paymentDetails = `Cash (${formatMoney(tendered)} tendered, ${formatMoney(tendered - totals.total)} change) - Payer: ${payerName}`;
     } else if (method === 'CARD') {
       const cardRef = document.getElementById('directCardRef')?.value.trim() || 'POS-TERMINAL-OK';
-      paymentDetails = `Card Payment (${cardRef})`;
+      paymentDetails = `Card Payment (${cardRef}) - Payer: ${payerName}`;
     } else if (method === 'MOBILE_MONEY') {
       const provider = document.getElementById('directMomoProvider')?.value || 'MTN MoMo';
-      const phone = document.getElementById('directMomoNumber')?.value.trim();
-      paymentDetails = `${provider} ${phone ? `(${phone})` : '(Paid)'}`;
+      paymentDetails = `${provider} (Payer: ${payerName})`;
     }
 
     const order = {
@@ -224,6 +226,8 @@ window.processDirectPayment = function() {
       checkoutMode: 'DIRECT_PAYMENT',
       paymentMethod: method,
       paymentDetails: paymentDetails,
+      payerName: payerName,
+      customerName: payerName,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,

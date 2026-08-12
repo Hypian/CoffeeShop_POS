@@ -207,11 +207,14 @@ window.loadStorageData = function() {
     try {
       const parsed = JSON.parse(d);
       state.categories = Array.isArray(parsed.categories) ? parsed.categories : [...DEFAULT_CATEGORIES];
-      state.products = Array.isArray(parsed.products) ? parsed.products : [...DEFAULT_PRODUCTS];
-      state.departments = Array.isArray(parsed.departments) ? parsed.departments : [...DEFAULT_DEPARTMENTS];
-      state.employees = Array.isArray(parsed.employees) ? parsed.employees : [...DEFAULT_EMPLOYEES];
-      state.rooms = Array.isArray(parsed.rooms) ? parsed.rooms : [...DEFAULT_ROOMS];
-      state.orders = Array.isArray(parsed.orders) ? parsed.orders : [];
+      
+      // Filter out lingering demo/sample placeholder items from storage
+      state.products = (Array.isArray(parsed.products) ? parsed.products : []).filter(p => p && !/^p\d+$/.test(String(p.id)));
+      state.departments = (Array.isArray(parsed.departments) ? parsed.departments : []).filter(d => d && !/^dept-\d+$/.test(String(d.id)));
+      state.employees = (Array.isArray(parsed.employees) ? parsed.employees : []).filter(e => e && !/^emp-\d+$/.test(String(e.id)));
+      state.rooms = (Array.isArray(parsed.rooms) ? parsed.rooms : []).filter(r => r && !/^room-\d+$/.test(String(r.id)));
+      state.orders = (Array.isArray(parsed.orders) ? parsed.orders : []).filter(o => o && !/^ORD-8821\d+$/.test(String(o.id)));
+      
       state.auditLogs = Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [];
       state.archives = Array.isArray(parsed.archives) ? parsed.archives : [];
       state.tabReceipts = Array.isArray(parsed.tabReceipts) ? parsed.tabReceipts : [];
@@ -219,10 +222,10 @@ window.loadStorageData = function() {
     } catch(e) {
       console.error("Failed to parse storage data:", e);
       state.categories = [...DEFAULT_CATEGORIES];
-      state.products = [...DEFAULT_PRODUCTS];
-      state.departments = [...DEFAULT_DEPARTMENTS];
-      state.employees = [...DEFAULT_EMPLOYEES];
-      state.rooms = [...DEFAULT_ROOMS];
+      state.products = [];
+      state.departments = [];
+      state.employees = [];
+      state.rooms = [];
       state.orders = [];
       state.auditLogs = [];
       state.archives = [];
@@ -230,103 +233,17 @@ window.loadStorageData = function() {
       state.lastActiveDate = new Date().toLocaleDateString();
     }
   } else {
+    // Initial clean boot (storage key never existed)
     state.categories = [...DEFAULT_CATEGORIES];
-    state.products = [...DEFAULT_PRODUCTS];
-    state.departments = [...DEFAULT_DEPARTMENTS];
-    state.employees = [...DEFAULT_EMPLOYEES];
-    state.rooms = [...DEFAULT_ROOMS];
+    state.products = [];
+    state.departments = [];
+    state.employees = [];
+    state.rooms = [];
     state.orders = [];
     state.auditLogs = [];
     state.archives = [];
     state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
-  }
-
-  // Populate sample orders if no orders exist, to ensure historical days have data out of the box
-  if (!state.orders || state.orders.length === 0) {
-    const todayObj = new Date();
-    const yesterdayObj = new Date(todayObj.getTime() - 86400000);
-    const formatDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const todayKey = formatDateKey(todayObj);
-    const yesterdayKey = formatDateKey(yesterdayObj);
-
-    state.orders = [
-      {
-        id: 'ORD-882101',
-        timestamp: `${yesterdayKey}T08:30:00.000Z`,
-        cashierName: 'CHIEF CASHIER',
-        checkoutMode: 'DIRECT_PAYMENT',
-        paymentMethod: 'CASH',
-        items: [
-          { productId: 'p1', name: 'Café Espresso', price: 2000, qty: 2, subtotal: 4000 },
-          { productId: 'p5', name: 'Butter Croissant', price: 1500, qty: 1, subtotal: 1500 }
-        ],
-        total: 5500,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'ORD-882102',
-        timestamp: `${yesterdayKey}T12:15:00.000Z`,
-        cashierName: 'CHIEF CASHIER',
-        checkoutMode: 'INSTITUTIONAL_TAB',
-        paymentMethod: 'TAB',
-        employeeName: 'JEAN-PAUL HABIMANA',
-        staffId: 'EMP-1001',
-        departmentName: 'ENGINEERING & MAINTENANCE',
-        items: [
-          { productId: 'p2', name: 'Cappuccino', price: 2500, qty: 1, subtotal: 2500 },
-          { productId: 'p6', name: 'Club Sandwich', price: 4500, qty: 1, subtotal: 4500 }
-        ],
-        total: 7000,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'ORD-882103',
-        timestamp: `${yesterdayKey}T18:45:00.000Z`,
-        cashierName: 'CHIEF CASHIER',
-        checkoutMode: 'PATIENT_ROOM_ORDER',
-        paymentMethod: 'ROOM_PERK',
-        roomNumber: 'Room 204 (VIP)',
-        mealType: 'Dinner',
-        billingType: 'COVERED_PERK',
-        patientNotes: 'Patient Soft Diet',
-        items: [
-          { productId: 'p3', name: 'Fresh Fruit Juice', price: 3000, qty: 1, subtotal: 3000 },
-          { productId: 'p7', name: 'Chicken Soup', price: 5000, qty: 1, subtotal: 5000 }
-        ],
-        total: 8000,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'ORD-882104',
-        timestamp: `${todayKey}T09:10:00.000Z`,
-        cashierName: 'CHIEF CASHIER',
-        checkoutMode: 'DIRECT_PAYMENT',
-        paymentMethod: 'MOBILE_MONEY',
-        items: [
-          { productId: 'p1', name: 'Café Latte', price: 2500, qty: 2, subtotal: 5000 }
-        ],
-        total: 5000,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'ORD-882105',
-        timestamp: `${todayKey}T13:20:00.000Z`,
-        cashierName: 'CHIEF CASHIER',
-        checkoutMode: 'INSTITUTIONAL_TAB',
-        paymentMethod: 'TAB',
-        employeeName: 'DR. MARIE CLAIRE',
-        staffId: 'EMP-1002',
-        departmentName: 'LABORATORY & PATHOLOGY',
-        items: [
-          { productId: 'p4', name: 'Black Tea', price: 1500, qty: 1, subtotal: 1500 },
-          { productId: 'p6', name: 'Club Sandwich', price: 4500, qty: 1, subtotal: 4500 }
-        ],
-        total: 6000,
-        status: 'COMPLETED'
-      }
-    ];
-    saveData();
   }
 
   // Initialize Unified Cloud Sync & Start 10s Fallback Sync Polling

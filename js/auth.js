@@ -9,10 +9,15 @@ async function hashPassword(str) {
 
 function seedDefaultUsers() {
   let existingUsers = JSON.parse(localStorage.getItem('dmch_resto_users'));
-  if (!existingUsers || existingUsers.length === 0) {
+  const sampleUserIds = ['u-cashier', 'u-claire', 'u-jean', 'u-grace', 'u-david', 'u-samuel'];
+
+  if (!existingUsers) {
     existingUsers = [...DEFAULT_USERS];
   } else {
-    // Ensure admin user credentials (username: 'admin', password: 'Dmc@123') and APPROVED status
+    // Purge sample placeholder users from storage
+    existingUsers = existingUsers.filter(u => u && !sampleUserIds.includes(u.id));
+
+    // Ensure admin user credentials (username: 'admin', password: 'Dmc@123') and APPROVED status always exist
     const adminUser = existingUsers.find(u => u.username && u.username.toLowerCase() === 'admin');
     if (adminUser) {
       adminUser.password = 'Dmc@123';
@@ -32,13 +37,6 @@ function seedDefaultUsers() {
         createdAt: new Date().toISOString()
       });
     }
-
-    // Ensure default in-service cashiers and waiters exist in the users list
-    DEFAULT_USERS.forEach(defUser => {
-      if (!existingUsers.some(u => u.username && u.username.toLowerCase() === defUser.username.toLowerCase())) {
-        existingUsers.push({ ...defUser });
-      }
-    });
 
     // Ensure every existing user has a status and fullName property
     existingUsers.forEach(u => {
