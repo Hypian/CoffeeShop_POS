@@ -525,6 +525,8 @@ window.showReceiptModal = function(order) {
     checkoutLabel = `PATIENT PERK: ${order.roomNumber || 'Room'} (${order.mealType || 'Meal'})`;
   }
 
+  const payerName = order.payerName || order.customerName || (order.checkoutMode === 'DIRECT_PAYMENT' ? 'Direct Customer' : '');
+
   const itemsHtml = Array.isArray(order.items) ? order.items.map(item => `
     <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
       <span style="flex:1;">${item.qty}x ${item.name}</span>
@@ -547,6 +549,7 @@ window.showReceiptModal = function(order) {
       <div><strong>Date:</strong> ${dateStr}</div>
       <div><strong>Cashier:</strong> ${order.cashierName || order.cashier || 'Staff'}</div>
       <div><strong>Mode:</strong> ${checkoutLabel}</div>
+      ${payerName ? `<div><strong>Client / Payer:</strong> ${payerName}</div>` : ''}
       ${order.patientNotes ? `<div><strong>Notes:</strong> ${order.patientNotes}</div>` : ''}
     </div>
 
@@ -558,6 +561,13 @@ window.showReceiptModal = function(order) {
       <span>TOTAL AMOUNT:</span>
       <span style="font-size:14px; font-weight:900; color:#D97706;">${formatMoney(order.total)}</span>
     </div>
+
+    ${order.checkoutMode === 'INSTITUTIONAL_TAB' ? `
+      <div style="margin-top:16px; border-top:1px dashed #000; padding-top:8px; text-align:center;">
+        <div style="font-size:10px; font-weight:bold; color:#0F172A; margin-bottom:14px;">Staff Signature: _______________________</div>
+        <div style="font-size:8px; color:#475569; font-weight:700; text-transform:uppercase;">(Institutional Payroll Deduction Authorization)</div>
+      </div>
+    ` : ''}
 
     <div style="font-size:10px; color:#475569; text-align:center; margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
       <div>Thank you for dining at DMCH Resto!</div>
@@ -583,7 +593,13 @@ window.triggerPrintReceipt = function() {
 
   const printFrame = document.getElementById('print-container');
   if (printFrame) {
-    printFrame.innerHTML = container.innerHTML;
+    printFrame.classList.remove('hidden');
+    printFrame.style.display = 'block';
+    printFrame.innerHTML = `
+      <div class="receipt-80mm" style="padding:10px; font-family:Courier, monospace; background:#fff; color:#000; width:100%; max-width:80mm; margin:0 auto;">
+        ${container.innerHTML}
+      </div>
+    `;
   }
   window.print();
 };
