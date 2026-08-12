@@ -2,7 +2,36 @@
    DMCH Resto POS & MIS — Application Router & Main Bootstrapper
    ========================================================================== */
 
+// Hardened RBAC-enforced view router
+// Defines the allowed views per role — any unlisted view is silently blocked.
+const ROLE_ALLOWED_VIEWS = {
+  admin:   ['pos', 'dashboard', 'ledgers', 'products', 'reports', 'users'],
+  cashier: ['pos', 'dashboard', 'ledgers', 'products', 'reports'],
+  waiter:  ['pos']
+};
+
 window.switchView = function(viewName) {
+  const role = (state.currentUser && state.currentUser.role) || 'waiter';
+  const allowed = ROLE_ALLOWED_VIEWS[role] || ['pos'];
+
+  // RBAC Guard — block unauthorized view access
+  if (!allowed.includes(viewName)) {
+    // Log unauthorized access attempt
+    if (window.addSecurityAuditLog) {
+      window.addSecurityAuditLog(
+        'ACCESS',
+        'Unauthorized View Access Attempt',
+        `User @${(state.currentSession && state.currentSession.username) || 'unknown'} (${role}) attempted to access restricted view: "${viewName}"`,
+        'WARNING'
+      );
+    }
+    if (window.showToast) {
+      window.showToast(`Access denied: "${viewName}" view requires elevated permissions.`, 'error');
+    }
+    // Redirect to POS terminal — the universal safe default
+    viewName = 'pos';
+  }
+
   state.activeTab = viewName;
   document.querySelectorAll('.nav-tab').forEach(el => {
     if (el.dataset.view === viewName) {
@@ -38,6 +67,21 @@ window.toggleMobileMenu = function() {
 };
 
 window.renderAllViews = function() {
+  // Core POS components always rendered
+  if (window.renderCategoryPills) window.renderCategoryPills();
+  if (window.renderProductGrid) window.renderProductGrid();
+  if (window.renderCart) window.renderCart();
+
+  // Render active tab view to eliminate unnecessary DOM recalculations
+  const activeTab = state.activeTab || 'pos';
+  if (activeTab === 'dashboard' && window.renderDashboard) window.renderDashboard();
+  else if (activeTab === 'ledgers' && window.renderDepartmentLedgers) window.renderDepartmentLedgers();
+  else if (activeTab === 'products' && window.renderProductManagement) window.renderProductManagement();
+  else if (activeTab === 'reports' && window.renderReports) window.renderReports();
+  else if (activeTab === 'users' && window.renderUsers) window.renderUsers();
+};
+
+window.forceRenderAllViews = function() {
   if (window.renderCategoryPills) window.renderCategoryPills();
   if (window.renderProductGrid) window.renderProductGrid();
   if (window.renderCart) window.renderCart();
@@ -45,6 +89,7 @@ window.renderAllViews = function() {
   if (window.renderDepartmentLedgers) window.renderDepartmentLedgers();
   if (window.renderProductManagement) window.renderProductManagement();
   if (window.renderReports) window.renderReports();
+  if (window.renderUsers) window.renderUsers();
 };
 
 window.setupEventListeners = function() {

@@ -11,8 +11,52 @@ function seedDefaultUsers() {
   let existingUsers = JSON.parse(localStorage.getItem('dmch_resto_users'));
   if (!existingUsers || existingUsers.length === 0) {
     existingUsers = [...DEFAULT_USERS];
-    localStorage.setItem('dmch_resto_users', JSON.stringify(existingUsers));
+  } else {
+    // Ensure admin user credentials (username: 'admin', password: 'Dmc@123') and APPROVED status
+    const adminUser = existingUsers.find(u => u.username && u.username.toLowerCase() === 'admin');
+    if (adminUser) {
+      adminUser.password = 'Dmc@123';
+      adminUser.passwordHash = '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb';
+      adminUser.role = 'admin';
+      adminUser.status = 'APPROVED';
+    } else {
+      existingUsers.unshift({
+        id: 'u-admin',
+        username: 'admin',
+        password: 'Dmc@123',
+        passwordHash: '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb',
+        role: 'admin',
+        name: 'System Administrator',
+        fullName: 'SYSTEM ADMINISTRATOR',
+        status: 'APPROVED',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    // Ensure default in-service cashiers and waiters exist in the users list
+    DEFAULT_USERS.forEach(defUser => {
+      if (!existingUsers.some(u => u.username && u.username.toLowerCase() === defUser.username.toLowerCase())) {
+        existingUsers.push({ ...defUser });
+      }
+    });
+
+    // Ensure every existing user has a status and fullName property
+    existingUsers.forEach(u => {
+      if (!u.status) u.status = 'APPROVED';
+      if (!u.fullName && u.name) u.fullName = u.name.toUpperCase();
+      if (!u.fullName && u.username) u.fullName = u.username.toUpperCase();
+    });
   }
+
+  // CRITICAL FIX: Assign stable id to any user missing one (handles legacy localStorage records)
+  // Without an id, Block/Delete/Reset buttons cannot look up the user by userId
+  existingUsers.forEach((u, i) => {
+    if (!u.id) {
+      u.id = `u-legacy-${(u.username || i).toString().toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+    }
+  });
+
+  localStorage.setItem('dmch_resto_users', JSON.stringify(existingUsers));
 }
 
 function getUsers() {
@@ -21,6 +65,12 @@ function getUsers() {
 
 function saveUsers(users) {
   localStorage.setItem('dmch_resto_users', JSON.stringify(users));
+  if (window.cloudSyncUsers) {
+    window.cloudSyncUsers(users);
+  }
+  if (window.broadcastLiveSync) {
+    window.broadcastLiveSync({ type: 'USERS_UPDATED' });
+  }
 }
 
 function checkExistingSession() {
@@ -81,13 +131,16 @@ function updateUserBadge() {
 }
 
 function applyRolePermissions() {
-  const role = state.currentUser.role || 'waiter';
+  const role = (state.currentUser && state.currentUser.role) || 'waiter';
   document.querySelectorAll('.nav-tab').forEach(el => {
     const view = el.dataset.view;
     let allowed = false;
     
-    if (role === 'admin' || role === 'cashier') {
+    if (role === 'admin') {
+      // Administrator has full access including User Management ('users')
       allowed = true;
+    } else if (role === 'cashier') {
+      allowed = ['pos', 'dashboard', 'ledgers', 'products', 'reports'].includes(view);
     } else if (role === 'waiter') {
       allowed = ['pos'].includes(view);
     }
@@ -136,8 +189,43 @@ window.handleLogin = async function() {
   
   if (!user) {
     errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
+    if (errorIcon) errorIcon.textContent = '❌';
     errorDiv.classList.add('visible');
     passwordInput.value = '';
+    // Security audit — failed login attempt
+    if (window.addSecurityAuditLog) {
+      window.addSecurityAuditLog('AUTH', 'Failed Login Attempt', `Unknown username attempted: "${username}"`, 'WARNING');
+    }
+    return;
+  }
+
+  // Enforce account approval status
+  const userStatus = user.status || 'APPROVED';
+  if (userStatus === 'PENDING_APPROVAL') {
+    if (errorIcon) errorIcon.textContent = '⏳';
+    errorText.textContent = 'Account Pending Approval: Your account request is currently awaiting administrator review. System data access is restricted until approved.';
+    errorDiv.style.background = 'rgba(245,158,11,0.12)';
+    errorDiv.style.color = '#D97706';
+    errorDiv.style.borderColor = 'rgba(245,158,11,0.3)';
+    errorDiv.classList.add('visible');
+    passwordInput.value = '';
+    if (window.addSecurityAuditLog) {
+      window.addSecurityAuditLog('AUTH', 'Blocked Login — Pending Approval', `User @${user.username} (${user.role}) attempted login while PENDING_APPROVAL.`, 'WARNING');
+    }
+    return;
+  }
+
+  if (userStatus === 'DECLINED') {
+    if (errorIcon) errorIcon.textContent = '🚫';
+    errorText.textContent = 'Access Denied: Your account request was declined by the administrator. Please contact management.';
+    errorDiv.style.background = 'rgba(239,68,68,0.12)';
+    errorDiv.style.color = '#EF4444';
+    errorDiv.style.borderColor = 'rgba(239,68,68,0.3)';
+    errorDiv.classList.add('visible');
+    passwordInput.value = '';
+    if (window.addSecurityAuditLog) {
+      window.addSecurityAuditLog('AUTH', 'Blocked Login — Account Declined', `User @${user.username} attempted login with DECLINED account status.`, 'CRITICAL');
+    }
     return;
   }
   
@@ -152,6 +240,10 @@ window.handleLogin = async function() {
   
   showMainApp();
   showToast(`Welcome back, ${session.fullName}!`, 'success');
+  // Security audit — successful login
+  if (window.addSecurityAuditLog) {
+    window.addSecurityAuditLog('AUTH', 'Successful Login', `User @${session.username} (${session.role}) signed in successfully.`, 'INFO');
+  }
 };
 
 window.handleSignup = async function() {
@@ -167,7 +259,12 @@ window.handleSignup = async function() {
   const username = (usernameInput.value || '').trim().toLowerCase();
   const password = (passwordInput.value || '').trim();
   const confirm = (confirmInput.value || '').trim();
-  const role = roleSelect.value;
+  let role = roleSelect ? roleSelect.value : 'waiter';
+
+  // Prevent creation of admin role via sign up form
+  if (role === 'admin') {
+    role = 'cashier';
+  }
   
   if (!fullName || !username || !password || !confirm) {
     errorText.textContent = 'All fields are required.';
@@ -196,9 +293,23 @@ window.handleSignup = async function() {
   }
   
   const hashedPassword = await hashPassword(password);
-  const newUser = { id: `u-${Date.now()}`, username, password: hashedPassword, passwordHash: hashedPassword, fullName: fullName.toUpperCase(), role };
+  const newUser = {
+    id: `u-${Date.now()}`,
+    username,
+    password: hashedPassword,
+    passwordHash: hashedPassword,
+    fullName: fullName.toUpperCase(),
+    role,
+    status: 'PENDING_APPROVAL',
+    createdAt: new Date().toISOString()
+  };
   users.push(newUser);
   saveUsers(users);
+
+  // Security audit — new registration
+  if (window.addSecurityAuditLog) {
+    window.addSecurityAuditLog('USER_MGMT', 'New Account Registration', `New account registered: @${username} (${role}) — status: PENDING_APPROVAL. Awaiting admin review.`, 'INFO');
+  }
   
   fullNameInput.value = '';
   usernameInput.value = '';
@@ -212,11 +323,11 @@ window.handleSignup = async function() {
     const loginErrorText = document.getElementById('loginErrorText');
     const loginErrorIcon = document.getElementById('loginErrorIcon');
     if (loginError && loginErrorText) {
-      if (loginErrorIcon) loginErrorIcon.textContent = '✅';
-      loginErrorText.textContent = 'Account created! Sign in with your credentials.';
-      loginError.style.background = 'rgba(16,185,129,0.12)';
-      loginError.style.color = '#10B981';
-      loginError.style.borderColor = 'rgba(16,185,129,0.2)';
+      if (loginErrorIcon) loginErrorIcon.textContent = '⏳';
+      loginErrorText.textContent = 'Account Created! Your request is pending admin approval before you can sign in.';
+      loginError.style.background = 'rgba(245,158,11,0.12)';
+      loginError.style.color = '#D97706';
+      loginError.style.borderColor = 'rgba(245,158,11,0.3)';
       loginError.classList.add('visible');
     }
   }, 100);
@@ -243,6 +354,10 @@ window.showSignupForm = function() {
 };
 
 window.logout = function() {
+  // Security audit — logout event
+  if (window.addSecurityAuditLog && state.currentSession) {
+    window.addSecurityAuditLog('AUTH', 'User Logout', `User @${state.currentSession.username} (${state.currentSession.role}) signed out.`, 'INFO');
+  }
   document.documentElement.classList.remove('authenticated-session');
   sessionStorage.removeItem('dmch_resto_session');
   sessionStorage.removeItem('coffeeshop_session');

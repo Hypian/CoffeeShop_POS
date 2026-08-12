@@ -418,57 +418,692 @@ function openPrintWindow(html) {
   }, 250);
 }
 
+window.getFilteredOrdersForReport = function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
+  const period = folderPeriod || state.dashboardFolder || 'daily';
+  const dateSub = targetDateStr || state.dashboardTimeSubfolder || state.selectedReportDate || getDateKey(new Date().toISOString());
+  const sub = subfolderFilter || state.dashboardSubfolder || state.selectedReportSubfolder || 'all';
+
+  let orders = getOrdersForPeriod(period, dateSub);
+
+  if (sub === 'direct') {
+    orders = orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT');
+  } else if (sub === 'tab') {
+    orders = orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB');
+  } else if (sub === 'patient') {
+    orders = orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
+  }
+
+  return { orders, period, dateSub, sub };
+};
+
+window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
+  const { orders, dateSub, sub } = getFilteredOrdersForReport(targetDateStr, subfolderFilter, folderPeriod);
+
+  let filterTitle = "ALL RECEIPTS";
+  if (sub === 'direct') filterTitle = "DIRECT SALES (CASH / MOMO / CARD)";
+  else if (sub === 'tab') filterTitle = "INSTITUTIONAL STAFF TABS (PAYROLL DEDUCTIONS)";
+  else if (sub === 'patient') filterTitle = "HOSPITAL INPATIENT ROOM PERKS";
+  else if (sub === 'items') filterTitle = "ITEMIZED PRODUCT SALES LOG";
+
+  let csvContent = "";
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  // Header branding metadata
+  csvContent += `${escapeCsv('DMCH RESTO - DREAM MEDICAL CENTER HOSPITAL')}\n`;
+  csvContent += `${escapeCsv(`DAILY AUDIT REPORT [${filterTitle}] - ${dateSub}`)}\n`;
+  csvContent += `${escapeCsv(`Generated: ${new Date().toLocaleString()}`)}\n\n`;
+
+  if (sub === 'items') {
+    const productMap = {};
+    orders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          const key = item.productId || item.name;
+          if (!productMap[key]) {
+            productMap[key] = { name: item.name || 'Item', qty: 0, revenue: 0 };
+          }
+          productMap[key].qty += (item.qty || 1);
+          productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+        });
+      }
+    });
+
+    const productList = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+    let totalQty = 0;
+    let totalRev = 0;
+
+    csvContent += `${escapeCsv('PRODUCT SALES LOG SUMMARY')}\n`;
+    csvContent += `${escapeCsv('Product Name')},${escapeCsv('Quantity Sold')},${escapeCsv('Total Revenue (RWF)')}\n`;
+
+    productList.forEach(p => {
+      csvContent += [p.name, p.qty, p.revenue].map(escapeCsv).join(',') + '\n';
+      totalQty += p.qty;
+      totalRev += p.revenue;
+    });
+
+    csvContent += `\n${escapeCsv('TOTAL UNITS SOLD')},${totalQty},${escapeCsv('TOTAL REVENUE')},${totalRev}\n`;
+  } else {
+    const revDirect = orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+    const revTab = orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+    const revPatient = orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+    const totalRev = revDirect + revTab + revPatient;
+
+    csvContent += `${escapeCsv('FINANCIAL SUMMARY FOR FILTER')}\n`;
+    csvContent += `${escapeCsv('Metric')},${escapeCsv('Amount (RWF)')}\n`;
+    csvContent += `${escapeCsv('Total Filter Volume')},${totalRev}\n`;
+    csvContent += `${escapeCsv('Direct Sales (Cash/Mobile)')},${revDirect}\n`;
+    csvContent += `${escapeCsv('Institutional Staff Tabs')},${revTab}\n`;
+    csvContent += `${escapeCsv('Hospital Room Perks')},${revPatient}\n`;
+    csvContent += `${escapeCsv('Total Receipts Processed')},${orders.length}\n\n`;
+
+    csvContent += `${escapeCsv('ITEMIZED TRANSACTIONS')}\n`;
+    csvContent += [
+      'Order ID',
+      'Date & Time',
+      'Checkout Mode',
+      'Client / Staff / Room',
+      'Cashier',
+      'Status',
+      'Items Consumed',
+      'Amount (RWF)'
+    ].map(escapeCsv).join(',') + '\n';
+
+    let grandTotal = 0;
+    orders.forEach(o => {
+      const timeStr = new Date(o.timestamp).toLocaleString();
+      let mode = 'Direct Pay';
+      if (o.checkoutMode === 'INSTITUTIONAL_TAB') mode = 'Staff Tab';
+      else if (o.checkoutMode === 'PATIENT_ROOM_ORDER') mode = 'Inpatient Room Order';
+
+      let client = 'Walk-in Customer';
+      if (o.checkoutMode === 'PATIENT_ROOM_ORDER') {
+        client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}`;
+      } else if (o.employeeName) {
+        client = `${o.employeeName} (${o.staffId || 'N/A'}) - ${o.departmentName || ''}`;
+      }
+
+      const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join('; ') : 'N/A';
+      const statusStr = o.status === 'VOIDED' ? `VOIDED (${o.voidReason || 'Voided'})` : 'COMPLETED';
+
+      csvContent += [
+        o.id,
+        timeStr,
+        mode,
+        client,
+        o.cashierName || 'Cashier',
+        statusStr,
+        itemsStr,
+        o.total || 0
+      ].map(escapeCsv).join(',') + '\n';
+
+      if (o.status !== 'VOIDED') grandTotal += (o.total || 0);
+    });
+
+    csvContent += `\n${escapeCsv('GRAND TOTAL')},,,,,,,${grandTotal}\n`;
+  }
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const filename = `Daily_Report_${sub.toUpperCase()}_${dateSub}.csv`;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  if (window.showToast) {
+    window.showToast(`CSV report exported for ${filterTitle}: ${filename}`, 'success');
+  }
+};
+
+window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
+  const { orders, dateSub, sub } = getFilteredOrdersForReport(targetDateStr, subfolderFilter, folderPeriod);
+
+  let filterTitle = "ALL RECEIPTS";
+  if (sub === 'direct') filterTitle = "DIRECT SALES";
+  else if (sub === 'tab') filterTitle = "STAFF TABS";
+  else if (sub === 'patient') filterTitle = "INPATIENT PERKS";
+  else if (sub === 'items') filterTitle = "PRODUCT LOG";
+
+  const workbookTitle = `DAILY MIS AUDIT REPORT [${filterTitle}] - ${dateSub}`;
+
+  if (sub === 'items') {
+    const productMap = {};
+    orders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          const key = item.productId || item.name;
+          if (!productMap[key]) {
+            productMap[key] = { name: item.name || 'Item', qty: 0, revenue: 0 };
+          }
+          productMap[key].qty += (item.qty || 1);
+          productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+        });
+      }
+    });
+
+    const productList = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+    const headers = ["Product Name", "Quantity Sold", "Total Revenue (RWF)"];
+    const rows = [];
+    let grandTotal = 0;
+
+    productList.forEach(p => {
+      rows.push([p.name, p.qty, p.revenue]);
+      grandTotal += p.revenue;
+    });
+
+    rows.push([]);
+    rows.push(["GRAND TOTAL", "", grandTotal]);
+
+    const filename = `Daily_Report_PRODUCT_LOG_${dateSub}.xlsx`;
+    await exportExcelWithLogo(workbookTitle, headers, rows, filename);
+  } else {
+    const headers = ["Order ID", "Date & Time", "Mode", "Client / Staff / Room", "Cashier", "Status", "Items Consumed", "Amount (RWF)"];
+    const rows = [];
+    let grandTotal = 0;
+
+    orders.forEach(o => {
+      const timeStr = new Date(o.timestamp).toLocaleString();
+      let mode = 'Direct Pay';
+      if (o.checkoutMode === 'INSTITUTIONAL_TAB') mode = 'Staff Tab';
+      else if (o.checkoutMode === 'PATIENT_ROOM_ORDER') mode = 'Inpatient Perk';
+
+      let client = 'Walk-in Customer';
+      if (o.checkoutMode === 'PATIENT_ROOM_ORDER') {
+        client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}`;
+      } else if (o.employeeName) {
+        client = `${o.employeeName} (${o.staffId || 'N/A'})`;
+      }
+
+      const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
+      const statusStr = o.status === 'VOIDED' ? 'VOIDED' : 'COMPLETED';
+
+      rows.push([o.id, timeStr, mode, client, o.cashierName || 'Cashier', statusStr, itemsStr, o.total || 0]);
+      if (o.status !== 'VOIDED') grandTotal += (o.total || 0);
+    });
+
+    rows.push([]);
+    rows.push(["GRAND TOTAL", "", "", "", "", "", "", grandTotal]);
+
+    const filename = `Daily_Report_${sub.toUpperCase()}_${dateSub}.xlsx`;
+    await exportExcelWithLogo(workbookTitle, headers, rows, filename);
+  }
+};
+
+window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
+  const { orders, dateSub, sub } = getFilteredOrdersForReport(targetDateStr, subfolderFilter, folderPeriod);
+
+  let filterTitle = "Daily MIS Audit Report (All Receipts)";
+  if (sub === 'direct') filterTitle = "Daily Direct Sales Report (Cash / Momo / Card)";
+  else if (sub === 'tab') filterTitle = "Daily Staff Tabs Audit Report (Payroll Deductions)";
+  else if (sub === 'patient') filterTitle = "Daily Inpatient Catering Statement (Room Perks)";
+  else if (sub === 'items') filterTitle = "Itemized Product Sales Log Report";
+
+  const revDirect = orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+  const revTab = orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+  const revPatient = orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && o.status !== 'VOIDED').reduce((s,o)=>s+(o.total||0),0);
+  const totalRev = revDirect + revTab + revPatient;
+
+  const displayDate = new Date(dateSub + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  let printHtml = `
+    <div style="font-family:sans-serif; color:#0F172A; padding:24px; max-width:900px; margin:0 auto; background:#fff;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #0F172A; padding-bottom:14px; margin-bottom:20px;">
+        <div>
+          <img src="${APP_LOGO_DATA_URI}" style="max-height:55px; width:auto; display:block; margin-bottom:8px;" alt="Logo">
+          <h2 style="margin:0; font-size:22px; font-weight:800; color:#0F172A;">DMCH RESTO</h2>
+          <p style="margin:2px 0 0 0; font-size:12px; color:#475569; font-weight:600;">Dream Medical Center Hospital — Staff Lounge & Cafeteria</p>
+        </div>
+        <div style="text-align:right;">
+          <h1 style="margin:0; font-size:20px; font-weight:800; color:#0F172A;">${filterTitle}</h1>
+          <div style="display:inline-block; background:#FEF3C7; color:#D97706; border:1px solid #F59E0B; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold; margin-top:6px;">
+            Date: ${displayDate} | Filter: ${sub.toUpperCase()}
+          </div>
+          <p style="margin:6px 0 0 0; font-size:11px; color:#64748B;">Generated: ${new Date().toLocaleString()}</p>
+        </div>
+      </div>
+  `;
+
+  if (sub === 'items') {
+    const productMap = {};
+    orders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          const key = item.productId || item.name;
+          if (!productMap[key]) {
+            productMap[key] = { name: item.name || 'Item', qty: 0, revenue: 0 };
+          }
+          productMap[key].qty += (item.qty || 1);
+          productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+        });
+      }
+    });
+
+    const productList = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+    let totalQty = 0;
+    let totalRevProduct = 0;
+
+    printHtml += `
+      <div style="margin-bottom:24px;">
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Product Sales Breakdown</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#0F172A; color:#FFFFFF;">
+              <th style="padding:8px; text-align:left;">Product Name</th>
+              <th style="padding:8px; text-align:center;">Quantity Sold</th>
+              <th style="padding:8px; text-align:right;">Total Revenue (RWF)</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (productList.length > 0) {
+      productList.forEach((p, idx) => {
+        totalQty += p.qty;
+        totalRevProduct += p.revenue;
+        const bgColor = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+        printHtml += `
+          <tr style="background:${bgColor}; border-bottom:1px solid #E2E8F0;">
+            <td style="padding:8px; font-weight:bold;">${p.name}</td>
+            <td style="padding:8px; text-align:center; font-family:monospace;">${p.qty} units</td>
+            <td style="padding:8px; text-align:right; font-family:monospace; font-weight:bold; color:#D97706;">${formatMoney(p.revenue)}</td>
+          </tr>
+        `;
+      });
+
+      printHtml += `
+        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #F59E0B;">
+          <td style="padding:10px;">TOTAL (${productList.length} Products)</td>
+          <td style="padding:10px; text-align:center; font-family:monospace;">${totalQty} Total Units</td>
+          <td style="text-align:right; padding:10px; font-size:14px; color:#D97706; font-family:monospace;">${formatMoney(totalRevProduct)}</td>
+        </tr>
+      `;
+    } else {
+      printHtml += `<tr><td colspan="3" style="padding:20px; text-align:center; font-style:italic; color:#64748B;">No product sales recorded for this date and filter.</td></tr>`;
+    }
+
+    printHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else {
+    printHtml += `
+      <div style="margin-bottom:24px;">
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Financial Breakdown</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <tr style="background:#F8FAFC; border:1px solid #CBD5E1;">
+            <td style="padding:10px; font-weight:bold;">Total Filter Volume</td>
+            <td style="padding:10px; font-weight:extrabold; text-align:right; color:#10B981; font-size:15px;">${formatMoney(totalRev)}</td>
+          </tr>
+          <tr style="border:1px solid #E2E8F0;">
+            <td style="padding:8px 10px;">💵 Direct Sales (Cash & Mobile Register)</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#3B82F6;">${formatMoney(revDirect)}</td>
+          </tr>
+          <tr style="border:1px solid #E2E8F0;">
+            <td style="padding:8px 10px;">💳 Institutional Staff Tabs (Payroll Deductions)</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#F59E0B;">${formatMoney(revTab)}</td>
+          </tr>
+          <tr style="border:1px solid #E2E8F0;">
+            <td style="padding:8px 10px;">🏥 Hospital Inpatient Catering (Covered Room Perks)</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#8B5CF6;">${formatMoney(revPatient)}</td>
+          </tr>
+          <tr style="background:#F8FAFC; border:1px solid #CBD5E1; font-weight:bold;">
+            <td style="padding:8px 10px;">Total Receipts Processed</td>
+            <td style="padding:8px 10px; text-align:right;">${orders.length} Orders</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Itemized Daily Transactions (${orders.length})</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#0F172A; color:#FFFFFF;">
+              <th style="padding:8px; text-align:left;">Order ID</th>
+              <th style="padding:8px; text-align:left;">Time</th>
+              <th style="padding:8px; text-align:left;">Mode</th>
+              <th style="padding:8px; text-align:left;">Client / Staff</th>
+              <th style="padding:8px; text-align:left;">Items Consumed</th>
+              <th style="padding:8px; text-align:right;">Amount (RWF)</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (orders.length > 0) {
+      orders.forEach((o, index) => {
+        const timeStr = new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
+        const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
+        const isVoided = o.status === 'VOIDED';
+
+        let modeLabel = '💳 Staff Tab';
+        if (isDirect) modeLabel = '💵 Direct';
+        else if (isPatient) modeLabel = '🏥 Room';
+
+        let clientText = 'Walk-in';
+        if (isPatient) clientText = `Room ${o.roomNumber || ''}`;
+        else if (o.employeeName) clientText = `${o.employeeName} (${o.staffId || ''})`;
+
+        const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
+        const bgColor = isVoided ? '#FEF2F2' : (index % 2 === 0 ? '#FFFFFF' : '#F8FAFC');
+
+        printHtml += `
+          <tr style="background:${bgColor}; border-bottom:1px solid #E2E8F0;">
+            <td style="padding:8px; font-family:monospace; font-weight:bold;">${o.id}${isVoided ? ' (VOID)' : ''}</td>
+            <td style="padding:8px;">${timeStr}</td>
+            <td style="padding:8px;">${modeLabel}</td>
+            <td style="padding:8px; font-weight:600;">${clientText}</td>
+            <td style="padding:8px;">${itemsStr}</td>
+            <td style="padding:8px; text-align:right; font-family:monospace; font-weight:bold; ${isVoided ? 'text-decoration:line-through; color:#94A3B8;' : ''}">${formatMoney(o.total)}</td>
+          </tr>
+        `;
+      });
+
+      printHtml += `
+        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #F59E0B;">
+          <td colspan="4" style="padding:10px;">GRAND TOTAL (${orders.length} Transactions)</td>
+          <td style="padding:10px;">Filter Volume</td>
+          <td style="text-align:right; padding:10px; font-size:14px; color:#D97706; font-family:monospace;">${formatMoney(totalRev)}</td>
+        </tr>
+      `;
+    } else {
+      printHtml += `<tr><td colspan="6" style="padding:20px; text-align:center; font-style:italic; color:#64748B;">No transactions recorded for this date and filter.</td></tr>`;
+    }
+
+    printHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  printHtml += `
+      <div style="margin-top:50px; display:flex; justify-content:space-between; font-size:13px;">
+        <div style="width: 42%;">
+          <p style="margin-bottom:40px; font-weight:bold;">Prepared By (Cashier / Shift Supervisor):</p>
+          <p style="border-top:1px solid #000; padding-top:5px;">Name, Date & Signature</p>
+        </div>
+        <div style="width: 42%;">
+          <p style="margin-bottom:40px; font-weight:bold;">Approved By (Resto Manager / HR):</p>
+          <p style="border-top:1px solid #000; padding-top:5px;">Name, Date & Signature</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openPrintWindow(printHtml);
+};
+
+window.printDailyA4Report = function() {
+  window.exportDailyReportPDF(state.selectedReportDate || getDateKey(new Date().toISOString()), state.selectedReportSubfolder || 'all');
+};
+
+window.setSelectedReportDate = function(dateStr) {
+  state.selectedReportDate = dateStr;
+  renderReports();
+};
+
+window.setSelectedReportSubfolder = function(subfolderStr) {
+  state.selectedReportSubfolder = subfolderStr;
+  renderReports();
+};
+
 window.renderReports = function() {
   const container = document.getElementById('reportsContent');
   if (!container) return;
 
-  const revDirect = state.orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s,o)=>s+o.total,0);
-  const revTab = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s,o)=>s+o.total,0);
-  const revPatient = state.orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER').reduce((s,o)=>s+o.total,0);
+  // Build unique date subfolders list from all orders
+  const datesSet = new Set();
+  const todayStr = getDateKey(new Date().toISOString());
+  datesSet.add(todayStr);
+
+  (state.orders || []).forEach(o => {
+    if (o.timestamp) {
+      const key = getDateKey(o.timestamp);
+      if (key) datesSet.add(key);
+    }
+  });
+
+  const availableDates = Array.from(datesSet).sort((a, b) => b.localeCompare(a));
+  if (!state.selectedReportDate || !datesSet.has(state.selectedReportDate)) {
+    state.selectedReportDate = availableDates[0] || todayStr;
+  }
+  if (!state.selectedReportSubfolder) {
+    state.selectedReportSubfolder = 'all';
+  }
+
+  const selectedDate = state.selectedReportDate;
+  const selectedSub = state.selectedReportSubfolder;
+
+  const { orders: filteredOrders } = getFilteredOrdersForReport(selectedDate, selectedSub, 'daily');
+  const dayAllOrders = (state.orders || []).filter(o => o.timestamp && getDateKey(o.timestamp) === selectedDate);
+
+  const revDirect = dayAllOrders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT' && o.status !== 'VOIDED').reduce((s,o)=>s+o.total,0);
+  const revTab = dayAllOrders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB' && o.status !== 'VOIDED').reduce((s,o)=>s+o.total,0);
+  const revPatient = dayAllOrders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && o.status !== 'VOIDED').reduce((s,o)=>s+o.total,0);
   const totalRev = revDirect + revTab + revPatient;
-  const totalOrders = state.orders.length;
+  const totalOrders = dayAllOrders.length;
   const totalOutstanding = state.employees.reduce((s,e)=>s+e.currentBalance, 0);
 
+  const formattedSelectedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
   container.innerHTML = `
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
-        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Total System Volume</div>
-        <div class="text-2xl font-extrabold text-[#10B981]">${formatMoney(totalRev)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">${totalOrders} transactions recorded</div>
+    <!-- Top Date Subfolder & Report Selector -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-[#0F172A] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📄</div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-500/30">Official Audit Reports</span>
+            <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Branded PDF, CSV & Excel</span>
+          </div>
+          <h2 class="text-xl font-bold text-[#0F172A] mt-1">Daily Audit Report & Historical Subfolders</h2>
+          <p class="text-xs text-[#475569]">Select any day subfolder & filter below to view transactions and extract matching CSV, PDF, or Excel downloads.</p>
+        </div>
       </div>
-      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+
+      <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
+        <div class="flex items-center gap-2 bg-[#F8FAFC] border border-black/[0.1] rounded-xl px-3 py-2 w-full sm:w-auto">
+          <span class="text-xs font-bold text-[#475569]">📅 Day Subfolder:</span>
+          <select class="bg-transparent border-none text-xs font-extrabold text-[#0F172A] focus:outline-none cursor-pointer" onchange="window.setSelectedReportDate(this.value)">
+            ${availableDates.map(d => `
+              <option value="${d}" ${d === selectedDate ? 'selected' : ''}>
+                ${d === todayStr ? `Today (${d})` : d}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button onclick="exportDailyReportPDF('${selectedDate}', '${selectedSub}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 w-full sm:w-auto">
+            <span>🖨️</span> PDF (A4)
+          </button>
+          <button onclick="exportDailyReportCSV('${selectedDate}', '${selectedSub}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 w-full sm:w-auto">
+            <span>📊</span> CSV
+          </button>
+          <button onclick="exportDailyReportExcel('${selectedDate}', '${selectedSub}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 w-full sm:w-auto">
+            <span>📈</span> Excel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Pills for Reports View -->
+    <div class="flex items-center gap-2 bg-[#FFFFFF] p-2 rounded-2xl border border-black/[0.1] shadow-xs flex-wrap">
+      <span class="text-xs font-extrabold text-[#0F172A] px-2">Filter View:</span>
+      <button onclick="setSelectedReportSubfolder('all')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+        🗂️ All Receipts
+      </button>
+      <button onclick="setSelectedReportSubfolder('direct')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'direct' ? 'bg-[#10B981] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+        💵 Direct Sales
+      </button>
+      <button onclick="setSelectedReportSubfolder('tab')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'tab' ? 'bg-[#D97706] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+        💳 Staff Tabs
+      </button>
+      <button onclick="setSelectedReportSubfolder('patient')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'patient' ? 'bg-[#8B5CF6] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+        🏥 Inpatient Perks
+      </button>
+      <button onclick="setSelectedReportSubfolder('items')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'items' ? 'bg-[#64748B] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+        📦 Product Log
+      </button>
+    </div>
+
+    <!-- Summary Metrics for Selected Date -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
+        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Day Volume (${selectedDate})</div>
+        <div class="text-2xl font-extrabold text-[#10B981]">${formatMoney(totalRev)}</div>
+        <div class="text-[0.7rem] text-[#475569] mt-1">${totalOrders} transactions on ${formattedSelectedDate}</div>
+      </div>
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
         <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Direct Sales (Cash/Momo)</div>
         <div class="text-2xl font-extrabold text-[#3B82F6]">${formatMoney(revDirect)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">Paid directly at register</div>
+        <div class="text-[0.7rem] text-[#475569] mt-1">Direct register payments</div>
       </div>
-      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
         <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Staff Payroll Tabs</div>
         <div class="text-2xl font-extrabold text-[#F59E0B]">${formatMoney(revTab)}</div>
         <div class="text-[0.7rem] text-[#475569] mt-1">Institutional staff credit</div>
       </div>
-      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+      <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
         <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Hospital Room Perks</div>
         <div class="text-2xl font-extrabold text-[#8B5CF6]">${formatMoney(revPatient)}</div>
         <div class="text-[0.7rem] text-[#475569] mt-1">Covered inpatient catering</div>
       </div>
     </div>
 
-    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center text-2xl">📄</div>
+    <!-- Complete Transactions or Product Log Table for Selected Day & Filter -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h3 class="text-base font-bold text-[#0F172A]">Official End-of-Day MIS Audit Report</h3>
-          <p class="text-xs text-[#475569]">Generate & print full A4 management report with financial breakdown and department tab balances.</p>
+          <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2">
+            <span>${selectedSub === 'items' ? '📦' : '📜'}</span>
+            ${selectedSub === 'items' ? 'Itemized Product Sales Log' : `Transactions Log — Date: ${selectedDate}`}
+          </h3>
+          <p class="text-xs text-[#475569]">Showing data for subfolder filter <strong class="text-amber-600 font-mono font-bold">${selectedSub.toUpperCase()}</strong> on ${formattedSelectedDate}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+            ${selectedSub === 'items' ? 'Product Breakdown' : `${filteredOrders.length} Orders Logged`}
+          </span>
         </div>
       </div>
-      <div class="flex gap-2">
-        <button onclick="printDailyA4Report()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-lg shadow-[#F59E0B]/20">
-          <span>🖨</span> Print A4 Report
-        </button>
+
+      <div class="overflow-x-auto">
+        ${selectedSub === 'items' ? (function() {
+          const productMap = {};
+          filteredOrders.forEach(o => {
+            if (Array.isArray(o.items)) {
+              o.items.forEach(item => {
+                const key = item.productId || item.name;
+                if (!productMap[key]) {
+                  productMap[key] = { name: item.name || 'Item', qty: 0, revenue: 0 };
+                }
+                productMap[key].qty += (item.qty || 1);
+                productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+              });
+            }
+          });
+          const productList = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+
+          return `
+            <table class="data-table w-full text-left text-sm">
+              <thead>
+                <tr class="text-[#475569] border-b border-black/[0.1]">
+                  <th class="py-3 px-4 font-semibold">Product Name</th>
+                  <th class="py-3 px-4 font-semibold">Quantity Sold</th>
+                  <th class="py-3 px-4 font-semibold">Total Revenue (RWF)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-black/[0.1]">
+                ${productList.length > 0 ? productList.map(p => `
+                  <tr>
+                    <td class="font-bold text-slate-900">${p.name}</td>
+                    <td class="font-mono text-slate-600 font-bold">${p.qty} units sold</td>
+                    <td class="font-mono font-extrabold text-amber-600">${formatMoney(p.revenue)}</td>
+                  </tr>
+                `).join('') : `
+                  <tr><td colspan="3" class="py-8 text-center text-[#475569] italic">No product sales recorded for this date & filter.</td></tr>
+                `}
+              </tbody>
+            </table>
+          `;
+        })() : `
+          <table class="data-table w-full text-left text-sm">
+            <thead>
+              <tr class="text-[#475569] border-b border-black/[0.1]">
+                <th class="py-3 px-4 font-semibold">Order ID</th>
+                <th class="py-3 px-4 font-semibold">Time</th>
+                <th class="py-3 px-4 font-semibold">Mode</th>
+                <th class="py-3 px-4 font-semibold">Client / Staff</th>
+                <th class="py-3 px-4 font-semibold">Items Consumed</th>
+                <th class="py-3 px-4 font-semibold">Total</th>
+                <th class="py-3 px-4 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-black/[0.1]">
+              ${filteredOrders.length > 0 ? filteredOrders.map(o => {
+                const time = new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
+                const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
+                const isVoided = o.status === 'VOIDED';
+
+                let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">💳 Tab</span>';
+                if (isDirect) {
+                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">💵 Direct</span>';
+                } else if (isPatient) {
+                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🏥 Inpatient</span>';
+                }
+
+                let clientText = 'Walk-in Customer';
+                if (isPatient) {
+                  clientText = `🏥 Inpatient Order (${o.roomNumber}${o.mealType ? ` - ${o.mealType}` : ''})`;
+                } else if (o.employeeName) {
+                  clientText = `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>`;
+                }
+
+                const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
+
+                return `
+                  <tr class="${isVoided ? 'opacity-60 bg-rose-50/40' : ''}">
+                    <td>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold ${isVoided ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-500/10 text-amber-700 border border-amber-500/20'}">${o.id} ${isVoided ? '(VOIDED)' : ''}</span>
+                    </td>
+                    <td class="text-xs text-slate-500 font-medium">${time}</td>
+                    <td>${isVoided ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">🚫 Voided</span>' : modePill}</td>
+                    <td><span class="text-sm font-semibold text-slate-800">${clientText}</span></td>
+                    <td class="text-xs text-slate-600">${itemsStr}</td>
+                    <td><span class="font-mono font-extrabold ${isVoided ? 'line-through text-slate-400' : 'text-slate-900'}">${formatMoney(o.total)}</span></td>
+                    <td class="text-right whitespace-nowrap">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all cursor-pointer shadow-xs active:scale-95">📄 Receipt</button>
+                        ${!isVoided ? `<button onclick="openVoidOrderModal('${o.id}')" title="Void / Refund Order" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 cursor-pointer transition-all active:scale-95">🔄 Void</button>` : ''}
+                        <button onclick="deleteOrder('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('') : `
+                <tr>
+                  <td colspan="7" class="py-8 text-center text-[#475569] italic">No transactions recorded for subfolder filter ${selectedSub.toUpperCase()} on ${selectedDate}.</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        `}
       </div>
     </div>
 
-    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-4 mb-4">
+    <!-- HR Payroll & Statement Export Section -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-6">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl">👥</div>
         <div>
@@ -493,7 +1128,8 @@ window.renderReports = function() {
       </div>
     </div>
 
-    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+    <!-- Department Tab Ledger Summary -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 mt-6">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Department Tab Ledger Summary</h3>
         <span class="text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/10 px-3 py-1 rounded-full border border-[#F59E0B]/20">Total Outstanding: ${formatMoney(totalOutstanding)}</span>
@@ -538,126 +1174,4 @@ window.renderReports = function() {
       </div>
     </div>
   `;
-}
-
-window.showReceiptModal = function(order) {
-  state.lastReceiptOrder = order;
-  const preview = document.getElementById('receiptPreviewContent');
-  if (!preview) return;
-  
-  const itemsHtml = order.items.map(item => `
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-      <span>${item.qty}x ${item.name}</span>
-      <span>${formatMoney(item.subtotal)}</span>
-    </div>
-  `).join('');
-
-  let paymentInfo = `Payment: ${order.paymentMethod}`;
-  if (order.checkoutMode === 'INSTITUTIONAL_TAB') {
-    paymentInfo = `Tab: ${order.employeeName} (${order.staffId})<br>Dept: ${order.departmentName}`;
-  } else if (order.checkoutMode === 'PATIENT_ROOM_ORDER') {
-    paymentInfo = `Catering Delivery: ${order.roomNumber}<br>Meal Category: ${order.mealType}<br>Billing: ${order.billingType === 'COVERED_PERK' ? 'Hospital Covered Perk' : 'Direct Pay'}${order.patientNotes ? `<br>Notes: ${order.patientNotes}` : ''}`;
-  }
-
-  preview.innerHTML = `
-    <div style="text-align:center; font-family:monospace; color:#333;">
-      <img src="${APP_LOGO_DATA_URI}" style="max-width:140px; height:auto; margin:0 auto 8px; display:block;" alt="Logo">
-      <h3 style="margin:0; font-size:16px; font-weight:bold; letter-spacing:0.5px;">DMCH RESTO</h3>
-      <div style="text-align:left; font-size:12px; border-bottom:1px dashed #ccc; padding-bottom:8px; margin-bottom:8px;">
-        Order: ${order.id}<br>
-        Date: ${new Date(order.timestamp).toLocaleString()}<br>
-        Cashier: ${order.cashierName}
-      </div>
-      <div style="text-align:left; margin-bottom:12px; color:#000;">
-        ${itemsHtml}
-      </div>
-      <div style="text-align:right; border-top:1px dashed #ccc; padding-top:8px; font-weight:bold;">
-        TOTAL: ${formatMoney(order.total)}
-      </div>
-      <div style="text-align:left; font-size:12px; margin-top:12px; color:#555;">
-        ${paymentInfo}
-      </div>
-      ${order.signatureDataUrl ? `<div style="margin-top:12px; text-align:center;"><img src="${order.signatureDataUrl}" style="max-height:48px; width:auto; background:transparent; display:inline-block;" alt="Signature"></div>` : ''}
-      <div style="margin-top:16px; font-size:12px; text-align:center;">Thank you!</div>
-    </div>
-  `;
-  window.openModal('modalReceipt');
-};
-
-window.reprintReceipt = function(orderId) {
-  const order = state.orders.find(o => o.id === orderId);
-  if (order) window.showReceiptModal(order);
-};
-
-window.triggerPrintReceipt = function() {
-  if (state.lastReceiptOrder) {
-    window.print80mmReceipt(state.lastReceiptOrder);
-  }
-};
-
-window.print80mmReceipt = function(order) {
-  const container = document.getElementById('print-container');
-  if (!container) return;
-  container.innerHTML = document.getElementById('receiptPreviewContent').innerHTML;
-  window.print();
-};
-
-window.printDailyA4Report = function() {
-  const container = document.getElementById('print-container');
-  if (!container) return;
-  
-  const revDirect = state.orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s,o)=>s+o.total,0);
-  const revTab = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s,o)=>s+o.total,0);
-  const revPatient = state.orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER').reduce((s,o)=>s+o.total,0);
-  const totalRev = revDirect + revTab + revPatient;
-  
-  container.innerHTML = `
-    <div style="font-family:sans-serif; color:#000; padding:20px; max-width:850px; margin:0 auto;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:20px;">
-        <div>
-          <img src="${APP_LOGO_DATA_URI}" style="max-height:50px; width:auto; display:block; margin-bottom:6px;" alt="Logo">
-          <h2 style="margin:0; font-size:20px; font-weight:800;">DMCH RESTO</h2>
-          <p style="margin:2px 0 0 0; font-size:12px; color:#555;">Dream Medical Center Hospital — Staff Lounge & Cafeteria</p>
-        </div>
-        <div style="text-align:right;">
-          <h1 style="margin:0; font-size:20px; font-weight:bold;">Daily MIS Audit Report</h1>
-          <p style="margin:4px 0 0 0; font-size:12px; color:#555;">Generated: ${new Date().toLocaleString()}</p>
-        </div>
-      </div>
-      
-      <h2>Financial Breakdown</h2>
-      <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-        <tr><td style="border:1px solid #000; padding:8px; font-weight:bold;">Total System Transaction Volume</td><td style="border:1px solid #000; padding:8px; font-weight:bold;">${formatMoney(totalRev)}</td></tr>
-        <tr><td style="border:1px solid #000; padding:8px;">💵 Direct Sales (Cash & Mobile Register)</td><td style="border:1px solid #000; padding:8px;">${formatMoney(revDirect)}</td></tr>
-        <tr><td style="border:1px solid #000; padding:8px;">💳 Institutional Staff Tabs (Payroll Deductions)</td><td style="border:1px solid #000; padding:8px;">${formatMoney(revTab)}</td></tr>
-        <tr><td style="border:1px solid #000; padding:8px; font-weight:bold; color:#7C3AED;">🏥 Hospital Inpatient Catering (Covered Room Perks)</td><td style="border:1px solid #000; padding:8px; font-weight:bold; color:#7C3AED;">${formatMoney(revPatient)}</td></tr>
-        <tr><td style="border:1px solid #000; padding:8px;">Total Receipts Processed</td><td style="border:1px solid #000; padding:8px;">${state.orders.length}</td></tr>
-      </table>
-      
-      <h2>Department Tab Balances</h2>
-      <table style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr style="background:#eee;">
-            <th style="border:1px solid #000; padding:8px; text-align:left;">Employee</th>
-            <th style="border:1px solid #000; padding:8px; text-align:left;">Department</th>
-            <th style="border:1px solid #000; padding:8px; text-align:right;">Outstanding Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${state.employees.filter(e => e.currentBalance > 0).map(e => `
-            <tr>
-              <td style="border:1px solid #000; padding:8px;">${e.fullName} (${e.staffId})</td>
-              <td style="border:1px solid #000; padding:8px;">${getCategoryName(e.departmentId) || e.departmentId}</td>
-              <td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(e.currentBalance)}</td>
-            </tr>
-          `).join('')}
-          <tr style="font-weight:bold; background:#FEF3C7; color:#92400E;">
-            <td colspan="2" style="border:1px solid #000; padding:10px; text-align:right;">GRAND TOTAL TO BE DEDUCTED FROM PAYROLL:</td>
-            <td style="border:1px solid #000; padding:10px; text-align:right; font-size:15px; color:#D97706;">${formatMoney(state.employees.reduce((s, e) => s + e.currentBalance, 0))}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `;
-  window.print();
 };

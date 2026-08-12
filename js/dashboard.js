@@ -39,9 +39,44 @@ window.filterDashboardOrders = function(query) {
   }
 };
 
+function getDateKey(timestamp) {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '';
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+window.getDateKey = getDateKey;
+
 function getOrdersForPeriod(period, timeSubfolder = null) {
   if (!state.orders || !Array.isArray(state.orders)) return [];
   
+  if (timeSubfolder) {
+    return state.orders.filter(o => {
+      if (!o.timestamp) return false;
+      const d = new Date(o.timestamp);
+      if (isNaN(d.getTime())) return false;
+
+      if (period === 'daily') {
+        return getDateKey(o.timestamp) === timeSubfolder;
+      }
+      if (period === 'weekly') {
+        const key = `${d.getFullYear()}-W${getWeekNum(d)}`;
+        return key === timeSubfolder;
+      }
+      if (period === 'monthly') {
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return key === timeSubfolder;
+      }
+      if (period === 'yearly') {
+        return String(d.getFullYear()) === timeSubfolder;
+      }
+      return true;
+    });
+  }
+
   let periodOrders = state.orders;
   if (period !== 'all') {
     const now = new Date();
@@ -67,30 +102,7 @@ function getOrdersForPeriod(period, timeSubfolder = null) {
     });
   }
 
-  if (!timeSubfolder) return periodOrders;
-
-  return periodOrders.filter(o => {
-    if (!o.timestamp) return false;
-    const d = new Date(o.timestamp);
-    if (isNaN(d.getTime())) return false;
-
-    if (period === 'daily') {
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      return key === timeSubfolder;
-    }
-    if (period === 'weekly') {
-      const key = `${d.getFullYear()}-W${getWeekNum(d)}`;
-      return key === timeSubfolder;
-    }
-    if (period === 'monthly') {
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return key === timeSubfolder;
-    }
-    if (period === 'yearly') {
-      return String(d.getFullYear()) === timeSubfolder;
-    }
-    return true;
-  });
+  return periodOrders;
 }
 
 function getWeekNum(d) {
@@ -265,7 +277,7 @@ function renderDashboardOrderRows() {
     `;
   }
 
-  return filteredOrders.slice(0, 50).map(o => {
+  return filteredOrders.map(o => {
     const time = new Date(o.timestamp).toLocaleString();
     const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
     const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
@@ -501,22 +513,36 @@ window.renderDashboard = function() {
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-black/[0.08] flex-wrap w-full md:w-auto">
-          <button onclick="setDashboardSubfolder('all')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-            🗂️ All Receipts
-          </button>
-          <button onclick="setDashboardSubfolder('direct')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'direct' ? 'bg-[#10B981] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-            💵 Direct Sales
-          </button>
-          <button onclick="setDashboardSubfolder('tab')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'tab' ? 'bg-[#D97706] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-            💳 Staff Tabs
-          </button>
-          <button onclick="setDashboardSubfolder('patient')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'patient' ? 'bg-[#8B5CF6] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-            🏥 Inpatient Perks
-          </button>
-          <button onclick="setDashboardSubfolder('items')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'items' ? 'bg-[#64748B] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-            📦 Product Log
-          </button>
+        <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+          <div class="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-black/[0.08] flex-wrap w-full sm:w-auto">
+            <button onclick="setDashboardSubfolder('all')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+              🗂️ All Receipts
+            </button>
+            <button onclick="setDashboardSubfolder('direct')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'direct' ? 'bg-[#10B981] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+              💵 Direct Sales
+            </button>
+            <button onclick="setDashboardSubfolder('tab')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'tab' ? 'bg-[#D97706] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+              💳 Staff Tabs
+            </button>
+            <button onclick="setDashboardSubfolder('patient')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'patient' ? 'bg-[#8B5CF6] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+              🏥 Inpatient Perks
+            </button>
+            <button onclick="setDashboardSubfolder('items')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'items' ? 'bg-[#64748B] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+              📦 Product Log
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <button onclick="exportDailyReportPDF('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-3 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-amber-500/20">
+              <span>🖨️</span> PDF
+            </button>
+            <button onclick="exportDailyReportCSV('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-3 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-emerald-500/20">
+              <span>📊</span> CSV
+            </button>
+            <button onclick="exportDailyReportExcel('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-purple-500/20">
+              <span>📈</span> Excel
+            </button>
+          </div>
         </div>
       </div>
 

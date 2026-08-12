@@ -89,6 +89,9 @@ window.deleteOrder = function(orderId) {
       state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.orderId) !== String(orderId) && String(r.id) !== String(orderId));
 
       addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
+      if (window.addSecurityAuditLog) {
+        window.addSecurityAuditLog('FINANCIAL', 'Transaction Permanently Deleted', `Transaction ${order.id} (${formatMoney(order.total || 0)}) was permanently deleted from the financial ledger.`, 'CRITICAL');
+      }
       if (window.renderAllViews) window.renderAllViews();
       window.showToast(`Transaction "${order.id}" was successfully deleted.`, 'success');
 

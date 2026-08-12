@@ -57,6 +57,11 @@ const DEFAULT_ROOMS = [
 ];
 
 const DEFAULT_USERS = [
-  { id: "u-admin", username: "admin", passwordHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", role: "admin", name: "System Administrator" },
-  { id: "u-cashier", username: "cashier", passwordHash: "9049a04a3901b0b7aa8df6c2763f9157a31b4ab4b6008b8b0932267f8976451e", role: "cashier", name: "Main Cashier" }
+  { id: "u-admin", username: "admin", password: "Dmc@123", passwordHash: "0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb", role: "admin", name: "System Administrator", fullName: "SYSTEM ADMINISTRATOR", status: "APPROVED", createdAt: "2026-08-01T08:00:00.000Z" },
+  { id: "u-cashier", username: "cashier", password: "cashier123", passwordHash: "9049a04a3901b0b7aa8df6c2763f9157a31b4ab4b6008b8b0932267f8976451e", role: "cashier", name: "Main Cashier", fullName: "ERIC MUGISHA (MAIN CASHIER)", status: "APPROVED", createdAt: "2026-08-01T09:00:00.000Z" },
+  { id: "u-claire", username: "claire", password: "claire123", passwordHash: "37a3e83726aa9d5697d3375d85177360f38254407ac33df03e45db0bff0aea71", role: "cashier", name: "Marie Claire", fullName: "MARIE CLAIRE (SHIFT CASHIER)", status: "APPROVED", createdAt: "2026-08-02T10:00:00.000Z" },
+  { id: "u-jean", username: "jean", password: "jean123", passwordHash: "6f9968f5395fc05c000c078d08f698a37ff9ad619cb799173bc3278022adc219", role: "waiter", name: "Jean Paul", fullName: "JEAN PAUL (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-03T11:00:00.000Z" },
+  { id: "u-grace", username: "grace", password: "grace123", passwordHash: "d53ecaf3fc441a2086dc0cdc26692699dc8e12dd80f329414d605f1cdc4da3df", role: "waiter", name: "Grace Uwase", fullName: "GRACE UWASE (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-04T12:00:00.000Z" },
+  { id: "u-david", username: "david", password: "david123", passwordHash: "0f14089313b20c1723ec1d660b0aaa4f473cf5b321cd370f2d48b7bcf9a7b234", role: "waiter", name: "David Kwizera", fullName: "DAVID KWIZERA (SERVICE WAITER)", status: "APPROVED", createdAt: "2026-08-05T14:00:00.000Z" },
+  { id: "u-samuel", username: "samuel", password: "samuel123", passwordHash: "58926d6353b450f6555479cb6d1a41495c3704ec5bcb965278e208aff4776d67", role: "waiter", name: "Samuel Habimana", fullName: "SAMUEL HABIMANA", status: "PENDING_APPROVAL", createdAt: "2026-08-11T16:30:00.000Z" }
 ];

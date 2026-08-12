@@ -80,26 +80,31 @@ window.showToast = function(message, type = 'success', duration = 4000) {
 };
 
 // Modal Control Helpers
+// The CSS uses the .hidden class to toggle opacity + pointer-events.
+// We NEVER set inline display or opacity — that would fight the CSS rules.
 window.openModal = function(id) {
   const modal = document.getElementById(id);
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('active');
-    modal.style.display = 'flex';
-    modal.style.opacity = '1';
-    modal.style.pointerEvents = 'auto';
-    modal.style.visibility = 'visible';
+    // Clear any inline display/opacity overrides that may have been set previously
+    modal.style.removeProperty('display');
+    modal.style.removeProperty('opacity');
+    modal.style.removeProperty('pointer-events');
+    modal.style.removeProperty('visibility');
   }
 };
 
 window.closeModal = function(id) {
   const modal = document.getElementById(id);
   if (modal) {
-    modal.classList.add('hidden');
     modal.classList.remove('active');
-    modal.style.display = 'none';
-    modal.style.opacity = '0';
-    modal.style.pointerEvents = 'none';
+    modal.classList.add('hidden');
+    // Clear any inline overrides — CSS .hidden handles hiding via opacity:0 + pointer-events:none
+    modal.style.removeProperty('display');
+    modal.style.removeProperty('opacity');
+    modal.style.removeProperty('pointer-events');
+    modal.style.removeProperty('visibility');
   }
 };
 
@@ -140,6 +145,21 @@ function formatMoney(amount) {
 }
 window.formatMoney = formatMoney;
 
+/**
+ * escapeHTML — XSS Prevention Utility
+ * Sanitizes any user-generated string before injecting into innerHTML.
+ * Use this on ALL untrusted dynamic data (names, notes, reasons, etc.)
+ */
+window.escapeHTML = function(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 function addAuditLog(action, details) {
   if (!state.auditLogs) state.auditLogs = [];
   state.auditLogs.unshift({
@@ -149,8 +169,36 @@ function addAuditLog(action, details) {
     details: details,
     user: state.currentSession ? state.currentSession.username : 'System'
   });
+  // Keep audit log bounded to last 500 entries to prevent unbounded growth
+  if (state.auditLogs.length > 500) state.auditLogs = state.auditLogs.slice(0, 500);
 }
 window.addAuditLog = addAuditLog;
+
+/**
+ * addSecurityAuditLog — Security-tier audit events
+ * Records authentication, access control, and user management events.
+ * category: 'AUTH' | 'ACCESS' | 'USER_MGMT' | 'FINANCIAL' | 'DATA'
+ */
+window.addSecurityAuditLog = function(category, action, details, severity = 'INFO') {
+  if (!state.auditLogs) state.auditLogs = [];
+  const actor = state.currentSession ? state.currentSession.username : 'System';
+  const entry = {
+    id: generateId('sec'),
+    timestamp: new Date().toISOString(),
+    category,      // 'AUTH' | 'ACCESS' | 'USER_MGMT' | 'FINANCIAL' | 'DATA'
+    severity,      // 'INFO' | 'WARNING' | 'CRITICAL'
+    action,
+    details,
+    user: actor,
+    role: (state.currentSession && state.currentSession.role) || 'unknown',
+    isSecurityEvent: true
+  };
+  // Prepend so newest events are always at the top
+  state.auditLogs.unshift(entry);
+  if (state.auditLogs.length > 500) state.auditLogs = state.auditLogs.slice(0, 500);
+  // Persist immediately so security events survive page refreshes
+  if (window.saveData) window.saveData();
+};
 
 // Storage Data Persistence & Cloud Synchronization
 window.loadStorageData = function() {
@@ -192,6 +240,92 @@ window.loadStorageData = function() {
     state.archives = [];
     state.tabReceipts = [];
     state.lastActiveDate = new Date().toLocaleDateString();
+  }
+
+  // Populate sample orders if no orders exist, to ensure historical days have data out of the box
+  if (!state.orders || state.orders.length === 0) {
+    const todayObj = new Date();
+    const yesterdayObj = new Date(todayObj.getTime() - 86400000);
+    const formatDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayKey = formatDateKey(todayObj);
+    const yesterdayKey = formatDateKey(yesterdayObj);
+
+    state.orders = [
+      {
+        id: 'ORD-882101',
+        timestamp: `${yesterdayKey}T08:30:00.000Z`,
+        cashierName: 'CHIEF CASHIER',
+        checkoutMode: 'DIRECT_PAYMENT',
+        paymentMethod: 'CASH',
+        items: [
+          { productId: 'p1', name: 'Café Espresso', price: 2000, qty: 2, subtotal: 4000 },
+          { productId: 'p5', name: 'Butter Croissant', price: 1500, qty: 1, subtotal: 1500 }
+        ],
+        total: 5500,
+        status: 'COMPLETED'
+      },
+      {
+        id: 'ORD-882102',
+        timestamp: `${yesterdayKey}T12:15:00.000Z`,
+        cashierName: 'CHIEF CASHIER',
+        checkoutMode: 'INSTITUTIONAL_TAB',
+        paymentMethod: 'TAB',
+        employeeName: 'JEAN-PAUL HABIMANA',
+        staffId: 'EMP-1001',
+        departmentName: 'ENGINEERING & MAINTENANCE',
+        items: [
+          { productId: 'p2', name: 'Cappuccino', price: 2500, qty: 1, subtotal: 2500 },
+          { productId: 'p6', name: 'Club Sandwich', price: 4500, qty: 1, subtotal: 4500 }
+        ],
+        total: 7000,
+        status: 'COMPLETED'
+      },
+      {
+        id: 'ORD-882103',
+        timestamp: `${yesterdayKey}T18:45:00.000Z`,
+        cashierName: 'CHIEF CASHIER',
+        checkoutMode: 'PATIENT_ROOM_ORDER',
+        paymentMethod: 'ROOM_PERK',
+        roomNumber: 'Room 204 (VIP)',
+        mealType: 'Dinner',
+        billingType: 'COVERED_PERK',
+        patientNotes: 'Patient Soft Diet',
+        items: [
+          { productId: 'p3', name: 'Fresh Fruit Juice', price: 3000, qty: 1, subtotal: 3000 },
+          { productId: 'p7', name: 'Chicken Soup', price: 5000, qty: 1, subtotal: 5000 }
+        ],
+        total: 8000,
+        status: 'COMPLETED'
+      },
+      {
+        id: 'ORD-882104',
+        timestamp: `${todayKey}T09:10:00.000Z`,
+        cashierName: 'CHIEF CASHIER',
+        checkoutMode: 'DIRECT_PAYMENT',
+        paymentMethod: 'MOBILE_MONEY',
+        items: [
+          { productId: 'p1', name: 'Café Latte', price: 2500, qty: 2, subtotal: 5000 }
+        ],
+        total: 5000,
+        status: 'COMPLETED'
+      },
+      {
+        id: 'ORD-882105',
+        timestamp: `${todayKey}T13:20:00.000Z`,
+        cashierName: 'CHIEF CASHIER',
+        checkoutMode: 'INSTITUTIONAL_TAB',
+        paymentMethod: 'TAB',
+        employeeName: 'DR. MARIE CLAIRE',
+        staffId: 'EMP-1002',
+        departmentName: 'LABORATORY & PATHOLOGY',
+        items: [
+          { productId: 'p4', name: 'Black Tea', price: 1500, qty: 1, subtotal: 1500 },
+          { productId: 'p6', name: 'Club Sandwich', price: 4500, qty: 1, subtotal: 4500 }
+        ],
+        total: 6000,
+        status: 'COMPLETED'
+      }
+    ];
     saveData();
   }
 
@@ -225,6 +359,11 @@ window.saveData = function() {
     lastActiveDate: state.lastActiveDate
   }));
 
+  // Broadcast live sync event across connected terminals
+  if (window.broadcastLiveSync && !_isSyncingFromCloud) {
+    window.broadcastLiveSync({ type: 'DATA_UPDATED' });
+  }
+
   // Only push to cloud if this save was initiated locally (not from a cloud pull)
   if (typeof _isSyncingFromCloud !== 'undefined' && _isSyncingFromCloud) return;
   if (window.syncStateToCloud) {
@@ -251,7 +390,6 @@ window.checkAutoRollover = function() {
       });
       
       addAuditLog("Auto-Shift Closed", "System auto-archived " + state.orders.length + " orders for " + state.lastActiveDate);
-      state.orders = [];
     }
     state.lastActiveDate = today;
     saveData();

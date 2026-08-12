@@ -316,6 +316,89 @@ window.cloudClearAllRooms = async function() {
   }
 };
 
+window.cloudSyncUsers = async function(users) {
+  if (!supabaseClient || _isSyncingFromCloud) return;
+  try {
+    if (users && users.length > 0) {
+      const dbUsers = users.map(u => ({
+        id: u.id,
+        username: u.username,
+        full_name: u.fullName || u.name || u.username,
+        role: u.role,
+        status: u.status || 'APPROVED',
+        created_at: u.createdAt || new Date().toISOString()
+      }));
+      const { error } = await supabaseClient.from('users').upsert(dbUsers, { onConflict: 'id' });
+      if (error) console.warn('Cloud sync users warning:', error);
+    }
+  } catch(err) {
+    console.warn('Cloud sync users error:', err);
+  }
+};
+
+window.cloudDeleteUser = async function(userId) {
+  if (!supabaseClient) return;
+  _isSyncingFromCloud = true;
+  try {
+    const { error } = await supabaseClient.from('users').delete().eq('id', userId);
+    if (error) console.warn('Cloud delete user warning:', error);
+  } catch(err) {
+    console.warn('Cloud delete user error:', err);
+  } finally {
+    setTimeout(() => { _isSyncingFromCloud = false; }, 2000);
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REAL-TIME CROSS-TERMINAL LIVE BROADCAST ENGINE
+// Instant zero-refresh sync across all connected windows, tabs, & terminals
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _liveBroadcastChannel = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    _liveBroadcastChannel = new BroadcastChannel('dmch_resto_live_sync_channel');
+    _liveBroadcastChannel.onmessage = function(event) {
+      handleLiveSyncMessage(event.data);
+    };
+  }
+} catch (e) {
+  console.warn('BroadcastChannel fallback enabled:', e);
+}
+
+// Storage event listener fallback for cross-tab local storage changes
+window.addEventListener('storage', function(e) {
+  if (e.key === 'dmch_resto_users') {
+    handleLiveSyncMessage({ type: 'USERS_UPDATED' });
+  } else if (e.key === 'dmch_resto_posData') {
+    handleLiveSyncMessage({ type: 'DATA_UPDATED' });
+  }
+});
+
+window.broadcastLiveSync = function(payload) {
+  try {
+    if (_liveBroadcastChannel) {
+      _liveBroadcastChannel.postMessage(payload);
+    }
+  } catch(err) {
+    console.warn('Live sync broadcast warning:', err);
+  }
+  // Local invocation in current tab
+  handleLiveSyncMessage(payload);
+};
+
+function handleLiveSyncMessage(payload) {
+  if (!payload || !payload.type) return;
+
+  if (payload.type === 'USERS_UPDATED') {
+    if (window.renderUsers) window.renderUsers();
+    if (window.applyRolePermissions) window.applyRolePermissions();
+  } else if (payload.type === 'DATA_UPDATED') {
+    if (window.loadStorageData) window.loadStorageData();
+    if (window.renderAllViews) window.renderAllViews();
+  }
+}
+
 // Stub functions for removed cloud sync modal (keeps app from throwing errors)
 window.openCloudSyncModal = function() {};
 window.saveCloudSyncSettings = function() {};
