@@ -46,4 +46,19 @@ router.post('/', async (req, res) => {
   }
 });
 
+// DELETE /api/products/:id - Remove a product from the catalog
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!db.pool) return res.json({ success: true, data: { id: req.params.id } });
+    const { rows } = await db.query('DELETE FROM products WHERE id = $1 RETURNING id', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Error deleting product:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

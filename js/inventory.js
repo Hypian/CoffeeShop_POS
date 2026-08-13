@@ -106,16 +106,19 @@ window.deleteProduct = function(id) {
     badgeText: "Inventory Removal",
     isDanger: true,
     onConfirm: async () => {
-      if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
-      state.products = (state.products || []).filter(p => p && String(p.id) !== String(id));
-      
-      if (window.renderAllViews) window.renderAllViews();
-      window.showToast(`Product "${prodName}" was successfully deleted.`, 'success');
-
-      if (window.cloudDeleteProduct) {
-        await window.cloudDeleteProduct(id);
+      try {
+        if (window.cloudDeleteProduct) {
+          await window.cloudDeleteProduct(id);
+        }
+        if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
+        state.products = (state.products || []).filter(p => p && String(p.id) !== String(id));
+        if (window.renderAllViews) window.renderAllViews();
+        saveData({ sync: false });
+        window.showToast(`Product "${prodName}" was successfully deleted.`, 'success');
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        window.showToast('Product could not be deleted. Please try again.', 'error');
       }
-      saveData();
     }
   });
 };
@@ -125,7 +128,7 @@ window.selectProductIcon = function(emoji) {
   document.getElementById('addProdIconPreview').textContent = emoji;
 };
 
-window.saveNewProduct = function() {
+window.saveNewProduct = async function() {
   const name = (document.getElementById('addProdName').value || '').trim().toUpperCase();
   const catId = document.getElementById('addProdCategory').value;
   const price = parseFloat(document.getElementById('addProdPrice').value) || 0;
@@ -133,9 +136,13 @@ window.saveNewProduct = function() {
   
   if (!name) { window.showToast('Product name is required', 'error'); return; }
   
+  let product;
+  let originalProduct;
+  const isEditing = Boolean(state.editingProductId);
   if (state.editingProductId) {
-    const product = state.products.find(p => p.id === state.editingProductId);
+    product = state.products.find(p => p.id === state.editingProductId);
     if (product) {
+      originalProduct = { ...product };
       product.name = name;
       product.categoryId = catId;
       product.price = price;
@@ -143,20 +150,36 @@ window.saveNewProduct = function() {
     }
     state.editingProductId = null;
     addAuditLog("Product Edited", `Updated details for ${name}`);
-    window.showToast('Product updated successfully', 'success');
   } else {
-    state.products.push({
+    product = {
       id: generateId('p'),
       name,
       categoryId: catId,
       price,
       icon
-    });
+    };
+    state.products.push(product);
     addAuditLog("Product Added", `Added new product ${name}`);
-    window.showToast('Product added successfully', 'success');
   }
-  
-  saveData();
-  window.closeModal('modalAddProduct');
-  renderAllViews();
+
+  try {
+    if (window.cloudSaveProduct) {
+      await window.cloudSaveProduct(product);
+    } else {
+      await window.syncStateToCloud();
+    }
+    saveData({ sync: false });
+    window.closeModal('modalAddProduct');
+    renderAllViews();
+    window.showToast(isEditing ? 'Product updated successfully' : 'Product added successfully', 'success');
+  } catch (error) {
+    if (originalProduct) {
+      Object.assign(product, originalProduct);
+    } else {
+      state.products = state.products.filter(item => item.id !== product.id);
+    }
+    renderAllViews();
+    console.error('Error saving product:', error);
+    window.showToast('Product could not be saved. Please try again.', 'error');
+  }
 };

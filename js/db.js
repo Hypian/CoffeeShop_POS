@@ -147,7 +147,8 @@ window.pullCloudDataToState = async function() {
           passwordHash: u.password_hash || u.passwordHash || u.password,
           fullName: (u.full_name || u.name || u.username).toUpperCase(),
           role: u.role,
-          status: u.status || 'APPROVED'
+          status: u.status || 'PENDING_APPROVAL',
+          createdAt: u.created_at || u.createdAt
         }));
         if (window.renderUsers) window.renderUsers();
       }
@@ -236,8 +237,29 @@ window.cloudDeleteOrder = async function(orderId) {
   // Local state update handled in main app
 };
 
+window.cloudSaveProduct = async function(product) {
+  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const response = await fetch(`${baseUrl}/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(product)
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) {
+    throw new Error((result && result.error) || 'Product could not be saved.');
+  }
+  return result.data;
+};
+
 window.cloudDeleteProduct = async function(productId) {
-  // Local state update handled in main app
+  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const response = await fetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
+    method: 'DELETE'
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) {
+    throw new Error((result && result.error) || 'Product could not be deleted.');
+  }
 };
 
 window.cloudDeleteDepartment = async function(deptId) {
@@ -266,12 +288,21 @@ window.cloudSyncUsers = async function(users) {
         username: u.username,
         passwordHash: u.passwordHash || u.password,
         fullName: u.fullName || u.name || u.username,
-        role: u.role || 'cashier'
+        role: u.role || 'cashier',
+        status: u.status || 'PENDING_APPROVAL'
       })
-    }).catch(() => null);
+    }).then(async response => {
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'User could not be saved.');
+    });
   }
 };
-window.cloudDeleteUser = async function() {};
+window.cloudDeleteUser = async function(userId) {
+  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const response = await fetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'User could not be deleted.');
+};
 
 // REAL-TIME CROSS-TERMINAL LIVE BROADCAST ENGINE
 let _liveBroadcastChannel = null;
@@ -312,8 +343,7 @@ function handleLiveSyncMessage(payload) {
     if (window.renderUsers) window.renderUsers();
     if (window.applyRolePermissions) window.applyRolePermissions();
   } else if (payload.type === 'DATA_UPDATED') {
-    if (window.loadStorageData) window.loadStorageData();
-    if (window.renderAllViews) window.renderAllViews();
+    if (window.pullCloudDataToState) window.pullCloudDataToState();
   }
 }
 

@@ -269,7 +269,9 @@ window.loadStorageData = function() {
   }
 };
 
-window.saveData = function() {
+
+
+window.saveData = function({ sync = true } = {}) {
   if (!state.lastActiveDate) state.lastActiveDate = new Date().toLocaleDateString();
 
   // Broadcast live sync event across connected terminals
@@ -278,7 +280,7 @@ window.saveData = function() {
   }
 
   // Always push directly to Render cloud database API
-  if (window.syncStateToCloud) {
+  if (sync && window.syncStateToCloud) {
     window.syncStateToCloud();
   }
 };
