@@ -144,8 +144,10 @@ window.pullCloudDataToState = async function() {
         state.users = result.data.map(u => ({
           id: u.id,
           username: u.username,
+          passwordHash: u.password_hash || u.passwordHash || u.password,
           fullName: (u.full_name || u.name || u.username).toUpperCase(),
-          role: u.role
+          role: u.role,
+          status: u.status || 'APPROVED'
         }));
         if (window.renderUsers) window.renderUsers();
       }

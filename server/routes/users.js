@@ -6,7 +6,7 @@ const db = require('../db');
 router.get('/', async (req, res) => {
   try {
     if (!db.pool) return res.json({ success: true, data: [] });
-    const { rows } = await db.query('SELECT id, username, full_name, role, updated_at FROM users ORDER BY username ASC');
+    const { rows } = await db.query('SELECT id, username, password_hash, full_name, role, updated_at FROM users ORDER BY username ASC');
     res.json({ success: true, data: rows });
   } catch (err) {
     console.error('Error fetching users:', err);

