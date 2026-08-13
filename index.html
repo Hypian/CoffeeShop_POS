@@ -51,11 +51,11 @@
             <label>Password</label>
             <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
           </div>
-          <button class="auth-btn" onclick="handleLogin()">🔐 Sign In</button>
+          <button type="button" class="auth-btn" onclick="window.handleLogin()">🔐 Sign In</button>
         </div>
         <div class="auth-footer">
           <span>Don't have an account? </span>
-          <a onclick="showSignupForm()">Create Account</a>
+          <a href="javascript:void(0)" onclick="window.showSignupForm()">Create Account</a>
         </div>
       </div>
 
@@ -85,7 +85,7 @@
           </div>
           <div class="auth-field">
             <label>Confirm Password</label>
-            <input type="password" id="signupConfirmPassword" placeholder="Confirm your password" onkeydown="if(event.key==='Enter')handleSignup()">
+            <input type="password" id="signupConfirmPassword" placeholder="Confirm your password" onkeydown="if(event.key==='Enter')window.handleSignup()">
           </div>
           <div class="auth-field">
             <label>Role</label>
@@ -94,11 +94,11 @@
               <option value="cashier">Staff Cashier</option>
             </select>
           </div>
-          <button class="auth-btn" onclick="handleSignup()">✅ Create Account</button>
+          <button type="button" class="auth-btn" onclick="window.handleSignup()">✅ Create Account</button>
         </div>
         <div class="auth-footer">
           <span>Already have an account? </span>
-          <a onclick="showLoginForm()">Sign In</a>
+          <a href="javascript:void(0)" onclick="window.showLoginForm()">Sign In</a>
         </div>
       </div>
 
