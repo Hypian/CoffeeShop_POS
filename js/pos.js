@@ -22,7 +22,7 @@ window.selectCategory = function(catId) {
 window.renderProductGrid = function() {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
-  const query = state.searchQuery.toLowerCase();
+  const query = (state.searchQuery || '').toLowerCase();
   const filtered = state.products.filter(p => {
     const matchCat = state.selectedCategory === 'cat-all' || p.categoryId === state.selectedCategory;
     const matchQuery = p.name.toLowerCase().includes(query);

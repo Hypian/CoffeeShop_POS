@@ -69,17 +69,27 @@ function showAuthScreen() {
 }
 
 function showMainApp() {
-  document.documentElement.classList.add('authenticated-session');
-  const authScreen = document.getElementById('authScreen');
-  const mainApp = document.getElementById('mainAppContainer');
-  if (authScreen) authScreen.classList.add('hidden');
-  if (mainApp) mainApp.classList.add('authenticated');
-  
-  if (window.loadStorageData) window.loadStorageData();
-  if (window.setupEventListeners) window.setupEventListeners();
-  updateUserBadge();
-  applyRolePermissions();
-  if (window.switchView) window.switchView('pos');
+  try {
+    document.documentElement.classList.add('authenticated-session');
+    const authScreen = document.getElementById('authScreen');
+    const mainApp = document.getElementById('mainAppContainer');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (mainApp) mainApp.classList.add('authenticated');
+    
+    if (window.loadStorageData) {
+      try { window.loadStorageData(); } catch(e) { console.error('Error in loadStorageData:', e); }
+    }
+    if (window.setupEventListeners) {
+      try { window.setupEventListeners(); } catch(e) { console.error('Error in setupEventListeners:', e); }
+    }
+    try { updateUserBadge(); } catch(e) { console.error('Error in updateUserBadge:', e); }
+    try { applyRolePermissions(); } catch(e) { console.error('Error in applyRolePermissions:', e); }
+    if (window.switchView) {
+      try { window.switchView('pos'); } catch(e) { console.error('Error in switchView:', e); }
+    }
+  } catch(err) {
+    console.error('Error displaying main application:', err);
+  }
 }
 
 function showLoginForm() {
