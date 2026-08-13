@@ -54,7 +54,7 @@ window.openAddRoomModal = function(editId = null) {
 
 window.saveRoom = function() {
   const id = document.getElementById('editRoomId').value;
-  const name = (document.getElementById('addRoomNumber').value || '').trim();
+  const name = (document.getElementById('addRoomNumber').value || '').trim().toUpperCase();
   const tier = document.getElementById('addRoomTier').value;
 
   if (!name) {

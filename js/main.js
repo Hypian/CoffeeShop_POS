@@ -166,8 +166,6 @@ window.setupEventListeners = function() {
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
     }
   });
-  
-  window.initSignatureCanvas();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

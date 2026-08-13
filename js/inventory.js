@@ -22,8 +22,8 @@ window.renderProductManagement = function() {
         </td>
         <td class="text-right whitespace-nowrap">
           <div class="flex items-center justify-end gap-2">
-            <button onclick="editProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">✏️ Edit</button>
-            <button onclick="deleteProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+            <button onclick="editProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">Edit</button>
+            <button onclick="deleteProduct('${p.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">Delete</button>
           </div>
         </td>
       </tr>
@@ -31,24 +31,48 @@ window.renderProductManagement = function() {
   }).join('');
 }
 
+window.populateCategoryDropdown = function(selectedCatId = '') {
+  const cat = document.getElementById('addProdCategory');
+  if (!cat) return;
+
+  const cats = (state.categories || []).filter(c => c && c.id !== 'cat-all');
+  if (cats.length === 0) {
+    const fallbacks = [
+      { id: 'cat-coffee', name: 'COFFEE & HOT BEVERAGES' },
+      { id: 'cat-beverage', name: 'FRESH JUICES & DRINKS' },
+      { id: 'cat-meal', name: 'HOSPITAL HOT MEALS' },
+      { id: 'cat-pastry', name: 'BREAKFAST & PASTRIES' }
+    ];
+    cat.innerHTML = fallbacks.map(c => `<option value="${c.id}" ${c.id === selectedCatId ? 'selected' : ''}>${c.name}</option>`).join('');
+    return;
+  }
+
+  cat.innerHTML = cats.map(c => {
+    const isSel = (c.id === selectedCatId || c.name === selectedCatId) ? 'selected' : '';
+    return `<option value="${c.id}" ${isSel}>${c.name.toUpperCase()}</option>`;
+  }).join('');
+
+  if (selectedCatId) {
+    const match = cats.find(c => c.id === selectedCatId || c.name === selectedCatId);
+    if (match) cat.value = match.id;
+  }
+};
+
 window.openAddProductModal = function() {
   state.editingProductId = null;
   const title = document.getElementById('modalAddProductTitle');
-  if (title) title.textContent = '➕ Add Product';
+  if (title) title.textContent = 'Add Product';
   
   const ids = ['addProdName', 'addProdPrice', 'addProdIconPreview'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       if (el.tagName === 'INPUT') el.value = '';
-      else if (id === 'addProdIconPreview') el.textContent = '📦';
+      else if (id === 'addProdIconPreview') el.textContent = '☕';
     }
   });
-  const cat = document.getElementById('addProdCategory');
-  if (cat) {
-    cat.innerHTML = state.categories.filter(c => c.id !== 'cat-all').map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  }
-  document.getElementById('addProdIcon').value = '📦';
+  window.populateCategoryDropdown();
+  document.getElementById('addProdIcon').value = '☕';
   window.openModal('modalAddProduct');
 };
 
@@ -58,15 +82,11 @@ window.editProduct = function(id) {
   
   state.editingProductId = id;
   const title = document.getElementById('modalAddProductTitle');
-  if (title) title.textContent = '✏️ Edit Product';
+  if (title) title.textContent = 'Edit Product';
   
-  const cat = document.getElementById('addProdCategory');
-  if (cat) {
-    cat.innerHTML = state.categories.filter(c => c.id !== 'cat-all').map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  }
+  window.populateCategoryDropdown(product.categoryId);
   
   document.getElementById('addProdName').value = product.name;
-  document.getElementById('addProdCategory').value = product.categoryId;
   document.getElementById('addProdPrice').value = product.price;
   document.getElementById('addProdIconPreview').textContent = product.icon;
   document.getElementById('addProdIcon').value = product.icon;
@@ -79,10 +99,10 @@ window.deleteProduct = function(id) {
   const prodName = product ? product.name : 'this product';
 
   window.showConfirmModal({
-    title: "📦 Delete Product",
+    title: "Delete Product",
     message: `Are you sure you want to permanently delete "${prodName}" from menu inventory?`,
     confirmText: "Yes, Delete Product",
-    icon: "📦",
+    icon: "",
     badgeText: "Inventory Removal",
     isDanger: true,
     onConfirm: async () => {
@@ -106,7 +126,7 @@ window.selectProductIcon = function(emoji) {
 };
 
 window.saveNewProduct = function() {
-  const name = document.getElementById('addProdName').value.trim();
+  const name = (document.getElementById('addProdName').value || '').trim().toUpperCase();
   const catId = document.getElementById('addProdCategory').value;
   const price = parseFloat(document.getElementById('addProdPrice').value) || 0;
   const icon = document.getElementById('addProdIcon').value || '📦';

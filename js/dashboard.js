@@ -282,18 +282,19 @@ function renderDashboardOrderRows() {
     const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
     const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
     
-    let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">💳 Tab</span>';
+    let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">Tab</span>';
     if (isDirect) {
-      modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">💵 Direct</span>';
+      modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">Direct</span>';
     } else if (isPatient) {
-      modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🏥 Inpatient</span>';
+      modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">Inpatient</span>';
     }
 
     let clientText = o.payerName || o.customerName || 'Walk-in Customer';
     if (isPatient) {
-      clientText = `🏥 Inpatient Order (${o.roomNumber}${o.mealType ? ` - ${o.mealType}` : ''})`;
-    } else if (o.employeeName) {
-      clientText = `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>`;
+      const pName = o.patientNotes || o.customerName || o.payerName || '';
+      clientText = `Inpatient Order (${o.roomNumber}${o.patientId ? ` - PID: ${o.patientId}` : ''}${o.mealType ? ` - ${o.mealType}` : ''}${pName ? ` - ${pName}` : ''})`;
+    } else if (o.employeeName || o.staffId) {
+      clientText = `${o.employeeName || 'Staff Member'} ${o.staffId ? `<span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>` : ''}`;
     } else if (o.payerName || o.customerName) {
       clientText = `${o.payerName || o.customerName}`;
     }

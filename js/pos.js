@@ -34,23 +34,25 @@ window.renderProductGrid = function() {
     return;
   }
   
-  grid.innerHTML = filtered.map(p => `
-    <div class="product-card bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 cursor-pointer relative select-none" onclick="addToCart('${p.id}')">
+  grid.innerHTML = filtered.map(p => {
+    const safeProdId = String(p.id).replace(/'/g, "\\'");
+    return `
+    <div class="product-card bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 cursor-pointer relative select-none" onclick="addToCart('${safeProdId}')">
       <div class="w-12 h-12 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center text-2xl mb-3">${p.icon}</div>
       <div class="font-bold text-sm text-[#0F172A] mb-1">${p.name}</div>
       <div class="text-[0.7rem] text-[#475569] font-medium mb-3">${getCategoryName(p.categoryId)}</div>
       <div class="flex items-center justify-between pt-2 border-t border-black/[0.1]">
         <div class="font-extrabold text-base text-[#F59E0B]">${formatMoney(p.price)}</div>
-        <button class="w-8 h-8 rounded-lg bg-[#F59E0B] text-black flex items-center justify-center font-bold text-lg hover:bg-[#FBBF24] transition-colors">+</button>
+        <button class="w-8 h-8 rounded-lg bg-[#F59E0B] text-black flex items-center justify-center font-bold text-lg hover:bg-[#FBBF24] transition-colors" onclick="event.stopPropagation(); addToCart('${safeProdId}')">+</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 };
 
 window.addToCart = function(productId) {
-  const p = state.products.find(x => x.id === productId);
+  const p = state.products.find(x => String(x.id) === String(productId));
   if (!p) return;
-  const cartItem = state.cart.find(x => x.productId === productId);
+  const cartItem = state.cart.find(x => String(x.productId) === String(productId));
   if (cartItem) {
     cartItem.qty += 1;
     cartItem.subtotal = cartItem.qty * cartItem.price;
@@ -67,12 +69,12 @@ window.addToCart = function(productId) {
 };
 
 window.updateCartQty = function(productId, delta) {
-  const cartItem = state.cart.find(x => x.productId === productId);
+  const cartItem = state.cart.find(x => String(x.productId) === String(productId));
   if (!cartItem) return;
   
   cartItem.qty += delta;
   if (cartItem.qty <= 0) {
-    state.cart = state.cart.filter(x => x.productId !== productId);
+    state.cart = state.cart.filter(x => String(x.productId) !== String(productId));
   } else {
     cartItem.subtotal = cartItem.qty * cartItem.price;
   }
@@ -111,34 +113,36 @@ window.renderCart = function() {
     `;
     if (subtotalEl) subtotalEl.textContent = 'RWF 0';
     if (totalEl) totalEl.textContent = 'RWF 0';
-    if (btnDirect) btnDirect.disabled = false;
-    if (btnTab) btnTab.disabled = false;
-    if (btnPatient) btnPatient.disabled = false;
+    if (btnDirect) { btnDirect.disabled = false; btnDirect.classList.remove('opacity-50', 'cursor-not-allowed'); }
+    if (btnTab) { btnTab.disabled = false; btnTab.classList.remove('opacity-50', 'cursor-not-allowed'); }
+    if (btnPatient) { btnPatient.disabled = false; btnPatient.classList.remove('opacity-50', 'cursor-not-allowed'); }
     return;
   }
 
-  list.innerHTML = state.cart.map(item => `
+  list.innerHTML = state.cart.map(item => {
+    const safeProdId = String(item.productId).replace(/'/g, "\\'");
+    return `
     <div class="cart-item-row flex items-center justify-between p-3 rounded-xl bg-[#F1F5F9] border border-black/[0.1]">
       <div class="flex-1 pr-3">
         <div class="font-bold text-sm text-[#0F172A]">${item.name}</div>
         <div class="text-xs text-[#475569]">${formatMoney(item.price)} each</div>
       </div>
       <div class="flex items-center gap-2">
-        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${item.productId}',-1)">−</button>
+        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',-1)">−</button>
         <span class="text-sm font-bold w-5 text-center">${item.qty}</span>
-        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${item.productId}',1)">+</button>
+        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',1)">+</button>
       </div>
       <div class="font-extrabold text-sm text-[#F59E0B] ml-3 min-w-[55px] text-right">${formatMoney(item.subtotal)}</div>
     </div>
-  `).join('');
+  `}).join('');
 
   const totals = calculateCartTotals();
   if (subtotalEl) subtotalEl.textContent = formatMoney(totals.subtotal);
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
-  if (btnDirect) btnDirect.disabled = false;
-  if (btnTab) btnTab.disabled = false;
-  if (btnPatient) btnPatient.disabled = false;
-}
+  if (btnDirect) { btnDirect.disabled = false; btnDirect.classList.remove('opacity-50', 'cursor-not-allowed'); }
+  if (btnTab) { btnTab.disabled = false; btnTab.classList.remove('opacity-50', 'cursor-not-allowed'); }
+  if (btnPatient) { btnPatient.disabled = false; btnPatient.classList.remove('opacity-50', 'cursor-not-allowed'); }
+};
 
 // Checkout - Direct Payment
 window.handlePaymentMethodChange = function() {
@@ -219,10 +223,12 @@ window.processDirectPayment = function() {
       paymentDetails = `${provider} (Payer: ${payerName})`;
     }
 
+    const cashierName = state.currentUser ? (state.currentUser.name || state.currentUser.username || 'Cashier') : 'Cashier';
+
     const order = {
       id: `ORD-${new Date().toISOString().replace(/\D/g,'').slice(0,14)}`,
       timestamp: new Date().toISOString(),
-      cashierName: state.currentUser.name,
+      cashierName: cashierName,
       checkoutMode: 'DIRECT_PAYMENT',
       paymentMethod: method,
       paymentDetails: paymentDetails,
@@ -244,7 +250,7 @@ window.processDirectPayment = function() {
     renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
   } finally {
-    setTimeout(() => { state.isProcessingPayment = false; }, 1000);
+    setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }
 };
 
@@ -274,7 +280,6 @@ window.openTabCheckoutModal = function() {
   
   state.currentTabEmployee = null;
   window.updateEmployeeTabPreview(null);
-  window.clearSignature();
   window.openModal('modalTabCheckout');
 };
 
@@ -308,72 +313,6 @@ window.updateEmployeeTabPreview = function(empId) {
   badge.innerHTML = `<span class="bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full text-xs font-bold border border-[#10B981]/30">Approved (New Balance: ${formatMoney(totalAfter)})</span>`;
 };
 
-let signatureCtx = null;
-let isDrawing = false;
-
-window.initSignatureCanvas = function() {
-  const canvas = document.getElementById('signatureCanvas');
-  if (!canvas) return;
-  signatureCtx = canvas.getContext('2d');
-  signatureCtx.lineWidth = 2.5;
-  signatureCtx.lineCap = 'round';
-  signatureCtx.lineJoin = 'round';
-  signatureCtx.strokeStyle = '#000000';
-  
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    if (e.touches && e.touches.length > 0) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY
-      };
-    }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
-  }
-
-  function startDrawing(e) {
-    isDrawing = true;
-    const pos = getPos(e);
-    signatureCtx.beginPath();
-    signatureCtx.moveTo(pos.x, pos.y);
-    if (e.type === 'touchstart') e.preventDefault();
-  }
-
-  function draw(e) {
-    if (!isDrawing) return;
-    const pos = getPos(e);
-    signatureCtx.lineTo(pos.x, pos.y);
-    signatureCtx.stroke();
-    if (e.type === 'touchmove') e.preventDefault();
-  }
-
-  function stopDrawing() {
-    isDrawing = false;
-  }
-
-  canvas.addEventListener('mousedown', startDrawing);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDrawing);
-  canvas.addEventListener('mouseleave', stopDrawing);
-
-  canvas.addEventListener('touchstart', startDrawing, { passive: false });
-  canvas.addEventListener('touchmove', draw, { passive: false });
-  canvas.addEventListener('touchend', stopDrawing);
-};
-
-window.clearSignature = function() {
-  const canvas = document.getElementById('signatureCanvas');
-  if (canvas && signatureCtx) {
-    signatureCtx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-};
-
 window.processTabPayment = function() {
   if (state.isProcessingPayment) return;
   state.isProcessingPayment = true;
@@ -388,18 +327,16 @@ window.processTabPayment = function() {
     
     const totals = calculateCartTotals();
     const dept = state.departments.find(d => d.id === state.currentTabEmployee.departmentId);
+    const cashierName = state.currentUser ? (state.currentUser.name || state.currentUser.username || 'Cashier') : 'Cashier';
 
-    const canvas = document.getElementById('signatureCanvas');
-    const signatureDataUrl = canvas ? canvas.toDataURL() : '';
-    
     const order = {
       id: `ORD-${new Date().toISOString().replace(/\D/g,'').slice(0,14)}`,
       timestamp: new Date().toISOString(),
-      cashierName: state.currentUser.name,
+      cashierName: cashierName,
       checkoutMode: 'INSTITUTIONAL_TAB',
       paymentMethod: 'PAYROLL_DEDUCTION',
-      departmentId: dept.id,
-      departmentName: dept.name,
+      departmentId: dept ? dept.id : null,
+      departmentName: dept ? dept.name : 'Hospital Dept',
       employeeId: state.currentTabEmployee.id,
       employeeName: state.currentTabEmployee.fullName,
       staffId: state.currentTabEmployee.staffId,
@@ -407,8 +344,7 @@ window.processTabPayment = function() {
       tax: totals.tax,
       total: totals.total,
       items: JSON.parse(JSON.stringify(state.cart)),
-      status: 'COMPLETED',
-      signatureDataUrl: signatureDataUrl
+      status: 'COMPLETED'
     };
 
     state.currentTabEmployee.currentBalance += totals.total;
@@ -422,7 +358,7 @@ window.processTabPayment = function() {
     renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
   } finally {
-    setTimeout(() => { state.isProcessingPayment = false; }, 1000);
+    setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }
 };
 
@@ -436,7 +372,7 @@ window.openPatientCheckoutModal = function() {
   const totalEl = document.getElementById('patientTotalText');
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
 
-  window.populateRoomDropdown();
+  if (window.populateRoomDropdown) window.populateRoomDropdown();
 
   const notesInput = document.getElementById('patientNameNotes');
   const mealSelect = document.getElementById('patientMealType');
@@ -457,7 +393,8 @@ window.processPatientPayment = function() {
     const roomSelect = document.getElementById('patientRoomNumberSelect');
     const roomNumber = roomSelect ? (roomSelect.value || '').trim() : '';
     const mealType = document.getElementById('patientMealType') ? document.getElementById('patientMealType').value : 'Breakfast';
-    const notes = document.getElementById('patientNameNotes') ? (document.getElementById('patientNameNotes').value || '').trim() : '';
+    const notes = document.getElementById('patientNameNotes') ? (document.getElementById('patientNameNotes').value || '').trim().toUpperCase() : '';
+    const patientId = document.getElementById('patientIdInput') ? (document.getElementById('patientIdInput').value || '').trim().toUpperCase() : '';
     const billingType = document.getElementById('patientBillingType') ? document.getElementById('patientBillingType').value : 'COVERED_PERK';
 
     if (!roomNumber) {
@@ -480,6 +417,7 @@ window.processPatientPayment = function() {
       roomNumber: roomNumber,
       roomTier: roomTier,
       mealType: mealType,
+      patientId: patientId,
       patientNotes: notes,
       billingType: billingType,
       subtotal: totals.subtotal,
@@ -518,19 +456,74 @@ window.showReceiptModal = function(order) {
     hour: '2-digit', minute: '2-digit'
   });
 
-  let checkoutLabel = 'DIRECT CASH / CARD SALE';
-  if (order.checkoutMode === 'INSTITUTIONAL_TAB') {
-    checkoutLabel = `STAFF TAB: ${order.employeeName || 'Staff'} (${order.staffId || ''})`;
-  } else if (order.checkoutMode === 'PATIENT_ROOM_ORDER') {
-    checkoutLabel = `PATIENT PERK: ${order.roomNumber || 'Room'} (${order.mealType || 'Meal'})`;
+  // Resolve Staff & Dept Info if missing from ID
+  let empName = order.employeeName || order.employee_name || '';
+  let stfId = order.staffId || order.staff_id || '';
+  let deptName = order.departmentName || order.department_name || '';
+
+  if (!empName && order.employeeId && Array.isArray(state.employees)) {
+    const emp = state.employees.find(e => String(e.id) === String(order.employeeId));
+    if (emp) {
+      empName = emp.fullName;
+      stfId = emp.staffId || stfId;
+      if (!deptName && emp.departmentId && Array.isArray(state.departments)) {
+        const d = state.departments.find(dept => String(dept.id) === String(emp.departmentId));
+        if (d) deptName = d.name;
+      }
+    }
   }
 
-  const payerName = order.payerName || order.customerName || (order.checkoutMode === 'DIRECT_PAYMENT' ? 'Direct Customer' : '');
+  let checkoutLabel = 'DIRECT SALE';
+  let paymentMethodLabel = order.paymentMethod || 'DIRECT PAYMENT';
+
+  if (order.paymentMethod === 'MOBILE_MONEY') {
+    checkoutLabel = 'DIRECT MOBILE MONEY (MoMo) SALE';
+    paymentMethodLabel = 'Mobile Money (MoMo)';
+  } else if (order.paymentMethod === 'CARD') {
+    checkoutLabel = 'DIRECT CARD SALE';
+    paymentMethodLabel = 'Credit / Debit Card';
+  } else if (order.paymentMethod === 'CASH') {
+    checkoutLabel = 'DIRECT CASH SALE';
+    paymentMethodLabel = 'Cash';
+  }
+
+  if (order.checkoutMode === 'INSTITUTIONAL_TAB') {
+    checkoutLabel = `STAFF TAB: ${empName || 'Staff'} ${stfId ? `(${stfId})` : ''}`;
+    paymentMethodLabel = 'Staff Payroll Tab';
+  } else if (order.checkoutMode === 'PATIENT_ROOM_ORDER') {
+    checkoutLabel = `PATIENT CATERING: ${order.roomNumber || 'Room'} (${order.mealType || 'Meal'})`;
+    paymentMethodLabel = 'Hospital Inpatient Room Perk';
+  }
+
+  const cashierName = order.cashierName || order.cashier || (state.currentUser ? state.currentUser.name : 'Cashier');
+  const payerName = order.payerName || order.customerName || order.customer_name || '';
+  const patientId = order.patientId || order.patient_id || '';
+  const patientNotes = order.patientNotes || order.patient_notes || '';
+
+  let clientSectionHtml = '';
+
+  if (order.checkoutMode === 'INSTITUTIONAL_TAB') {
+    clientSectionHtml = `
+      <div><strong>Staff Member:</strong> ${empName || 'Hospital Staff'} ${stfId ? `(${stfId})` : ''}</div>
+      ${deptName ? `<div><strong>Department:</strong> ${deptName}</div>` : ''}
+    `;
+  } else if (order.checkoutMode === 'PATIENT_ROOM_ORDER') {
+    clientSectionHtml = `
+      <div><strong>Room Number:</strong> ${order.roomNumber || 'N/A'} ${order.roomTier ? `(${order.roomTier})` : ''}</div>
+      <div><strong>Meal Category:</strong> ${order.mealType || 'Meal'}</div>
+      ${patientId ? `<div><strong>Patient ID / MRN:</strong> ${patientId}</div>` : ''}
+      ${patientNotes ? `<div><strong>Patient Name / Notes:</strong> ${patientNotes}</div>` : ''}
+    `;
+  } else {
+    clientSectionHtml = `
+      <div><strong>Client / Payer:</strong> ${payerName || 'Direct Walk-in Customer'}</div>
+    `;
+  }
 
   const itemsHtml = Array.isArray(order.items) ? order.items.map(item => `
     <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
       <span style="flex:1;">${item.qty}x ${item.name}</span>
-      <span style="font-weight:bold;">${formatMoney(item.subtotal)}</span>
+      <span style="font-weight:bold;">${formatMoney(item.subtotal || ((item.price || 0) * (item.qty || 1)))}</span>
     </div>
   `).join('') : '<div style="font-size:11px; color:#666;">No items listed</div>';
 
@@ -546,11 +539,12 @@ window.showReceiptModal = function(order) {
 
     <div style="font-size:11px; margin-bottom:8px; line-height:1.5; color:#0F172A;">
       <div><strong>Receipt #:</strong> ${order.id}</div>
-      <div><strong>Date:</strong> ${dateStr}</div>
-      <div><strong>Cashier:</strong> ${order.cashierName || order.cashier || 'Staff'}</div>
-      <div><strong>Mode:</strong> ${checkoutLabel}</div>
-      ${payerName ? `<div><strong>Client / Payer:</strong> ${payerName}</div>` : ''}
-      ${order.patientNotes ? `<div><strong>Notes:</strong> ${order.patientNotes}</div>` : ''}
+      <div><strong>Date & Time:</strong> ${dateStr}</div>
+      <div><strong>Cashier:</strong> ${cashierName}</div>
+      <div><strong>Checkout Mode:</strong> ${checkoutLabel}</div>
+      <div><strong>Payment Method:</strong> ${paymentMethodLabel}</div>
+      ${order.paymentDetails ? `<div><strong>Pay Info:</strong> ${order.paymentDetails}</div>` : ''}
+      ${clientSectionHtml}
     </div>
 
     <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:8px 0; margin-bottom:8px;">
@@ -561,13 +555,6 @@ window.showReceiptModal = function(order) {
       <span>TOTAL AMOUNT:</span>
       <span style="font-size:14px; font-weight:900; color:#D97706;">${formatMoney(order.total)}</span>
     </div>
-
-    ${order.checkoutMode === 'INSTITUTIONAL_TAB' ? `
-      <div style="margin-top:16px; border-top:1px dashed #000; padding-top:8px; text-align:center;">
-        <div style="font-size:10px; font-weight:bold; color:#0F172A; margin-bottom:14px;">Staff Signature: _______________________</div>
-        <div style="font-size:8px; color:#475569; font-weight:700; text-transform:uppercase;">(Institutional Payroll Deduction Authorization)</div>
-      </div>
-    ` : ''}
 
     <div style="font-size:10px; color:#475569; text-align:center; margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
       <div>Thank you for dining at DMCH Resto!</div>
@@ -590,16 +577,30 @@ window.reprintReceipt = function(orderId) {
 window.triggerPrintReceipt = function() {
   const container = document.getElementById('receiptPreviewContent');
   if (!container) return;
+  // Prefer using the reusable print helper used by reports (opens a new window)
+  const receiptHtml = `
+    <div class="receipt-80mm" style="padding:10px; font-family:'Courier New', Courier, monospace; background:#ffffff; color:#000000; width:100%; max-width:80mm; margin:0 auto; box-sizing:border-box;">
+      ${container.innerHTML}
+    </div>
+  `;
 
+  if (typeof openPrintWindow === 'function') {
+    openPrintWindow(receiptHtml);
+    return;
+  }
+
+  // Fallback: use inline print container
   const printFrame = document.getElementById('print-container');
   if (printFrame) {
     printFrame.classList.remove('hidden');
+    printFrame.removeAttribute('hidden');
     printFrame.style.display = 'block';
-    printFrame.innerHTML = `
-      <div class="receipt-80mm" style="padding:10px; font-family:Courier, monospace; background:#fff; color:#000; width:100%; max-width:80mm; margin:0 auto;">
-        ${container.innerHTML}
-      </div>
-    `;
+    printFrame.style.visibility = 'visible';
+    printFrame.innerHTML = receiptHtml;
   }
-  window.print();
+
+  // Allow DOM paint before invoking browser print dialog
+  setTimeout(() => {
+    window.print();
+  }, 100);
 };

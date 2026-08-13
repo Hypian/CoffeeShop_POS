@@ -65,6 +65,10 @@ body {
   min-height: 100vh;
 }
 
+input[type="text"], input[type="search"], textarea {
+  text-transform: uppercase;
+}
+
 /* ══════ APP CONTAINER & AUTH SCREENS ══════ */
 #app {
   min-height: 100vh;
@@ -570,13 +574,7 @@ header.topbar {
   animation: slideUp 0.25s ease-out forwards;
 }
 
-.signature-wrap {
-  position: relative;
-  border: 2px dashed var(--border-hover);
-  border-radius: var(--radius-md);
-  background: #FFFFFF;
-  overflow: hidden;
-}
+
 
 /* ══════ TOAST NOTIFICATIONS ══════ */
 .toast-container {
@@ -619,7 +617,7 @@ header.topbar {
 }
 
 @media print {
-  body > * {
+  body > *:not(#print-container) {
     display: none !important;
   }
   #print-container, #print-container * {

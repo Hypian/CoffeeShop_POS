@@ -364,6 +364,7 @@ window.renderDepartmentLedgers = function() {
   // MODE 5: PATIENT ROOM CATERING EXPLORER & DIRECTORY
   if (state.ledgerMode === 'patients') {
     const patientOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
+
     const search = (state.ledgerSearchQuery || '').toLowerCase();
     const selectedTierFilter = state.selectedRoomTierFilter || 'ALL';
 
@@ -483,12 +484,18 @@ window.renderDepartmentLedgers = function() {
           </div>
         </div>
 
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
-          <button onclick="state.selectedRoomTierFilter='ALL'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='ALL'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🏢 All Rooms (${roomCards.length})</button>
-          <button onclick="state.selectedRoomTierFilter='Normal Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='Normal Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🏨 Normal Room</button>
-          <button onclick="state.selectedRoomTierFilter='Private Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='Private Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🔒 Private Room</button>
-          <button onclick="state.selectedRoomTierFilter='VIP Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='VIP Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">👑 VIP Room</button>
-          <button onclick="state.selectedRoomTierFilter='VVIP Room'; renderDepartmentLedgers();" class="px-4 py-2 rounded-xl border border-black/[0.1] transition-all cursor-pointer ${selectedTierFilter==='VVIP Room'?'bg-[#0F172A] text-white':'bg-[#FFFFFF] text-[#475569] hover:bg-[#F1F5F9]'}">🌟 VVIP Room</button>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-3.5 shadow-xs">
+          <div class="flex items-center gap-2 overflow-x-auto text-xs font-bold w-full sm:w-auto pb-1 sm:pb-0">
+            <span class="text-slate-400 font-semibold px-1 flex items-center gap-1 shrink-0">🏷️ Tiers:</span>
+            <button onclick="state.selectedRoomTierFilter='ALL'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='ALL'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">All Rooms (${roomCards.length})</button>
+            <button onclick="state.selectedRoomTierFilter='Normal Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Normal Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Normal Room</button>
+            <button onclick="state.selectedRoomTierFilter='Private Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Private Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Private Room</button>
+            <button onclick="state.selectedRoomTierFilter='VIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VIP Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">VIP Room</button>
+            <button onclick="state.selectedRoomTierFilter='VVIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VVIP Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">VVIP Room</button>
+          </div>
+          <div class="text-xs text-slate-500 font-semibold px-2 shrink-0">
+            Showing <strong class="text-slate-900 font-extrabold">${filteredRooms.length}</strong> of ${state.rooms.length} Rooms
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
@@ -505,29 +512,95 @@ window.renderDepartmentLedgers = function() {
     return;
   }
 
-  // MODE 6: PATIENT ROOM DETAIL EXPLORER
+  // MODE 6: PATIENT ROOM DETAIL EXPLORER (IN-ROOM STATEMENT & FILTERS)
   if (state.ledgerMode === 'patient_room_detail') {
     const roomNum = state.selectedLedgerDeptId;
-    const roomOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && o.roomNumber === roomNum);
+    const roomObj = (state.rooms || []).find(r => (r.roomNumber || '').toLowerCase() === roomNum.toLowerCase()) || { roomNumber: roomNum, tier: 'VIP Room' };
+
+    const tierBadgeClass = (tier) => {
+      if (tier === 'VVIP Room') return 'bg-amber-500/15 text-amber-700 border-amber-300';
+      if (tier === 'VIP Room') return 'bg-purple-500/15 text-purple-700 border-purple-300';
+      if (tier === 'Private Room') return 'bg-blue-500/15 text-blue-700 border-blue-300';
+      return 'bg-slate-100 text-slate-700 border-slate-200';
+    };
+
+    const tierIcon = (tier) => {
+      if (tier === 'VVIP Room') return '🌟';
+      if (tier === 'VIP Room') return '👑';
+      if (tier === 'Private Room') return '🔒';
+      return '🏨';
+    };
+
+    const allRoomOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER' && (o.roomNumber || '').toLowerCase() === roomNum.toLowerCase());
+    let roomOrders = [...allRoomOrders];
+    
+    const dateFilter = state.patientDateFilter || 'ALL';
+    const customDate = state.patientCustomDateFilter || '';
+    const mealFilter = state.patientMealFilter || 'ALL';
+    const roomSearch = (state.patientRoomSearchQuery || '').toLowerCase();
+
+    // 1. In-Room Date Filter
+    if (dateFilter === 'TODAY') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      roomOrders = roomOrders.filter(o => (o.timestamp || '').startsWith(todayStr));
+    } else if (dateFilter === 'YESTERDAY') {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yestStr = yesterday.toISOString().split('T')[0];
+      roomOrders = roomOrders.filter(o => (o.timestamp || '').startsWith(yestStr));
+    } else if (dateFilter === 'THIS_MONTH') {
+      const monthStr = new Date().toISOString().slice(0, 7);
+      roomOrders = roomOrders.filter(o => (o.timestamp || '').startsWith(monthStr));
+    } else if (dateFilter === 'CUSTOM' && customDate) {
+      roomOrders = roomOrders.filter(o => (o.timestamp || '').startsWith(customDate));
+    }
+
+    // 2. In-Room Meal Category Filter
+    if (mealFilter === 'Breakfast') {
+      roomOrders = roomOrders.filter(o => o.mealType === 'Breakfast');
+    } else if (mealFilter === 'Lunch') {
+      roomOrders = roomOrders.filter(o => o.mealType === 'Lunch');
+    } else if (mealFilter === 'Dinner') {
+      roomOrders = roomOrders.filter(o => o.mealType === 'Dinner');
+    } else if (mealFilter === 'Tea') {
+      roomOrders = roomOrders.filter(o => o.mealType === 'Tea & Snack' || o.mealType === 'Tea/Snack' || o.mealType === 'Tea');
+    }
+
+    // 3. In-Room Search Query
+    if (roomSearch) {
+      roomOrders = roomOrders.filter(o => {
+        const idMatch = (o.id || '').toLowerCase().includes(roomSearch);
+        const pIdMatch = (o.patientId || '').toLowerCase().includes(roomSearch);
+        const notesMatch = (o.patientNotes || o.customerName || '').toLowerCase().includes(roomSearch);
+        const itemsMatch = Array.isArray(o.items) && o.items.some(i => (i.name || '').toLowerCase().includes(roomSearch));
+        return idMatch || pIdMatch || notesMatch || itemsMatch;
+      });
+    }
+
     const totalRev = roomOrders.reduce((s, o) => s + (o.total || 0), 0);
+    const bkCount = roomOrders.filter(o => o.mealType === 'Breakfast').length;
+    const luCount = roomOrders.filter(o => o.mealType === 'Lunch').length;
+    const dnCount = roomOrders.filter(o => o.mealType === 'Dinner').length;
+    const teaCount = roomOrders.filter(o => o.mealType === 'Tea & Snack' || o.mealType === 'Tea/Snack' || o.mealType === 'Tea').length;
 
     const orderRowsHtml = roomOrders.map(o => {
       const timeStr = new Date(o.timestamp).toLocaleString();
       const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name}`).join(', ') : 'N/A';
       return `
-        <tr>
+        <tr class="hover:bg-slate-50/80 transition-colors">
           <td><span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200/80 shadow-xs">${o.id}</span></td>
           <td class="text-xs text-slate-500 font-medium">${timeStr}</td>
+          <td><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">${o.patientId || 'N/A'}</span></td>
+          <td class="text-xs font-bold text-slate-900">${o.patientNotes || o.customerName || 'N/A'}</td>
           <td>
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-              ${o.mealType === 'Breakfast' ? '🌅 Breakfast' : o.mealType === 'Lunch' ? '☀️ Lunch' : o.mealType === 'Dinner' ? '🌙 Dinner' : '☕ Tea/Snack'}
+              ${o.mealType === 'Breakfast' ? 'Breakfast' : o.mealType === 'Lunch' ? 'Lunch' : o.mealType === 'Dinner' ? 'Dinner' : 'Tea/Snack'}
             </span>
           </td>
           <td class="text-xs font-semibold text-slate-800">${itemsStr}</td>
-          <td class="text-xs text-slate-600">${o.patientNotes || 'Standard Diet'}</td>
           <td class="font-mono font-extrabold text-slate-900">${formatMoney(o.total)}</td>
           <td class="text-right whitespace-nowrap">
-            <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">📄 Ticket</button>
+            <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 cursor-pointer transition-all active:scale-95">Ticket</button>
           </td>
         </tr>
       `;
@@ -535,6 +608,7 @@ window.renderDepartmentLedgers = function() {
 
     container.innerHTML = `
       <div class="flex flex-col gap-6">
+        <!-- Breadcrumbs -->
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
             <button onclick="setLedgerMode('patients')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
@@ -544,41 +618,98 @@ window.renderDepartmentLedgers = function() {
             <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
               <span>Patient Catering</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>🏥</span> ${roomNum} Statement</span>
+              <span class="font-bold text-[#0F172A] flex items-center gap-1">${roomNum} Statement</span>
             </div>
           </div>
         </div>
 
+        <!-- Room Header Summary Card -->
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-3xl font-extrabold">🏥</div>
+            <div class="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl shrink-0 border border-[#8B5CF6]/20 shadow-xs">
+              ${tierIcon(roomObj.tier)}
+            </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded">${roomNum}</span>
-                <span class="text-xs text-[#475569] font-medium">${roomOrders.length} Meal Deliveries</span>
+                <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded shadow-xs">${roomNum}</span>
+                <span class="font-mono font-extrabold text-[0.7rem] px-2.5 py-0.5 rounded border ${tierBadgeClass(roomObj.tier)}">${tierIcon(roomObj.tier)} ${roomObj.tier || 'Room'}</span>
+                <span class="text-xs text-[#475569] font-medium">• ${allRoomOrders.length} Total Deliveries</span>
               </div>
-              <h2 class="text-xl font-bold text-[#0F172A] mt-1">Catering Statement for ${roomNum}</h2>
-              <p class="text-xs text-[#475569] mt-0.5">Total Covered Perk Amount: <strong class="text-purple-600 font-mono font-bold">${formatMoney(totalRev)}</strong></p>
+              <h2 class="text-xl font-bold text-[#0F172A] mt-1">Catering Statement for Room ${roomNum}</h2>
+              <div class="flex items-center gap-3 flex-wrap mt-2">
+                <p class="text-xs text-[#475569]">Filtered Perk Total: <strong class="text-[#8B5CF6] font-mono font-bold text-sm">${formatMoney(totalRev)}</strong></p>
+                <div class="flex items-center gap-1.5 text-[0.65rem] font-bold">
+                  <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">🌅 ${bkCount} Bkfast</span>
+                  <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">☀️ ${luCount} Lunch</span>
+                  <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">🌙 ${dnCount} Dinner</span>
+                  <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">☕ ${teaCount} Tea</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="flex items-center gap-2.5">
-            <button onclick="exportPatientCateringExcel('${roomNum}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center gap-1.5">
-              <span>📊</span> Export Room Excel (.xlsx)
+          <div class="flex items-center gap-2.5 w-full md:w-auto justify-end">
+            <button onclick="exportPatientCateringExcel('${roomNum}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center gap-1.5 whitespace-nowrap">
+              📊 Export Room Excel (.xlsx)
             </button>
           </div>
         </div>
 
-        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
+        <!-- IN-ROOM FILTER TOOLBAR -->
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 shadow-sm flex flex-col gap-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-black/[0.06]">
+            <!-- Date Filter Pills -->
+            <div class="flex items-center gap-2 overflow-x-auto text-xs font-bold scrollbar-none">
+              <span class="text-slate-400 font-semibold px-1 flex items-center gap-1 shrink-0">📅 Date:</span>
+              <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='ALL'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">All Time</button>
+              <button onclick="state.patientDateFilter='TODAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='TODAY'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Today</button>
+              <button onclick="state.patientDateFilter='YESTERDAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='YESTERDAY'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Yesterday</button>
+              <button onclick="state.patientDateFilter='THIS_MONTH'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='THIS_MONTH'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">This Month</button>
+              <input type="date" value="${customDate}" onchange="state.patientDateFilter='CUSTOM'; state.patientCustomDateFilter=this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-slate-300 text-slate-900 font-semibold rounded-xl px-2.5 py-1 text-xs focus:outline-none focus:border-[#8B5CF6]">
+            </div>
+
+            <!-- Meal Category Filters -->
+            <div class="flex items-center gap-1 overflow-x-auto text-xs font-bold bg-[#F8FAFC] border border-black/[0.1] rounded-xl p-1 scrollbar-none">
+              <span class="text-slate-400 font-semibold px-2 shrink-0">🍽️ Meal:</span>
+              <button onclick="state.patientMealFilter='ALL'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='ALL'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">All</button>
+              <button onclick="state.patientMealFilter='Breakfast'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Breakfast'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌅 Breakfast</button>
+              <button onclick="state.patientMealFilter='Lunch'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Lunch'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">☀️ Lunch</button>
+              <button onclick="state.patientMealFilter='Dinner'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Dinner'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌙 Dinner</button>
+              <button onclick="state.patientMealFilter='Tea'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Tea'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">☕ Tea/Snack</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <!-- In-Room Search Input -->
+            <div class="relative w-full sm:w-80">
+              <input type="text" placeholder="🔍 Search patient name, ID or items..." value="${state.patientRoomSearchQuery || ''}" oninput="state.patientRoomSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8B5CF6] w-full pr-8">
+              ${state.patientRoomSearchQuery ? `
+                <button onclick="state.patientRoomSearchQuery=''; renderDepartmentLedgers();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs border-none bg-transparent cursor-pointer font-bold">✕</button>
+              ` : ''}
+            </div>
+
+            <!-- In-Room Filter Status & Reset -->
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569] w-full sm:w-auto justify-between sm:justify-end">
+              <span>Showing <strong class="text-[#0F172A] font-extrabold">${roomOrders.length}</strong> of ${allRoomOrders.length} deliveries</span>
+              ${(dateFilter !== 'ALL' || mealFilter !== 'ALL' || state.patientRoomSearchQuery || customDate) ? `
+                <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; state.patientMealFilter='ALL'; state.patientRoomSearchQuery=''; renderDepartmentLedgers();" class="text-xs font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer border-none bg-transparent ml-2">Reset Filters</button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Statement Table -->
+        <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
               <thead>
                 <tr class="text-[#475569] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Order ID</th>
                   <th class="py-3 px-4 font-semibold">Date & Time</th>
+                  <th class="py-3 px-4 font-semibold">Patient ID</th>
+                  <th class="py-3 px-4 font-semibold">Patient Name / Notes</th>
                   <th class="py-3 px-4 font-semibold">Meal Category</th>
                   <th class="py-3 px-4 font-semibold">Items Consumed</th>
-                  <th class="py-3 px-4 font-semibold">Notes / Diet</th>
                   <th class="py-3 px-4 font-semibold">Total (RWF)</th>
                   <th class="py-3 px-4 font-semibold text-right">Action</th>
                 </tr>
@@ -586,7 +717,15 @@ window.renderDepartmentLedgers = function() {
               <tbody class="divide-y divide-black/[0.1]">
                 ${roomOrders.length > 0 ? orderRowsHtml : `
                   <tr>
-                    <td colspan="7" class="py-8 text-center text-[#475569] italic">No catering orders found for ${roomNum}.</td>
+                    <td colspan="8" class="py-10 text-center text-[#475569]">
+                      <div class="text-2xl mb-1">🔍</div>
+                      <p class="font-bold text-xs">No catering orders found for room ${roomNum} matching your active filters.</p>
+                      ${(dateFilter !== 'ALL' || mealFilter !== 'ALL' || state.patientRoomSearchQuery || customDate) ? `
+                        <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; state.patientMealFilter='ALL'; state.patientRoomSearchQuery=''; renderDepartmentLedgers();" class="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer border border-slate-300">
+                          Clear Active Filters
+                        </button>
+                      ` : ''}
+                    </td>
                   </tr>
                 `}
               </tbody>
@@ -743,6 +882,24 @@ window.updateAutoStaffId = function() {
   staffIdInput.value = `${prefix}-${nextNum}`;
 };
 
+window.generateDepartmentCode = function() {
+  const depts = state.departments || [];
+  let maxSeq = depts.length;
+
+  depts.forEach(d => {
+    if (d && d.code) {
+      const match = String(d.code).match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (num > maxSeq) maxSeq = num;
+      }
+    }
+  });
+
+  const nextSeq = maxSeq + 1;
+  return `DPT-${String(nextSeq).padStart(3, '0')}`;
+};
+
 window.openAddDepartmentModal = function() {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
   if (currentRole !== 'admin' && currentRole !== 'manager' && currentRole !== 'cashier') {
@@ -750,19 +907,19 @@ window.openAddDepartmentModal = function() {
     return;
   }
   document.getElementById('addDeptName').value = '';
-  document.getElementById('addDeptCode').value = '';
+  document.getElementById('addDeptCode').value = window.generateDepartmentCode();
   window.openModal('modalAddDepartment');
 };
 
 window.saveNewDepartment = function() {
   const name = (document.getElementById('addDeptName').value || '').trim().toUpperCase();
   let code = (document.getElementById('addDeptCode').value || '').trim().toUpperCase();
-  if (!code && name) {
-    code = window.generateDepartmentCode ? window.generateDepartmentCode(name) : name.slice(0, 4);
+  if (!code) {
+    code = window.generateDepartmentCode();
   }
 
-  if (!name || !code) {
-    window.showToast('Department name and code are required.', 'error');
+  if (!name) {
+    window.showToast('Department name is required.', 'error');
     return;
   }
 
@@ -776,7 +933,7 @@ window.saveNewDepartment = function() {
   addAuditLog("Department Created", `Created department ${name} (${code})`);
   saveData();
   window.closeModal('modalAddDepartment');
-  window.showToast(`Department "${name}" created successfully!`, 'success');
+  window.showToast(`Department "${name}" (${code}) created successfully!`, 'success');
   renderAllViews();
 };
 

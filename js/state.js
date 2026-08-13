@@ -108,31 +108,65 @@ window.closeModal = function(id) {
   }
 };
 
+let _pendingConfirmCallback = null;
+
+window.executeConfirmAction = function() {
+  window.closeModal('modalConfirmDialog');
+  if (typeof _pendingConfirmCallback === 'function') {
+    const cb = _pendingConfirmCallback;
+    _pendingConfirmCallback = null;
+    try {
+      cb();
+    } catch (err) {
+      console.error('Error executing confirm action:', err);
+    }
+  }
+};
+
 window.showConfirmModal = function({
-  title = '⚠️ Confirm Action',
-  message = 'Are you sure?',
+  title = 'Confirm Action',
+  message = 'Are you sure you want to perform this action?',
   confirmText = 'Yes, Confirm Action',
   isDanger = true,
-  icon = '🗑️',
+  icon = '',
   badgeText = 'Irreversible Action',
   onConfirm = null
 }) {
-  const promptText = `${title}\n\n${message}`;
-  if (window.confirm(promptText)) {
-    if (typeof onConfirm === 'function') {
-      try {
-        onConfirm();
-      } catch (err) {
-        console.error('Error executing confirm action:', err);
-      }
+  _pendingConfirmCallback = onConfirm;
+
+  const titleEl = document.getElementById('confirmDialogTitleText');
+  const msgEl = document.getElementById('confirmDialogMessage');
+  const btnEl = document.getElementById('confirmDialogBtn');
+  const badgeEl = document.getElementById('confirmDialogBadge');
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+  if (badgeEl) badgeEl.textContent = badgeText;
+
+  if (btnEl) {
+    btnEl.textContent = confirmText;
+    btnEl.onclick = function() {
+      window.executeConfirmAction();
+    };
+  }
+
+  const modal = document.getElementById('modalConfirmDialog');
+  if (modal) {
+    window.openModal('modalConfirmDialog');
+  } else {
+    if (window.confirm(`${title}\n\n${message}`)) {
+      window.executeConfirmAction();
     }
   }
 };
 
 // Category Name Helper
 function getCategoryName(catId) {
-  const cat = state.categories.find(c => c.id === catId);
-  return cat ? cat.name : 'Unknown';
+  if (!catId) return 'GENERAL';
+  if (!Array.isArray(state.categories)) return String(catId).toUpperCase();
+  const cat = state.categories.find(c => c && (c.id === catId || (c.name && c.name.toLowerCase() === String(catId).toLowerCase())));
+  if (cat && cat.name) return cat.name.toUpperCase();
+  return String(catId).toUpperCase();
 }
 
 // Utility Generators & Formatters
@@ -277,12 +311,11 @@ window.saveData = function() {
   }));
 
   // Broadcast live sync event across connected terminals
-  if (window.broadcastLiveSync && !_isSyncingFromCloud) {
+  if (window.broadcastLiveSync) {
     window.broadcastLiveSync({ type: 'DATA_UPDATED' });
   }
 
-  // Only push to cloud if this save was initiated locally (not from a cloud pull)
-  if (typeof _isSyncingFromCloud !== 'undefined' && _isSyncingFromCloud) return;
+  // Always push to cloud database
   if (window.syncStateToCloud) {
     window.syncStateToCloud();
   }

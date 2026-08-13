@@ -2,31 +2,58 @@
    DMCH Resto POS & MIS — MIS Audit Reports, A4 Statements & Excel Exports
    ========================================================================== */
 
+function exportCSVFallback(headers, rows, filename) {
+  let csvContent = '\uFEFF' + headers.map(h => `"${h}"`).join(',') + '\n';
+  rows.forEach(r => {
+    csvContent += r.map(v => `"${(v === null || v === undefined) ? '' : String(v).replace(/"/g, '""')}"`).join(',') + '\n';
+  });
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const downloadName = filename.endsWith('.csv') ? filename : filename.replace(/\.xlsx$/, '.csv');
+  a.download = downloadName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.showToast(`CSV report exported: ${downloadName}`, 'success');
+}
+
 async function exportExcelWithLogo(workbookTitle, headers, rows, filename) {
   try {
     if (typeof ExcelJS === 'undefined') {
-      window.showToast('Excel exporter library is loading, please try again in a moment.', 'info');
-      return;
+      window.showToast('Excel exporter library loading; generating CSV report fallback...', 'info');
+      return exportCSVFallback(headers, rows, filename);
     }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Report');
 
-    const isJpeg = APP_LOGO_DATA_URI.startsWith('data:image/jpeg') || APP_LOGO_DATA_URI.startsWith('data:image/jpg');
-    const imageExt = isJpeg ? 'jpeg' : 'png';
-    const b64Data = APP_LOGO_DATA_URI.split(',')[1];
-    const imageId = workbook.addImage({
-      base64: b64Data,
-      extension: imageExt
-    });
+    if (typeof APP_LOGO_DATA_URI === 'string' && APP_LOGO_DATA_URI.startsWith('data:image')) {
+      try {
+        const isJpeg = APP_LOGO_DATA_URI.startsWith('data:image/jpeg') || APP_LOGO_DATA_URI.startsWith('data:image/jpg');
+        const imageExt = isJpeg ? 'jpeg' : 'png';
+        const parts = APP_LOGO_DATA_URI.split(',');
+        if (parts.length > 1) {
+          const b64Data = parts[1];
+          const imageId = workbook.addImage({
+            base64: b64Data,
+            extension: imageExt
+          });
 
-    worksheet.getColumn(1).width = 14;
-    worksheet.getColumn(2).width = 14;
+          worksheet.getColumn(1).width = 14;
+          worksheet.getColumn(2).width = 14;
 
-    worksheet.addImage(imageId, {
-      tl: { col: 0, row: 0 },
-      ext: { width: 140, height: 45 }
-    });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 140, height: 45 }
+          });
+        }
+      } catch (imgErr) {
+        console.warn('Skipping logo embedding in Excel:', imgErr);
+      }
+    }
 
     worksheet.getRow(1).height = 20;
     worksheet.getRow(2).height = 20;
@@ -97,13 +124,63 @@ async function exportExcelWithLogo(workbookTitle, headers, rows, filename) {
     window.showToast(`Excel report exported: ${filename}`, 'success');
   } catch (err) {
     console.error('Excel Export Error:', err);
-    window.showToast('Failed to export Excel file. See console for details.', 'error');
+    exportCSVFallback(headers, rows, filename.replace(/\.xlsx$/, '.csv'));
   }
+}
+
+// Helper to generate dynamic date/month titles and clean file tags for exports
+function formatReportDateTag(dateFilter = 'ALL', customDate = '') {
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const now = new Date();
+  const currentMonthStr = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const currentMonthTag = `${monthNames[now.getMonth()]}_${now.getFullYear()}`;
+
+  if (dateFilter === 'TODAY') {
+    const todayStr = now.toISOString().split('T')[0];
+    return { title: `Today (${todayStr})`, tag: `Today_${todayStr}` };
+  } else if (dateFilter === 'YESTERDAY') {
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    const yestStr = yest.toISOString().split('T')[0];
+    return { title: `Yesterday (${yestStr})`, tag: `Yesterday_${yestStr}` };
+  } else if (dateFilter === 'THIS_MONTH') {
+    return { title: currentMonthStr, tag: currentMonthTag };
+  } else if (dateFilter === 'CUSTOM' && customDate) {
+    const cleanDate = String(customDate).replace(/[^a-zA-Z0-9_-]/g, '_');
+    return { title: customDate, tag: cleanDate };
+  } else {
+    return { title: currentMonthStr, tag: currentMonthTag };
+  }
+}
+
+function formatPeriodSubTitle(dateSub) {
+  if (!dateSub) {
+    const now = new Date();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    return { title: `${monthNames[now.getMonth()]} ${now.getFullYear()}`, fileTag: `${monthNames[now.getMonth()]}_${now.getFullYear()}` };
+  }
+  
+  if (/^\d{4}-\d{2}$/.test(dateSub)) {
+    const [y, m] = dateSub.split('-');
+    const dateObj = new Date(parseInt(y), parseInt(m) - 1, 1);
+    const monthName = dateObj.toLocaleString('en-US', { month: 'long' });
+    return { title: `${monthName} ${y}`, fileTag: `${monthName}_${y}` };
+  }
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateSub)) {
+    const [y, m, d] = dateSub.split('-');
+    const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const formatted = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return { title: formatted, fileTag: dateSub };
+  }
+
+  return { title: dateSub, fileTag: String(dateSub).replace(/[^a-zA-Z0-9_-]/g, '_') };
 }
 
 window.exportHRExcel = async function() {
   const deptId = document.getElementById('hrFilterDept')?.value || 'ALL';
   const empId = document.getElementById('hrFilterEmp')?.value || 'ALL';
+  const timeTag = formatReportDateTag('THIS_MONTH');
 
   if (empId !== 'ALL') {
     const emp = state.employees.find(e => e.id === empId);
@@ -111,7 +188,7 @@ window.exportHRExcel = async function() {
     const dept = state.departments.find(d => d.id === emp.departmentId);
     const receipts = state.tabReceipts.filter(r => r.employeeId === empId);
 
-    const workbookTitle = `DETAILED STATEMENT OF ACCOUNT - ${emp.fullName} (${emp.staffId})`;
+    const workbookTitle = `STAFF STATEMENT OF ACCOUNT - ${emp.fullName.toUpperCase()} (${emp.staffId || 'N/A'}) - ${timeTag.title.toUpperCase()}`;
     const headers = ["Order ID", "Date & Time", "Department", "Items Consumed", "Amount (RWF)"];
     const rows = [];
     let grandTotal = 0;
@@ -126,15 +203,19 @@ window.exportHRExcel = async function() {
     rows.push([]);
     rows.push(["GRAND TOTAL TO DEDUCT", "", "", "", grandTotal]);
 
-    const filename = `Staff_Statement_${emp.staffId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const cleanStaffId = (emp.staffId || emp.fullName).replace(/\s+/g, '_');
+    const filename = `HR_Staff_Statement_${cleanStaffId}_${timeTag.tag}.xlsx`;
     await exportExcelWithLogo(workbookTitle, headers, rows, filename);
   } else {
     let deptsToExport = state.departments;
+    let deptTag = 'All_Depts';
     if (deptId !== 'ALL') {
       deptsToExport = state.departments.filter(d => d.id === deptId);
+      const selectedDept = state.departments.find(d => d.id === deptId);
+      if (selectedDept) deptTag = selectedDept.code;
     }
 
-    const workbookTitle = `HR PAYROLL DEDUCTIONS SUMMARY REPORT`;
+    const workbookTitle = `HR PAYROLL DEDUCTIONS SUMMARY REPORT - ${timeTag.title.toUpperCase()}`;
     const headers = ["Department Code", "Department Name", "Staff ID", "Employee Name", "Current Outstanding Tab (RWF)"];
     const rows = [];
     let grandTotal = 0;
@@ -150,7 +231,7 @@ window.exportHRExcel = async function() {
     rows.push([]);
     rows.push(["GRAND TOTAL PAYROLL DEDUCTIONS", "", "", "", grandTotal]);
 
-    const filename = `HR_Payroll_Deductions_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `HR_Payroll_Deductions_${deptTag}_${timeTag.tag}.xlsx`;
     await exportExcelWithLogo(workbookTitle, headers, rows, filename);
   }
 };
@@ -159,11 +240,12 @@ window.exportDepartmentExcel = async function(deptId) {
   const dept = state.departments.find(d => d.id === deptId);
   if (!dept) return;
 
+  const timeTag = formatReportDateTag('THIS_MONTH');
   const staffList = state.employees.filter(e => e.departmentId === deptId);
   const staffIds = staffList.map(e => e.id);
   const receipts = state.tabReceipts.filter(r => staffIds.includes(r.employeeId) || r.departmentId === deptId);
 
-  const workbookTitle = `DEPARTMENT CONSUMPTION REPORT - ${dept.name.toUpperCase()} (${dept.code})`;
+  const workbookTitle = `DEPARTMENT CONSUMPTION REPORT - ${dept.name.toUpperCase()} (${dept.code}) - ${timeTag.title.toUpperCase()}`;
   const headers = ["Staff ID", "Employee Name", "Order ID", "Date & Time", "Items Consumed", "Amount (RWF)"];
   const rows = [];
   let grandTotal = 0;
@@ -178,38 +260,93 @@ window.exportDepartmentExcel = async function(deptId) {
   rows.push([]);
   rows.push(["GRAND TOTAL CONSUMED", "", "", "", "", grandTotal]);
 
-  const filename = `Department_Consumption_${dept.code}_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const filename = `Department_Consumption_${dept.code}_${timeTag.tag}.xlsx`;
   await exportExcelWithLogo(workbookTitle, headers, rows, filename);
 };
 
 window.exportPatientCateringExcel = async function(targetRoomNum = null) {
   let patientOrders = (state.orders || []).filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
   
-  if (targetRoomNum) {
-    patientOrders = patientOrders.filter(o => (o.roomNumber || '').toLowerCase() === targetRoomNum.toLowerCase());
+  const dateFilter = state.patientDateFilter || 'ALL';
+  const customDate = state.patientCustomDateFilter || '';
+  const mealFilter = state.patientMealFilter || 'ALL';
+  const roomSearch = (state.patientRoomSearchQuery || '').toLowerCase();
+
+  const timeTag = formatReportDateTag(dateFilter, customDate);
+
+  if (dateFilter === 'TODAY') {
+    const todayStr = new Date().toISOString().split('T')[0];
+    patientOrders = patientOrders.filter(o => (o.timestamp || '').startsWith(todayStr));
+  } else if (dateFilter === 'YESTERDAY') {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yestStr = yesterday.toISOString().split('T')[0];
+    patientOrders = patientOrders.filter(o => (o.timestamp || '').startsWith(yestStr));
+  } else if (dateFilter === 'THIS_MONTH') {
+    const monthStr = new Date().toISOString().slice(0, 7);
+    patientOrders = patientOrders.filter(o => (o.timestamp || '').startsWith(monthStr));
+  } else if (dateFilter === 'CUSTOM' && customDate) {
+    patientOrders = patientOrders.filter(o => (o.timestamp || '').startsWith(customDate));
   }
 
-  const workbookTitle = targetRoomNum 
-    ? `HOSPITAL INPATIENT CATERING STATEMENT - ${targetRoomNum.toUpperCase()}`
-    : `MONTHLY INPATIENT CATERING & MEAL DELIVERIES REPORT`;
+  let mealTitleSub = '';
+  let mealTagFile = '';
 
-  const headers = ["Order ID", "Date & Time", "Room Number", "Meal Category", "Items Consumed", "Diet / Notes", "Covered Amount (RWF)"];
+  if (targetRoomNum) {
+    patientOrders = patientOrders.filter(o => (o.roomNumber || '').toLowerCase() === targetRoomNum.toLowerCase());
+    
+    // Apply in-room meal filter if specified
+    if (mealFilter !== 'ALL') {
+      if (mealFilter === 'Breakfast') {
+        patientOrders = patientOrders.filter(o => o.mealType === 'Breakfast');
+      } else if (mealFilter === 'Lunch') {
+        patientOrders = patientOrders.filter(o => o.mealType === 'Lunch');
+      } else if (mealFilter === 'Dinner') {
+        patientOrders = patientOrders.filter(o => o.mealType === 'Dinner');
+      } else if (mealFilter === 'Tea') {
+        patientOrders = patientOrders.filter(o => o.mealType === 'Tea & Snack' || o.mealType === 'Tea/Snack' || o.mealType === 'Tea');
+      }
+      mealTitleSub = ` (${mealFilter.toUpperCase()})`;
+      mealTagFile = `_${mealFilter}`;
+    }
+
+    // Apply in-room search query if specified
+    if (roomSearch) {
+      patientOrders = patientOrders.filter(o => {
+        const idMatch = (o.id || '').toLowerCase().includes(roomSearch);
+        const pIdMatch = (o.patientId || '').toLowerCase().includes(roomSearch);
+        const notesMatch = (o.patientNotes || o.customerName || '').toLowerCase().includes(roomSearch);
+        const itemsMatch = Array.isArray(o.items) && o.items.some(i => (i.name || '').toLowerCase().includes(roomSearch));
+        return idMatch || pIdMatch || notesMatch || itemsMatch;
+      });
+    }
+  }
+
+  const cleanRoomNum = targetRoomNum ? targetRoomNum.toUpperCase().replace(/\s+/g, '_') : '';
+
+  const workbookTitle = targetRoomNum 
+    ? `PATIENT ROOM CATERING STATEMENT - ROOM ${targetRoomNum.toUpperCase()}${mealTitleSub} - ${timeTag.title.toUpperCase()}`
+    : `MONTHLY PATIENT ROOM CATERING DIRECTORY REPORT - ${timeTag.title.toUpperCase()}`;
+
+  const headers = ["Order ID", "Date & Time", "Room Number", "Patient ID / MRN #", "Patient Name / Diet Notes", "Meal Category", "Items Consumed", "Covered Amount (RWF)"];
   const rows = [];
   let grandTotal = 0;
 
   patientOrders.slice().reverse().forEach(o => {
     const timeStr = new Date(o.timestamp).toLocaleString();
     const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
-    rows.push([o.id, timeStr, o.roomNumber || 'N/A', o.mealType || 'Meal', itemsStr, o.patientNotes || 'Standard', o.total]);
+    const pId = o.patientId || 'N/A';
+    const pNameNotes = o.patientNotes || o.customerName || o.payerName || 'N/A';
+    rows.push([o.id, timeStr, o.roomNumber || 'N/A', pId, pNameNotes, o.mealType || 'Meal', itemsStr, o.total]);
     grandTotal += o.total;
   });
 
   rows.push([]);
-  rows.push(["GRAND TOTAL COVERED PERKS", "", "", "", "", "", grandTotal]);
+  rows.push(["GRAND TOTAL COVERED PERKS", "", "", "", "", "", "", grandTotal]);
 
   const filename = targetRoomNum 
-    ? `Patient_Catering_${targetRoomNum.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`
-    : `Monthly_Patient_Catering_${new Date().toISOString().split('T')[0]}.xlsx`;
+    ? `Patient_Room_Catering_Room_${cleanRoomNum}${mealTagFile}_${timeTag.tag}.xlsx`
+    : `Monthly_Patient_Room_Catering_${timeTag.tag}.xlsx`;
 
   await exportExcelWithLogo(workbookTitle, headers, rows, filename);
 };
@@ -438,6 +575,7 @@ window.getFilteredOrdersForReport = function(targetDateStr = null, subfolderFilt
 
 window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
   const { orders, dateSub, sub } = getFilteredOrdersForReport(targetDateStr, subfolderFilter, folderPeriod);
+  const periodTag = formatPeriodSubTitle(dateSub);
 
   let filterTitle = "ALL RECEIPTS";
   if (sub === 'direct') filterTitle = "DIRECT SALES (CASH / MOMO / CARD)";
@@ -454,7 +592,7 @@ window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = n
 
   // Header branding metadata
   csvContent += `${escapeCsv('DMCH RESTO - DREAM MEDICAL CENTER HOSPITAL')}\n`;
-  csvContent += `${escapeCsv(`DAILY AUDIT REPORT [${filterTitle}] - ${dateSub}`)}\n`;
+  csvContent += `${escapeCsv(`MIS AUDIT REPORT [${filterTitle}] - ${periodTag.title}`)}\n`;
   csvContent += `${escapeCsv(`Generated: ${new Date().toLocaleString()}`)}\n\n`;
 
   if (sub === 'items') {
@@ -521,7 +659,7 @@ window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = n
 
       let client = o.payerName || o.customerName || 'Walk-in Customer';
       if (o.checkoutMode === 'PATIENT_ROOM_ORDER') {
-        client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}`;
+        client = `Room: ${o.roomNumber || 'N/A'}${o.patientId ? ` (PID: ${o.patientId})` : ''}${o.mealType ? ` (${o.mealType})` : ''}${o.patientNotes ? ` - ${o.patientNotes}` : ''}`;
       } else if (o.employeeName) {
         client = `${o.employeeName} (${o.staffId || 'N/A'}) - ${o.departmentName || ''}`;
       } else if (o.payerName || o.customerName) {
@@ -552,7 +690,9 @@ window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = n
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const filename = `Daily_Report_${sub.toUpperCase()}_${dateSub}.csv`;
+  const isMonthly = /^\d{4}-\d{2}$/.test(dateSub);
+  const filePrefix = isMonthly ? "Monthly" : "Daily";
+  const filename = `${filePrefix}_MIS_Report_${sub.toUpperCase()}_${periodTag.fileTag}.csv`;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
@@ -566,6 +706,7 @@ window.exportDailyReportCSV = function(targetDateStr = null, subfolderFilter = n
 
 window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFilter = null, folderPeriod = null) {
   const { orders, dateSub, sub } = getFilteredOrdersForReport(targetDateStr, subfolderFilter, folderPeriod);
+  const periodTag = formatPeriodSubTitle(dateSub);
 
   let filterTitle = "ALL RECEIPTS";
   if (sub === 'direct') filterTitle = "DIRECT SALES";
@@ -573,7 +714,9 @@ window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFi
   else if (sub === 'patient') filterTitle = "INPATIENT PERKS";
   else if (sub === 'items') filterTitle = "PRODUCT LOG";
 
-  const workbookTitle = `DAILY MIS AUDIT REPORT [${filterTitle}] - ${dateSub}`;
+  const isMonthly = /^\d{4}-\d{2}$/.test(dateSub);
+  const reportPrefix = isMonthly ? "MONTHLY MIS AUDIT REPORT" : "DAILY MIS AUDIT REPORT";
+  const workbookTitle = `${reportPrefix} [${filterTitle}] - ${periodTag.title.toUpperCase()}`;
 
   if (sub === 'items') {
     const productMap = {};
@@ -603,7 +746,8 @@ window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFi
     rows.push([]);
     rows.push(["GRAND TOTAL", "", grandTotal]);
 
-    const filename = `Daily_Report_PRODUCT_LOG_${dateSub}.xlsx`;
+    const filePrefix = isMonthly ? "Monthly" : "Daily";
+    const filename = `${filePrefix}_MIS_Product_Log_${periodTag.fileTag}.xlsx`;
     await exportExcelWithLogo(workbookTitle, headers, rows, filename);
   } else {
     const headers = ["Order ID", "Date & Time", "Mode", "Client / Staff / Room", "Cashier", "Status", "Items Consumed", "Amount (RWF)"];
@@ -633,7 +777,8 @@ window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFi
     rows.push([]);
     rows.push(["GRAND TOTAL", "", "", "", "", "", "", grandTotal]);
 
-    const filename = `Daily_Report_${sub.toUpperCase()}_${dateSub}.xlsx`;
+    const filePrefix = isMonthly ? "Monthly" : "Daily";
+    const filename = `${filePrefix}_MIS_Audit_${sub.toUpperCase()}_${periodTag.fileTag}.xlsx`;
     await exportExcelWithLogo(workbookTitle, headers, rows, filename);
   }
 };
@@ -786,12 +931,12 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
         const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
         const isVoided = o.status === 'VOIDED';
 
-        let modeLabel = '💳 Staff Tab';
-        if (isDirect) modeLabel = '💵 Direct';
-        else if (isPatient) modeLabel = '🏥 Room';
+        let modeLabel = 'Staff Tab';
+        if (isDirect) modeLabel = 'Direct';
+        else if (isPatient) modeLabel = 'Room';
 
         let clientText = o.payerName || o.customerName || 'Walk-in';
-        if (isPatient) clientText = `Room ${o.roomNumber || ''}`;
+        if (isPatient) clientText = `Room ${o.roomNumber || ''}${o.patientId ? ` (PID: ${o.patientId})` : ''}`;
         else if (o.employeeName) clientText = `${o.employeeName} (${o.staffId || ''})`;
         else if (o.payerName || o.customerName) clientText = `${o.payerName || o.customerName}`;
 
@@ -1056,16 +1201,16 @@ window.renderReports = function() {
                 const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
                 const isVoided = o.status === 'VOIDED';
 
-                let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">💳 Tab</span>';
+                let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">Tab</span>';
                 if (isDirect) {
-                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">💵 Direct</span>';
+                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">Direct</span>';
                 } else if (isPatient) {
-                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🏥 Inpatient</span>';
+                  modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">Inpatient</span>';
                 }
 
                 let clientText = o.payerName || o.customerName || 'Walk-in Customer';
                 if (isPatient) {
-                  clientText = `🏥 Inpatient Order (${o.roomNumber}${o.mealType ? ` - ${o.mealType}` : ''})`;
+                  clientText = `Inpatient Order (${o.roomNumber}${o.patientId ? ` - PID: ${o.patientId}` : ''}${o.mealType ? ` - ${o.mealType}` : ''})`;
                 } else if (o.employeeName) {
                   clientText = `${o.employeeName} <span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>`;
                 } else if (o.payerName || o.customerName) {

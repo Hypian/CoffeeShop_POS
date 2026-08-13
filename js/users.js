@@ -137,9 +137,9 @@ window.renderUsers = function() {
 
         <select id="userRoleFilter" onchange="renderUsers()" class="bg-[#F8FAFC] border border-black/[0.1] text-xs font-bold text-[#0F172A] rounded-xl px-3 py-2 focus:outline-none focus:border-[#F59E0B]">
           <option value="ALL" ${roleFilter === 'ALL' ? 'selected' : ''}>All Roles</option>
-          <option value="admin" ${roleFilter === 'admin' ? 'selected' : ''}>👑 Administrator</option>
-          <option value="cashier" ${roleFilter === 'cashier' ? 'selected' : ''}>💵 Staff Cashier</option>
-          <option value="waiter" ${roleFilter === 'waiter' ? 'selected' : ''}>👤 Service Waiter</option>
+          <option value="admin" ${roleFilter === 'admin' ? 'selected' : ''}>Administrator</option>
+          <option value="cashier" ${roleFilter === 'cashier' ? 'selected' : ''}>Staff Cashier</option>
+          <option value="waiter" ${roleFilter === 'waiter' ? 'selected' : ''}>Service Waiter</option>
         </select>
       </div>
     </div>
@@ -169,11 +169,11 @@ window.renderUsers = function() {
               const isDeclined = status === 'DECLINED';
               const isApproved = status === 'APPROVED';
 
-              let roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">👤 Waiter</span>';
+              let roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">Waiter</span>';
               if (u.role === 'admin') {
-                roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">👑 Administrator</span>';
+                roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">Administrator</span>';
               } else if (u.role === 'cashier') {
-                roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">💵 Cashier</span>';
+                roleBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Cashier</span>';
               }
 
               let statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">✅ Active / Approved</span>';
@@ -323,7 +323,7 @@ window.openAddUserModal = function() {
 };
 
 window.saveNewUserByAdmin = async function() {
-  const fullName = (document.getElementById('adminNewUserFullName')?.value || '').trim();
+  const fullName = (document.getElementById('adminNewUserFullName')?.value || '').trim().toUpperCase();
   const username = (document.getElementById('adminNewUserUsername')?.value || '').trim().toLowerCase();
   const password = (document.getElementById('adminNewUserPassword')?.value || '').trim();
   const role = document.getElementById('adminNewUserRole')?.value || 'cashier';
