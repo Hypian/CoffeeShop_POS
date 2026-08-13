@@ -136,31 +136,17 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    // 6. Fetch Users
+    // 6. Fetch Users directly from Render Cloud API
     const resUsers = await fetch(`${baseUrl}/users`).catch(() => null);
     if (resUsers && resUsers.ok) {
       const result = await resUsers.json();
       if (result.success && Array.isArray(result.data)) {
-        let localUsers = JSON.parse(localStorage.getItem('dmch_resto_users')) || [];
-        const fetchedUsers = result.data.map(u => ({
+        state.users = result.data.map(u => ({
           id: u.id,
           username: u.username,
           fullName: (u.full_name || u.name || u.username).toUpperCase(),
           role: u.role
         }));
-
-        const mergedUsers = [...localUsers];
-        fetchedUsers.forEach(fUser => {
-          const existingIdx = mergedUsers.findIndex(lUser => lUser.id === fUser.id || (lUser.username && lUser.username.toLowerCase() === fUser.username.toLowerCase()));
-          if (existingIdx >= 0) {
-            mergedUsers[existingIdx].role = fUser.role;
-            if (!mergedUsers[existingIdx].fullName) mergedUsers[existingIdx].fullName = fUser.fullName;
-          } else {
-            mergedUsers.push(fUser);
-          }
-        });
-
-        localStorage.setItem('dmch_resto_users', JSON.stringify(mergedUsers));
         if (window.renderUsers) window.renderUsers();
       }
     }

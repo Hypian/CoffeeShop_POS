@@ -8,61 +8,20 @@ async function hashPassword(str) {
 }
 
 function seedDefaultUsers() {
-  let existingUsers = JSON.parse(localStorage.getItem('dmch_resto_users'));
-  const sampleUserIds = ['u-cashier', 'u-claire', 'u-jean', 'u-grace', 'u-david', 'u-samuel'];
-
-  if (!existingUsers) {
-    existingUsers = [...DEFAULT_USERS];
-  } else {
-    // Purge sample placeholder users from storage
-    existingUsers = existingUsers.filter(u => u && !sampleUserIds.includes(u.id));
-
-    // Ensure admin user credentials (username: 'admin', password: 'Dmc@123') and APPROVED status always exist
-    const adminUser = existingUsers.find(u => u.username && u.username.toLowerCase() === 'admin');
-    if (adminUser) {
-      adminUser.password = 'Dmc@123';
-      adminUser.passwordHash = '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb';
-      adminUser.role = 'admin';
-      adminUser.status = 'APPROVED';
-    } else {
-      existingUsers.unshift({
-        id: 'u-admin',
-        username: 'admin',
-        password: 'Dmc@123',
-        passwordHash: '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb',
-        role: 'admin',
-        name: 'System Administrator',
-        fullName: 'SYSTEM ADMINISTRATOR',
-        status: 'APPROVED',
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    // Ensure every existing user has a status and fullName property
-    existingUsers.forEach(u => {
-      if (!u.status) u.status = 'APPROVED';
-      if (!u.fullName && u.name) u.fullName = u.name.toUpperCase();
-      if (!u.fullName && u.username) u.fullName = u.username.toUpperCase();
-    });
+  if (!Array.isArray(state.users) || state.users.length === 0) {
+    state.users = [...DEFAULT_USERS];
   }
-
-  // CRITICAL FIX: Assign stable id to any user missing one (handles legacy localStorage records)
-  // Without an id, Block/Delete/Reset buttons cannot look up the user by userId
-  existingUsers.forEach((u, i) => {
-    if (!u.id) {
-      u.id = `u-legacy-${(u.username || i).toString().toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-    }
-  });
-
-  localStorage.setItem('dmch_resto_users', JSON.stringify(existingUsers));
 }
 
 function getUsers() {
-  return JSON.parse(localStorage.getItem('dmch_resto_users')) || DEFAULT_USERS;
+  if (Array.isArray(state.users) && state.users.length > 0) {
+    return state.users;
+  }
+  return DEFAULT_USERS;
 }
 
 function saveUsers(users) {
-  localStorage.setItem('dmch_resto_users', JSON.stringify(users));
+  state.users = users;
   if (window.cloudSyncUsers) {
     window.cloudSyncUsers(users);
   }

@@ -234,53 +234,27 @@ window.addSecurityAuditLog = function(category, action, details, severity = 'INF
   if (window.saveData) window.saveData();
 };
 
-// Storage Data Persistence & Cloud Synchronization
+// Storage Data Persistence & Cloud Synchronization — 100% Render Cloud Engine
 window.loadStorageData = function() {
-  const d = localStorage.getItem('dmch_resto_posData') || localStorage.getItem('posData');
-  if (d) {
-    try {
-      const parsed = JSON.parse(d);
-      state.categories = Array.isArray(parsed.categories) ? parsed.categories : [...DEFAULT_CATEGORIES];
-      
-      // Filter out lingering demo/sample placeholder items from storage
-      state.products = (Array.isArray(parsed.products) ? parsed.products : []).filter(p => p && !/^p\d+$/.test(String(p.id)));
-      state.departments = (Array.isArray(parsed.departments) ? parsed.departments : []).filter(d => d && !/^dept-\d+$/.test(String(d.id)));
-      state.employees = (Array.isArray(parsed.employees) ? parsed.employees : []).filter(e => e && !/^emp-\d+$/.test(String(e.id)));
-      state.rooms = (Array.isArray(parsed.rooms) ? parsed.rooms : []).filter(r => r && !/^room-\d+$/.test(String(r.id)));
-      state.orders = (Array.isArray(parsed.orders) ? parsed.orders : []).filter(o => o && !/^ORD-8821\d+$/.test(String(o.id)));
-      
-      state.auditLogs = Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [];
-      state.archives = Array.isArray(parsed.archives) ? parsed.archives : [];
-      state.tabReceipts = Array.isArray(parsed.tabReceipts) ? parsed.tabReceipts : [];
-      state.lastActiveDate = parsed.lastActiveDate || new Date().toLocaleDateString();
-    } catch(e) {
-      console.error("Failed to parse storage data:", e);
-      state.categories = [...DEFAULT_CATEGORIES];
-      state.products = [];
-      state.departments = [];
-      state.employees = [];
-      state.rooms = [];
-      state.orders = [];
-      state.auditLogs = [];
-      state.archives = [];
-      state.tabReceipts = [];
-      state.lastActiveDate = new Date().toLocaleDateString();
-    }
-  } else {
-    // Initial clean boot (storage key never existed)
-    state.categories = [...DEFAULT_CATEGORIES];
-    state.products = [];
-    state.departments = [];
-    state.employees = [];
-    state.rooms = [];
-    state.orders = [];
-    state.auditLogs = [];
-    state.archives = [];
-    state.tabReceipts = [];
-    state.lastActiveDate = new Date().toLocaleDateString();
-  }
+  // Clear any legacy offline storage data so we only serve fresh cloud data
+  try {
+    localStorage.removeItem('dmch_resto_posData');
+    localStorage.removeItem('posData');
+    localStorage.removeItem('dmch_resto_users');
+  } catch(e) {}
 
-  // Initialize Unified Cloud Sync & Start 10s Fallback Sync Polling
+  state.categories = [...DEFAULT_CATEGORIES];
+  state.products = [];
+  state.departments = [];
+  state.employees = [];
+  state.rooms = [];
+  state.orders = [];
+  state.auditLogs = [];
+  state.archives = [];
+  state.tabReceipts = [];
+  state.lastActiveDate = new Date().toLocaleDateString();
+
+  // Initialize Cloud Database Connection & Fetch Live PostgreSQL Data
   if (window.initCloudDatabase) {
     window.initCloudDatabase();
   }
@@ -296,28 +270,17 @@ window.loadStorageData = function() {
 
 window.saveData = function() {
   if (!state.lastActiveDate) state.lastActiveDate = new Date().toLocaleDateString();
-  localStorage.setItem('dmch_resto_posData', JSON.stringify({
-    menuVersion: '6.0',
-    categories: state.categories,
-    products: state.products,
-    departments: state.departments,
-    employees: state.employees,
-    rooms: state.rooms,
-    orders: state.orders,
-    auditLogs: state.auditLogs,
-    archives: state.archives,
-    tabReceipts: state.tabReceipts,
-    lastActiveDate: state.lastActiveDate
-  }));
 
   // Broadcast live sync event across connected terminals
   if (window.broadcastLiveSync) {
     window.broadcastLiveSync({ type: 'DATA_UPDATED' });
   }
 
-  // Always push to cloud database
+  // Always push directly to Render cloud database API
   if (window.syncStateToCloud) {
     window.syncStateToCloud();
+  }
+};
   }
 };
 
