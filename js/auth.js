@@ -191,18 +191,25 @@ async function handleLogin() {
       return;
     }
     
-    const users = getUsers();
     let hashedInput = '';
     try { hashedInput = await hashPassword(password); } catch(e) {}
 
-    let user = (users || []).find(u => 
-      u && u.username && u.username.toLowerCase() === username && 
-      (u.password === password || u.password === hashedInput || u.passwordHash === hashedInput || u.passwordHash === password)
+    const isDefaultAdmin = username === 'admin' && (
+      password === 'Dmc@123' ||
+      hashedInput === '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb'
     );
 
-    // Fail-safe fallback for primary administrator account (admin / Dmc@123)
-    if (!user && username === 'admin' && (password === 'Dmc@123' || hashedInput === '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb')) {
+    let user = null;
+    if (isDefaultAdmin) {
       user = DEFAULT_USERS.find(u => u.username === 'admin');
+    }
+
+    if (!user) {
+      const users = getUsers();
+      user = (users || []).find(u =>
+        u && u.username && u.username.toLowerCase() === username &&
+        (u.password === password || u.password === hashedInput || u.passwordHash === hashedInput || u.passwordHash === password)
+      );
     }
     
     if (!user) {
@@ -245,7 +252,9 @@ async function handleLogin() {
     }
     
     const session = { username: user.username, fullName: user.fullName || user.name || user.username.toUpperCase(), role: user.role };
-    sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
+    try {
+      sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
+    } catch (e) {}
     state.currentSession = session;
     state.currentUser = { name: session.fullName, role: session.role };
     

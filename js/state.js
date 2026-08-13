@@ -12,6 +12,7 @@ let state = {
   orders: [],
   cart: [],
   categories: [],
+  users: [],
   auditLogs: [],
   archives: [],
   tabReceipts: [],
@@ -279,8 +280,6 @@ window.saveData = function() {
   // Always push directly to Render cloud database API
   if (window.syncStateToCloud) {
     window.syncStateToCloud();
-  }
-};
   }
 };
 
