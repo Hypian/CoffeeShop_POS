@@ -15,7 +15,6 @@ async function hashPassword(str) {
   } catch(e) {
     console.warn('SubtleCrypto unavailable, using fallback hash:', e);
   }
-  // Simple fallback hash for non-HTTPS / HTTP environments
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
@@ -83,6 +82,31 @@ function showMainApp() {
   if (window.switchView) window.switchView('pos');
 }
 
+function showLoginForm() {
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  if (loginForm) loginForm.style.display = 'block';
+  if (signupForm) signupForm.style.display = 'none';
+  const loginError = document.getElementById('loginError');
+  const loginErrorIcon = document.getElementById('loginErrorIcon');
+  if (loginErrorIcon) loginErrorIcon.textContent = '❌';
+  if (loginError) {
+    loginError.classList.remove('visible');
+    loginError.style.background = '';
+    loginError.style.color = '';
+    loginError.style.borderColor = '';
+  }
+}
+
+function showSignupForm() {
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  if (loginForm) loginForm.style.display = 'none';
+  if (signupForm) signupForm.style.display = 'block';
+  const signupError = document.getElementById('signupError');
+  if (signupError) signupError.classList.remove('visible');
+}
+
 function updateUserBadge() {
   const user = state.currentUser || { name: 'CHIEF CASHIER', role: 'admin' };
   const badgeEl = document.getElementById('userRoleBadge');
@@ -132,7 +156,7 @@ function applyRolePermissions() {
   });
 }
 
-window.handleLogin = async function() {
+async function handleLogin() {
   try {
     const usernameInput = document.getElementById('loginUsername');
     const passwordInput = document.getElementById('loginPassword');
@@ -231,9 +255,9 @@ window.handleLogin = async function() {
     if (errorText) errorText.textContent = 'An error occurred during sign in. Please try again.';
     if (errorDiv) errorDiv.classList.add('visible');
   }
-};
+}
 
-window.handleSignup = async function() {
+async function handleSignup() {
   try {
     const fullNameInput = document.getElementById('signupFullName');
     const usernameInput = document.getElementById('signupUsername');
@@ -325,34 +349,9 @@ window.handleSignup = async function() {
     if (errorText) errorText.textContent = 'An error occurred during account creation. Please try again.';
     if (errorDiv) errorDiv.classList.add('visible');
   }
-};
+}
 
-window.showLoginForm = function() {
-  const loginForm = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
-  if (loginForm) loginForm.style.display = 'block';
-  if (signupForm) signupForm.style.display = 'none';
-  const loginError = document.getElementById('loginError');
-  const loginErrorIcon = document.getElementById('loginErrorIcon');
-  if (loginErrorIcon) loginErrorIcon.textContent = '❌';
-  if (loginError) {
-    loginError.classList.remove('visible');
-    loginError.style.background = '';
-    loginError.style.color = '';
-    loginError.style.borderColor = '';
-  }
-};
-
-window.showSignupForm = function() {
-  const loginForm = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
-  if (loginForm) loginForm.style.display = 'none';
-  if (signupForm) signupForm.style.display = 'block';
-  const signupError = document.getElementById('signupError');
-  if (signupError) signupError.classList.remove('visible');
-};
-
-window.logout = function() {
+function logout() {
   if (window.addSecurityAuditLog && state.currentSession) {
     window.addSecurityAuditLog('AUTH', 'User Logout', `User @${state.currentSession.username} (${state.currentSession.role}) signed out.`, 'INFO');
   }
@@ -364,4 +363,20 @@ window.logout = function() {
   state.cart = [];
   state.activeTab = 'pos';
   showAuthScreen();
-};
+}
+
+// Expose all functions to global window object
+window.hashPassword = hashPassword;
+window.seedDefaultUsers = seedDefaultUsers;
+window.getUsers = getUsers;
+window.saveUsers = saveUsers;
+window.checkExistingSession = checkExistingSession;
+window.showAuthScreen = showAuthScreen;
+window.showMainApp = showMainApp;
+window.showLoginForm = showLoginForm;
+window.showSignupForm = showSignupForm;
+window.updateUserBadge = updateUserBadge;
+window.applyRolePermissions = applyRolePermissions;
+window.handleLogin = handleLogin;
+window.handleSignup = handleSignup;
+window.logout = logout;

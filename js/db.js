@@ -252,8 +252,25 @@ window.cloudDeleteRoom = async function(roomId) {
   // Local state update handled in main app
 };
 
-window.cloudClearAllRooms = async function() {};
-window.cloudSyncUsers = async function() {};
+window.cloudSyncUsers = async function(users) {
+  if (!users) return;
+  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const userList = Array.isArray(users) ? users : [users];
+  for (const u of userList) {
+    if (!u || !u.username) continue;
+    await fetch(`${baseUrl}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: u.id,
+        username: u.username,
+        passwordHash: u.passwordHash || u.password,
+        fullName: u.fullName || u.name || u.username,
+        role: u.role || 'cashier'
+      })
+    }).catch(() => null);
+  }
+};
 window.cloudDeleteUser = async function() {};
 
 // REAL-TIME CROSS-TERMINAL LIVE BROADCAST ENGINE
