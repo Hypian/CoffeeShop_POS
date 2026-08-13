@@ -81,6 +81,8 @@ window.pullCloudDataToState = async function() {
           roomNumber: o.room_number,
           mealType: o.meal_type,
           patientNotes: o.patient_notes,
+          payerName: o.payer_name || o.payerName || o.customer_name || o.customerName,
+          customerName: o.customer_name || o.customerName || o.payer_name || o.payerName,
           status: o.status
         }));
         state.orders = fetchedOrders;
@@ -289,6 +291,48 @@ window.cloudSaveRoom = async function(room) {
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
     throw new Error((result && result.error) || 'Room could not be saved.');
+  }
+  return result.data;
+};
+
+window.cloudSaveDepartment = async function(dept) {
+  const baseUrl = getApiBaseUrl();
+  const payload = {
+    id: dept.id || `dept-${Date.now()}`,
+    code: dept.code,
+    name: dept.name,
+    monthlyCreditLimit: dept.monthlyCreditLimit || dept.monthly_credit_limit || 100000
+  };
+  const response = await fetch(`${baseUrl}/departments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) {
+    throw new Error((result && result.error) || 'Department could not be saved.');
+  }
+  return result.data;
+};
+
+window.cloudSaveEmployee = async function(emp) {
+  const baseUrl = getApiBaseUrl();
+  const payload = {
+    id: emp.id || `emp-${Date.now()}`,
+    staffId: emp.staffId || emp.staff_id,
+    fullName: emp.fullName || emp.full_name,
+    departmentId: emp.departmentId || emp.department_id,
+    monthlyCreditLimit: emp.monthlyCreditLimit || emp.monthly_credit_limit || 50000,
+    currentBalance: emp.currentBalance || emp.current_balance || 0
+  };
+  const response = await fetch(`${baseUrl}/employees`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) {
+    throw new Error((result && result.error) || 'Employee could not be saved.');
   }
   return result.data;
 };

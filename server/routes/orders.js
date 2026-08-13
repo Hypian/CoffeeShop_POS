@@ -28,10 +28,12 @@ router.post('/', async (req, res) => {
       INSERT INTO orders (
         id, timestamp, items, subtotal, tax, total, payment_method, 
         checkout_mode, cashier, employee_id, department_id, room_number, 
-        meal_type, patient_notes, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        meal_type, patient_notes, status, payer_name, customer_name
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
+        payer_name = EXCLUDED.payer_name,
+        customer_name = EXCLUDED.customer_name,
         updated_at = NOW()
       RETURNING *;
     `;
@@ -45,13 +47,15 @@ router.post('/', async (req, res) => {
       order.total,
       order.paymentMethod || order.payment_method || 'CASH',
       order.checkoutMode || order.checkout_mode || 'DIRECT',
-      order.cashier || 'System',
+      order.cashier || order.cashierName || 'System',
       order.employeeId || order.employee_id || null,
       order.departmentId || order.department_id || null,
       order.roomNumber || order.room_number || null,
       order.mealType || order.meal_type || null,
       order.patientNotes || order.patient_notes || null,
-      order.status || 'COMPLETED'
+      order.status || 'COMPLETED',
+      order.payerName || order.payer_name || order.customerName || order.customer_name || 'Walk-in Customer',
+      order.customerName || order.customer_name || order.payerName || order.payer_name || 'Walk-in Customer'
     ];
 
     const { rows } = await db.query(text, values);

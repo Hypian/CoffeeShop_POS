@@ -23,7 +23,7 @@ window.openVoidOrderModal = function(orderId) {
   window.openModal('modalVoidOrder');
 };
 
-window.confirmVoidOrder = function() {
+window.confirmVoidOrder = async function() {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'cashier');
   if (currentRole !== 'admin') {
     window.showToast('🔒 Row Level Security: Only Administrator can void transactions.', 'error');
@@ -41,6 +41,9 @@ window.confirmVoidOrder = function() {
     const emp = state.employees.find(e => e.id === order.employeeId || e.staffId === order.staffId);
     if (emp) {
       emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+      if (window.cloudSaveEmployee) {
+        await window.cloudSaveEmployee(emp);
+      }
     }
   }
 
@@ -63,7 +66,7 @@ window.confirmVoidOrder = function() {
   saveData();
   window.closeModal('modalVoidOrder');
   window.showToast(`Transaction ${order.id} voided & inventory restored!`, 'success');
-  renderAllViews();
+  if (window.renderAllViews) window.renderAllViews();
 };
 
 window.deleteOrder = function(orderId) {
@@ -87,6 +90,9 @@ window.deleteOrder = function(orderId) {
           const emp = (state.employees || []).find(e => e && (e.id === order.employeeId || e.staffId === order.staffId));
           if (emp) {
             emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+            if (window.cloudSaveEmployee) {
+              await window.cloudSaveEmployee(emp);
+            }
           }
         }
 

@@ -760,9 +760,12 @@ window.exportDailyReportExcel = async function(targetDateStr = null, subfolderFi
       if (o.checkoutMode === 'INSTITUTIONAL_TAB') mode = 'Staff Tab';
       else if (o.checkoutMode === 'PATIENT_ROOM_ORDER') mode = 'Inpatient Perk';
 
-      let client = 'Walk-in Customer';
+      let rawClient = o.payerName || o.customerName || o.clientName || 'Walk-in Customer';
+      if (rawClient === 'DIRECT CUSTOMER' || rawClient === 'DIRECT_CUSTOMER') rawClient = 'Walk-in Customer';
+      let client = rawClient;
       if (o.checkoutMode === 'PATIENT_ROOM_ORDER') {
-        client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}`;
+        const extraNote = o.payerName || o.customerName || o.patientNotes;
+        client = `Room: ${o.roomNumber || 'N/A'}${o.mealType ? ` (${o.mealType})` : ''}${extraNote && extraNote !== 'Walk-in Customer' ? ` - ${extraNote}` : ''}`;
       } else if (o.employeeName) {
         client = `${o.employeeName} (${o.staffId || 'N/A'})`;
       }
@@ -1071,11 +1074,8 @@ window.renderReports = function() {
         </div>
 
         <div class="flex items-center gap-2 w-full sm:w-auto">
-          <button onclick="exportDailyReportPDF('${selectedDate}', '${selectedSub}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 w-full sm:w-auto">
-            <span>🖨️</span> PDF (A4)
-          </button>
           <button onclick="exportDailyReportExcel('${selectedDate}', '${selectedSub}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 w-full sm:w-auto">
-            <span>📈</span> Excel
+            <span>📈</span> Export Excel Report
           </button>
         </div>
       </div>

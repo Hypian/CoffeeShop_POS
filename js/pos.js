@@ -202,8 +202,8 @@ window.processDirectPayment = function() {
     if (window.checkAutoRollover) window.checkAutoRollover();
     const method = document.getElementById('directPaymentMethod').value;
     const totals = calculateCartTotals();
-    const rawPayer = (document.getElementById('directPayerName')?.value || document.getElementById('directMomoNumber')?.value || '').trim().toUpperCase();
-    const payerName = rawPayer || 'DIRECT CUSTOMER';
+    const rawPayer = (document.getElementById('directPayerName')?.value || '').trim().toUpperCase();
+    const payerName = rawPayer || 'Walk-in Customer';
 
     let paymentDetails = '';
 
@@ -313,7 +313,7 @@ window.updateEmployeeTabPreview = function(empId) {
   badge.innerHTML = `<span class="bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full text-xs font-bold border border-[#10B981]/30">Approved (New Balance: ${formatMoney(totalAfter)})</span>`;
 };
 
-window.processTabPayment = function() {
+window.processTabPayment = async function() {
   if (state.isProcessingPayment) return;
   state.isProcessingPayment = true;
 
@@ -326,7 +326,7 @@ window.processTabPayment = function() {
     }
     
     const totals = calculateCartTotals();
-    const dept = state.departments.find(d => d.id === state.currentTabEmployee.departmentId);
+    const dept = (state.departments || []).find(d => d && d.id === state.currentTabEmployee.departmentId);
     const cashierName = state.currentUser ? (state.currentUser.name || state.currentUser.username || 'Cashier') : 'Cashier';
 
     const order = {
@@ -347,7 +347,16 @@ window.processTabPayment = function() {
       status: 'COMPLETED'
     };
 
-    state.currentTabEmployee.currentBalance += totals.total;
+    state.currentTabEmployee.currentBalance = (state.currentTabEmployee.currentBalance || 0) + totals.total;
+
+    const empInState = (state.employees || []).find(e => e && String(e.id) === String(state.currentTabEmployee.id));
+    if (empInState) {
+      empInState.currentBalance = state.currentTabEmployee.currentBalance;
+    }
+
+    if (window.cloudSaveEmployee) {
+      await window.cloudSaveEmployee(state.currentTabEmployee);
+    }
     
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
@@ -355,8 +364,11 @@ window.processTabPayment = function() {
     window.clearCart();
     window.closeModal('modalTabCheckout');
     window.showToast(`Tab order authorized for ${state.currentTabEmployee.fullName}`, 'success');
-    renderAllViews();
+    if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
+  } catch (err) {
+    console.error('Error processing staff tab payment:', err);
+    window.showToast('Could not process tab payment to cloud database.', 'error');
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }

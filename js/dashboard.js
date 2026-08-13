@@ -536,11 +536,8 @@ window.renderDashboard = function() {
           </div>
 
           <div class="flex items-center gap-1.5 w-full sm:w-auto">
-            <button onclick="exportDailyReportPDF('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-3 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-amber-500/20">
-              <span>🖨️</span> PDF
-            </button>
-            <button onclick="exportDailyReportExcel('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-purple-500/20">
-              <span>📈</span> Excel
+            <button onclick="exportDailyReportExcel('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-purple-500/20">
+              <span>📈</span> Export Excel Report
             </button>
           </div>
         </div>

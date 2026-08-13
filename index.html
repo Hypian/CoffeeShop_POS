@@ -284,6 +284,11 @@
               <option value="MOBILE_MONEY">Mobile Money (MoMo)</option>
             </select>
           </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Payer / Customer Full Name (Optional)</label>
+            <input type="text" id="directPayerName" placeholder="e.g. JEAN-PAUL MUGISHA" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B] uppercase">
+          </div>
           
           <!-- Cash Payment Details -->
           <div id="paymentDetailsCash" class="flex flex-col gap-4">
@@ -338,10 +343,6 @@
                   <option value="AT Money">AT Money</option>
                 </select>
               </div>
-              <div class="flex flex-col gap-2">
-                <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Payer / Customer Full Name</label>
-                <input type="text" id="directPayerName" placeholder="e.g. JEAN-PAUL MUGISHA" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:border-[#F59E0B] uppercase">
-              </div>
             </div>
           </div>
 
@@ -368,16 +369,12 @@
           
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Department</label>
-            <select id="checkoutDeptSelect" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
+            <select id="checkoutDeptSelect" onchange="populateEmployeeDropdown(this.value)" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
               <option value="">Select Department...</option>
               <!-- Options populated dynamically -->
             </select>
           </div>
           
-          <div class="flex flex-col gap-2">
-            <label for="signupFullName" class="text-xs font-bold text-[#475569] uppercase tracking-wider">Full Name</label>
-            <input type="text" id="signupFullName" placeholder="e.g. John Doe">
-          </div>
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#475569] uppercase tracking-wider">Staff Account / Employee</label>
             <select id="checkoutEmpSelect" disabled onchange="updateEmployeeTabPreview(this.value)" class="bg-[#F1F5F9] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#F59E0B]">
@@ -1146,18 +1143,18 @@
     <!-- Print Container (Direct child of body for window.print) -->
     <div id="print-container" class="hidden"></div>
 
-  <script src="js/config.js?v=13.0" defer></script>
-  <script src="js/db.js?v=13.0" defer></script>
-  <script src="js/state.js?v=13.0" defer></script>
-  <script src="js/auth.js?v=13.0" defer></script>
-  <script src="js/pos.js?v=13.0" defer></script>
-  <script src="js/rooms.js?v=13.0" defer></script>
-  <script src="js/dashboard.js?v=13.0" defer></script>
-  <script src="js/ledgers.js?v=13.0" defer></script>
-  <script src="js/reports.js?v=13.0" defer></script>
-  <script src="js/reconciliation.js?v=13.0" defer></script>
-  <script src="js/inventory.js?v=13.0" defer></script>
-  <script src="js/users.js?v=13.0" defer></script>
-  <script src="js/main.js?v=13.0" defer></script>
+  <script src="js/config.js?v=17.0" defer></script>
+  <script src="js/db.js?v=17.0" defer></script>
+  <script src="js/state.js?v=17.0" defer></script>
+  <script src="js/auth.js?v=17.0" defer></script>
+  <script src="js/pos.js?v=17.0" defer></script>
+  <script src="js/rooms.js?v=17.0" defer></script>
+  <script src="js/dashboard.js?v=17.0" defer></script>
+  <script src="js/ledgers.js?v=17.0" defer></script>
+  <script src="js/reports.js?v=17.0" defer></script>
+  <script src="js/reconciliation.js?v=17.0" defer></script>
+  <script src="js/inventory.js?v=17.0" defer></script>
+  <script src="js/users.js?v=17.0" defer></script>
+  <script src="js/main.js?v=17.0" defer></script>
 </body>
 </html>
