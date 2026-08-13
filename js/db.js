@@ -5,26 +5,50 @@
 let cloudSyncActive = false;
 let _isSyncingFromCloud = false;
 
+const RENDER_PROD_API = 'https://dmch-resto-pos-api.onrender.com/api';
+
+function getApiBaseUrl() {
+  return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : RENDER_PROD_API);
+}
+
 window.initCloudDatabase = async function() {
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  let baseUrl = window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api');
 
   try {
     const res = await fetch(`${baseUrl}/health`, { method: 'GET' });
     if (res.ok) {
+      window.API_BASE_URL = baseUrl;
       cloudSyncActive = true;
-      console.log(`⚡ Connected to Render POS & MIS Backend API at ${baseUrl}`);
-      pullCloudDataToState();
+      console.log(`⚡ Connected to POS API at ${baseUrl}`);
+      await pullCloudDataToState();
       return true;
     }
   } catch (err) {
-    console.warn('⚠️ Render API server unavailable. Running in offline/local storage mode.', err);
+    console.warn(`⚠️ Local API (${baseUrl}) unavailable. Fallback to Render Cloud backend...`);
   }
+
+  // Automatic Fallback to Live Render Cloud API if localhost:5000 is not running
+  if (baseUrl !== RENDER_PROD_API) {
+    try {
+      const resProd = await fetch(`${RENDER_PROD_API}/health`, { method: 'GET' });
+      if (resProd.ok) {
+        window.API_BASE_URL = RENDER_PROD_API;
+        cloudSyncActive = true;
+        console.log(`⚡ Auto-connected to Live Render Cloud API at ${RENDER_PROD_API}`);
+        await pullCloudDataToState();
+        return true;
+      }
+    } catch (errProd) {
+      console.error('⚠️ Could not connect to Render Cloud API either:', errProd);
+    }
+  }
+
   cloudSyncActive = false;
   return false;
 };
 
 window.pullCloudDataToState = async function() {
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   _isSyncingFromCloud = true;
 
   const prevSignature = JSON.stringify({
@@ -59,9 +83,7 @@ window.pullCloudDataToState = async function() {
           patientNotes: o.patient_notes,
           status: o.status
         }));
-        const localOrders = Array.isArray(state.orders) ? state.orders : [];
-        const unSyncedOrders = localOrders.filter(loc => !fetchedOrders.some(rem => rem.id === loc.id));
-        state.orders = [...fetchedOrders, ...unSyncedOrders];
+        state.orders = fetchedOrders;
       }
     }
 
@@ -78,9 +100,7 @@ window.pullCloudDataToState = async function() {
           icon: p.icon || '☕',
           stock: Number(p.stock || 100)
         }));
-        const localProds = Array.isArray(state.products) ? state.products : [];
-        const unSyncedProds = localProds.filter(loc => !fetchedProds.some(rem => rem.id === loc.id));
-        state.products = [...fetchedProds, ...unSyncedProds];
+        state.products = fetchedProds;
       }
     }
 
@@ -95,9 +115,7 @@ window.pullCloudDataToState = async function() {
           name: d.name,
           monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
         }));
-        const localDepts = Array.isArray(state.departments) ? state.departments : [];
-        const unSyncedDepts = localDepts.filter(loc => !fetchedDepts.some(rem => rem.id === loc.id));
-        state.departments = [...fetchedDepts, ...unSyncedDepts];
+        state.departments = fetchedDepts;
       }
     }
 
@@ -114,9 +132,7 @@ window.pullCloudDataToState = async function() {
           monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
           currentBalance: Number(e.current_balance || 0)
         }));
-        const localEmps = Array.isArray(state.employees) ? state.employees : [];
-        const unSyncedEmps = localEmps.filter(loc => !fetchedEmps.some(rem => rem.id === loc.id));
-        state.employees = [...fetchedEmps, ...unSyncedEmps];
+        state.employees = fetchedEmps;
       }
     }
 
@@ -130,9 +146,7 @@ window.pullCloudDataToState = async function() {
           roomNumber: r.room_number,
           tier: r.tier
         }));
-        const localRooms = Array.isArray(state.rooms) ? state.rooms : [];
-        const unSyncedRooms = localRooms.filter(loc => !fetchedRooms.some(rem => rem.id === loc.id));
-        state.rooms = [...fetchedRooms, ...unSyncedRooms];
+        state.rooms = fetchedRooms;
       }
     }
 
@@ -176,7 +190,7 @@ let _isPushingToCloud = false;
 
 window.syncStateToCloud = async function() {
   if (_isPushingToCloud) return;
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   _isPushingToCloud = true;
 
   try {
@@ -234,11 +248,20 @@ window.syncStateToCloud = async function() {
 };
 
 window.cloudDeleteOrder = async function(orderId) {
-  // Local state update handled in main app
+  const baseUrl = getApiBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Order could not be deleted.');
+    return result.data;
+  } catch (err) {
+    console.error('Error deleting order from cloud:', err);
+    throw err;
+  }
 };
 
 window.cloudSaveProduct = async function(product) {
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -252,7 +275,7 @@ window.cloudSaveProduct = async function(product) {
 };
 
 window.cloudDeleteProduct = async function(productId) {
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE'
   });
@@ -263,20 +286,47 @@ window.cloudDeleteProduct = async function(productId) {
 };
 
 window.cloudDeleteDepartment = async function(deptId) {
-  // Local state update handled in main app
+  const baseUrl = getApiBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Department could not be deleted.');
+    return result.data;
+  } catch (err) {
+    console.error('Error deleting department from cloud:', err);
+    throw err;
+  }
 };
 
 window.cloudDeleteEmployee = async function(empId) {
-  // Local state update handled in main app
+  const baseUrl = getApiBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Employee could not be deleted.');
+    return result.data;
+  } catch (err) {
+    console.error('Error deleting employee from cloud:', err);
+    throw err;
+  }
 };
 
 window.cloudDeleteRoom = async function(roomId) {
-  // Local state update handled in main app
+  const baseUrl = getApiBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Room could not be deleted.');
+    return result.data;
+  } catch (err) {
+    console.error('Error deleting room from cloud:', err);
+    throw err;
+  }
 };
 
 window.cloudSyncUsers = async function(users) {
   if (!users) return;
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   const userList = Array.isArray(users) ? users : [users];
   for (const u of userList) {
     if (!u || !u.username) continue;
@@ -298,7 +348,7 @@ window.cloudSyncUsers = async function(users) {
   }
 };
 window.cloudDeleteUser = async function(userId) {
-  const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'http://localhost:5000/api';
+  const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'User could not be deleted.');

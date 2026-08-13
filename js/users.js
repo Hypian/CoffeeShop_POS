@@ -4,9 +4,20 @@
 // role assignments, and password resets.
 // ══════════════════════════════════════════════════════════════════════════════
 
-window.renderUsers = function() {
+window.renderUsers = function(isRefresh = false) {
   const container = document.getElementById('usersContent');
   if (!container) return;
+
+  // Pull latest users from Render Cloud API if not already refreshing
+  if (!isRefresh && window.pullCloudDataToState && !window._isPullingUsersForView) {
+    window._isPullingUsersForView = true;
+    window.pullCloudDataToState().then(() => {
+      window._isPullingUsersForView = false;
+      if (window.renderUsers) window.renderUsers(true);
+    }).catch(() => {
+      window._isPullingUsersForView = false;
+    });
+  }
 
   const users = getUsers();
   const searchInput = (document.getElementById('userSearchInput')?.value || '').toLowerCase();

@@ -87,3 +87,16 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 module.exports = router;
+
+// DELETE /api/orders/:id - Remove an order/receipt
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!db.pool) return res.json({ success: true, data: { id: req.params.id } });
+    const { rows } = await db.query('DELETE FROM orders WHERE id = $1 RETURNING id', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ success: false, error: 'Order not found' });
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Error deleting order:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});

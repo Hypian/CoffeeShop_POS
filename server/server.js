@@ -45,10 +45,39 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Endpoint not found' });
 });
 
+// Auto-migration: ensure database columns added in later versions exist
+async function runMigrations() {
+  const db = require('./db');
+  if (!db.pool) return;
+
+  const migrations = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'PENDING_APPROVAL'`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+  ];
+
+  for (const sql of migrations) {
+    try {
+      await db.query(sql);
+    } catch (err) {
+      // Ignore errors (e.g. column already exists on older PG versions)
+      console.warn('Migration skipped:', err.message);
+    }
+  }
+  console.log('✅ Database migrations checked.');
+}
+
 // Start Express Listener
-app.listen(PORT, () => {
-  console.log(`🚀 DMCH Resto POS & MIS Server running on port ${PORT}`);
-  console.log(`📡 Health Check URL: http://localhost:${PORT}/api/health`);
+runMigrations().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 DMCH Resto POS & MIS Server running on port ${PORT}`);
+    console.log(`📡 Health Check URL: http://localhost:${PORT}/api/health`);
+  });
+}).catch((err) => {
+  console.error('Migration error (non-fatal):', err);
+  app.listen(PORT, () => {
+    console.log(`🚀 DMCH Resto POS & MIS Server running on port ${PORT}`);
+  });
 });
 
 module.exports = app;

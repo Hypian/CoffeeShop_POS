@@ -77,4 +77,19 @@ router.patch('/:id/balance', async (req, res) => {
   }
 });
 
+// DELETE /api/employees/:id - Delete employee credit account
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!db.pool) return res.json({ success: true, data: { id: req.params.id } });
+    const { rows } = await db.query('DELETE FROM employees WHERE id = $1 RETURNING id', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Employee not found' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Error deleting employee:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
