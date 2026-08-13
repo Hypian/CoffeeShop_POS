@@ -755,19 +755,23 @@ window.deleteDepartment = function(deptId) {
     badgeText: "Department Ledger",
     isDanger: true,
     onConfirm: async () => {
-      (state.employees || []).forEach(e => {
-        if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
-      });
-      state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
-      addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
-      
-      if (window.renderAllViews) window.renderAllViews();
-      window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
+      try {
+        if (window.cloudDeleteDepartment) {
+          await window.cloudDeleteDepartment(deptId);
+        }
 
-      if (window.cloudDeleteDepartment) {
-        await window.cloudDeleteDepartment(deptId);
+        (state.employees || []).forEach(e => {
+          if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
+        });
+        state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
+        addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
+        
+        if (window.renderAllViews) window.renderAllViews();
+        window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
+      } catch (err) {
+        console.error('Error deleting department:', err);
+        window.showToast('Could not delete department from cloud. Please try again.', 'error');
       }
-      saveData();
     }
   });
 };
@@ -784,17 +788,21 @@ window.deleteEmployee = function(empId) {
     badgeText: "Staff Account",
     isDanger: true,
     onConfirm: async () => {
-      state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
-      state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
-      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
-      
-      if (window.renderAllViews) window.renderAllViews();
-      window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
+      try {
+        if (window.cloudDeleteEmployee) {
+          await window.cloudDeleteEmployee(empId);
+        }
 
-      if (window.cloudDeleteEmployee) {
-        await window.cloudDeleteEmployee(empId);
+        state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
+        state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
+        addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
+        
+        if (window.renderAllViews) window.renderAllViews();
+        window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
+      } catch (err) {
+        console.error('Error deleting staff account:', err);
+        window.showToast('Could not delete staff account from cloud. Please try again.', 'error');
       }
-      saveData();
     }
   });
 };

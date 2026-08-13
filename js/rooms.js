@@ -52,7 +52,7 @@ window.openAddRoomModal = function(editId = null) {
   window.openModal('modalAddRoom');
 };
 
-window.saveRoom = function() {
+window.saveRoom = async function() {
   const id = document.getElementById('editRoomId').value;
   const name = (document.getElementById('addRoomNumber').value || '').trim().toUpperCase();
   const tier = document.getElementById('addRoomTier').value;
@@ -64,31 +64,31 @@ window.saveRoom = function() {
 
   if (!state.rooms) state.rooms = [];
 
-  if (id) {
-    const room = state.rooms.find(x => x && (x.id === id || x.roomNumber === id));
-    if (room) {
-      room.roomNumber = name;
-      room.tier = tier;
+  const roomId = id || generateId('ROOM');
+  const roomObj = { id: roomId, roomNumber: name, tier: tier };
+
+  try {
+    if (window.cloudSaveRoom) {
+      await window.cloudSaveRoom(roomObj);
+    }
+
+    const existingIndex = state.rooms.findIndex(x => x && (x.id === roomId || x.roomNumber === name));
+    if (existingIndex >= 0) {
+      state.rooms[existingIndex] = roomObj;
       addAuditLog("Room Updated", `Updated room ${name} (${tier})`);
     } else {
-      state.rooms.push({ id: generateId('ROOM'), roomNumber: name, tier: tier });
+      state.rooms.push(roomObj);
       addAuditLog("Room Added", `Added room ${name} (${tier})`);
     }
-  } else {
-    const newRoom = {
-      id: generateId('ROOM'),
-      roomNumber: name,
-      tier: tier
-    };
-    state.rooms.push(newRoom);
-    addAuditLog("Room Added", `Added room ${name} (${tier})`);
-  }
 
-  saveData();
-  window.closeModal('modalAddRoom');
-  window.populateRoomDropdown(name);
-  window.showToast(`Hospital room "${name}" (${tier}) saved!`, 'success');
-  if (window.renderAllViews) window.renderAllViews();
+    window.closeModal('modalAddRoom');
+    window.populateRoomDropdown(name);
+    window.showToast(`Hospital room "${name}" (${tier}) saved to cloud!`, 'success');
+    if (window.renderAllViews) window.renderAllViews();
+  } catch (err) {
+    console.error('Error saving room to cloud:', err);
+    window.showToast('Failed to save room to cloud database. Please try again.', 'error');
+  }
 };
 
 window.deleteRoom = function(roomId) {
@@ -111,22 +111,26 @@ window.deleteRoom = function(roomId) {
     badgeText: "Room Directory",
     isDanger: true,
     onConfirm: async () => {
-      state.rooms = state.rooms.filter(r => {
-        if (!r) return false;
-        const matchId = (r.id && String(r.id) === String(targetId)) || (roomId && String(r.id) === String(roomId));
-        const matchNum = (r.roomNumber && String(r.roomNumber) === String(targetName)) || (roomId && String(r.roomNumber) === String(roomId));
-        return !matchId && !matchNum;
-      });
+      try {
+        if (window.cloudDeleteRoom) {
+          await window.cloudDeleteRoom(targetId);
+        }
 
-      addAuditLog("Room Deleted", `Deleted room ${targetName}`);
-      if (window.populateRoomDropdown) window.populateRoomDropdown();
-      if (window.renderAllViews) window.renderAllViews();
-      window.showToast(`Hospital room "${targetName}" was successfully deleted.`, 'success');
+        state.rooms = state.rooms.filter(r => {
+          if (!r) return false;
+          const matchId = (r.id && String(r.id) === String(targetId)) || (roomId && String(r.id) === String(roomId));
+          const matchNum = (r.roomNumber && String(r.roomNumber) === String(targetName)) || (roomId && String(r.roomNumber) === String(roomId));
+          return !matchId && !matchNum;
+        });
 
-      if (window.cloudDeleteRoom) {
-        await window.cloudDeleteRoom(targetId);
+        addAuditLog("Room Deleted", `Deleted room ${targetName}`);
+        if (window.populateRoomDropdown) window.populateRoomDropdown();
+        if (window.renderAllViews) window.renderAllViews();
+        window.showToast(`Hospital room "${targetName}" was permanently deleted.`, 'success');
+      } catch (err) {
+        console.error('Error deleting room:', err);
+        window.showToast('Could not delete room from cloud database. Please try again.', 'error');
       }
-      saveData();
     }
   });
 };

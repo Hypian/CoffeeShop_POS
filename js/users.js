@@ -315,16 +315,21 @@ window.deleteUserAccount = function(userId) {
     badgeText: "User Management",
     isDanger: true,
     onConfirm: async () => {
-      const updatedUsers = users.filter(u => u && String(u.id) !== String(user.id) && String(u.username).toLowerCase() !== String(user.username).toLowerCase());
-      saveUsers(updatedUsers);
-      if (window.cloudDeleteUser) {
-        await window.cloudDeleteUser(user.id);
+      try {
+        if (window.cloudDeleteUser) {
+          await window.cloudDeleteUser(user.id);
+        }
+        const updatedUsers = users.filter(u => u && String(u.id) !== String(user.id) && String(u.username).toLowerCase() !== String(user.username).toLowerCase());
+        state.users = updatedUsers;
+        if (window.addSecurityAuditLog) {
+          window.addSecurityAuditLog('USER_MGMT', 'Account Permanently Deleted', `Admin permanently deleted account @${user.username} (${user.role}). All system access permanently revoked.`, 'CRITICAL');
+        }
+        showToast(`User account @${user.username} deleted successfully.`, 'success');
+        renderUsers();
+      } catch (err) {
+        console.error('Error deleting user account:', err);
+        showToast('Could not delete user account from cloud. Please try again.', 'error');
       }
-      if (window.addSecurityAuditLog) {
-        window.addSecurityAuditLog('USER_MGMT', 'Account Permanently Deleted', `Admin permanently deleted account @${user.username} (${user.role}). All system access permanently revoked.`, 'CRITICAL');
-      }
-      showToast(`User account @${user.username} deleted successfully.`, 'success');
-      renderUsers();
     }
   });
 };

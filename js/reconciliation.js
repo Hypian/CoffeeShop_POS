@@ -78,27 +78,31 @@ window.deleteOrder = function(orderId) {
     badgeText: "Financial Audit Ledger",
     isDanger: true,
     onConfirm: async () => {
-      if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
-        const emp = (state.employees || []).find(e => e && (e.id === order.employeeId || e.staffId === order.staffId));
-        if (emp) {
-          emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+      try {
+        if (window.cloudDeleteOrder) {
+          await window.cloudDeleteOrder(orderId);
         }
-      }
 
-      state.orders = (state.orders || []).filter(o => o && String(o.id) !== String(orderId));
-      state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.orderId) !== String(orderId) && String(r.id) !== String(orderId));
+        if (order.checkoutMode === 'INSTITUTIONAL_TAB' && (order.employeeId || order.staffId)) {
+          const emp = (state.employees || []).find(e => e && (e.id === order.employeeId || e.staffId === order.staffId));
+          if (emp) {
+            emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - order.total);
+          }
+        }
 
-      addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
-      if (window.addSecurityAuditLog) {
-        window.addSecurityAuditLog('FINANCIAL', 'Transaction Permanently Deleted', `Transaction ${order.id} (${formatMoney(order.total || 0)}) was permanently deleted from the financial ledger.`, 'CRITICAL');
-      }
-      if (window.renderAllViews) window.renderAllViews();
-      window.showToast(`Transaction "${order.id}" was successfully deleted.`, 'success');
+        state.orders = (state.orders || []).filter(o => o && String(o.id) !== String(orderId));
+        state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.orderId) !== String(orderId) && String(r.id) !== String(orderId));
 
-      if (window.cloudDeleteOrder) {
-        await window.cloudDeleteOrder(orderId);
+        addAuditLog("Order Deleted", `Deleted transaction ${order.id} for ${formatMoney(order.total)}`);
+        if (window.addSecurityAuditLog) {
+          window.addSecurityAuditLog('FINANCIAL', 'Transaction Permanently Deleted', `Transaction ${order.id} (${formatMoney(order.total || 0)}) was permanently deleted from the financial ledger.`, 'CRITICAL');
+        }
+        if (window.renderAllViews) window.renderAllViews();
+        window.showToast(`Transaction "${order.id}" was permanently deleted.`, 'success');
+      } catch (err) {
+        console.error('Error deleting transaction from cloud:', err);
+        window.showToast('Could not delete transaction from cloud database. Please try again.', 'error');
       }
-      saveData();
     }
   });
 };

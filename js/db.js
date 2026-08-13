@@ -274,6 +274,25 @@ window.cloudSaveProduct = async function(product) {
   return result.data;
 };
 
+window.cloudSaveRoom = async function(room) {
+  const baseUrl = getApiBaseUrl();
+  const payload = {
+    id: room.id || `room-${Date.now()}`,
+    roomNumber: room.roomNumber || room.room_number,
+    tier: room.tier || 'Normal Room'
+  };
+  const response = await fetch(`${baseUrl}/rooms`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) {
+    throw new Error((result && result.error) || 'Room could not be saved.');
+  }
+  return result.data;
+};
+
 window.cloudDeleteProduct = async function(productId) {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
