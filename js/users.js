@@ -29,13 +29,14 @@ window.renderUsers = function(isRefresh = false) {
   const roleFilter = document.getElementById('userRoleFilter')?.value || 'ALL';
 
   // Calculate statistics
-  const totalCount = users.length;
-  const pendingCount = users.filter(u => u.status === 'PENDING_APPROVAL').length;
-  const approvedCount = users.filter(u => u.status === 'APPROVED' || !u.status).length;
-  const declinedCount = users.filter(u => u.status === 'DECLINED').length;
+  const totalCount = users.filter(u => u).length;
+  const pendingCount = users.filter(u => u && u.status === 'PENDING_APPROVAL').length;
+  const approvedCount = users.filter(u => u && (u.status === 'APPROVED' || !u.status)).length;
+  const declinedCount = users.filter(u => u && u.status === 'DECLINED').length;
 
   // Filtered users list
   const filteredUsers = users.filter(u => {
+    if (!u) return false;
     const status = u.status || 'APPROVED';
     const matchesSearch = !searchInput || 
       (u.fullName || '').toLowerCase().includes(searchInput) || 
@@ -48,7 +49,7 @@ window.renderUsers = function(isRefresh = false) {
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const pendingUsers = users.filter(u => u.status === 'PENDING_APPROVAL');
+  const pendingUsers = users.filter(u => u && u.status === 'PENDING_APPROVAL');
 
   container.innerHTML = `
     <!-- Top Header & Metric Cards -->

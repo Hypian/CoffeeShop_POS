@@ -11,6 +11,16 @@ function getApiBaseUrl() {
   return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : RENDER_PROD_API);
 }
 
+window.apiFetch = async function(url, options = {}) {
+  const token = sessionStorage.getItem('jwtToken');
+  if (!options.headers) options.headers = {};
+  if (token) {
+    options.headers['Authorization'] = 'Bearer ' + token;
+  }
+  return fetch(url, options);
+};
+
+
 window.initCloudDatabase = async function() {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     console.log('⚡ Running locally. Cloud sync is disabled for testing.');
@@ -21,7 +31,7 @@ window.initCloudDatabase = async function() {
   let baseUrl = window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api');
 
   try {
-    const res = await fetch(`${baseUrl}/health`, { method: 'GET' });
+    const res = await apiFetch(`${baseUrl}/health`, { method: 'GET' });
     if (res.ok) {
       window.API_BASE_URL = baseUrl;
       cloudSyncActive = true;
@@ -36,7 +46,7 @@ window.initCloudDatabase = async function() {
   // Automatic Fallback to Live Render Cloud API if localhost:5000 is not running
   if (baseUrl !== RENDER_PROD_API) {
     try {
-      const resProd = await fetch(`${RENDER_PROD_API}/health`, { method: 'GET' });
+      const resProd = await apiFetch(`${RENDER_PROD_API}/health`, { method: 'GET' });
       if (resProd.ok) {
         window.API_BASE_URL = RENDER_PROD_API;
         cloudSyncActive = true;
@@ -67,7 +77,7 @@ window.pullCloudDataToState = async function() {
 
   try {
     // 1. Fetch Orders
-    const resOrders = await fetch(`${baseUrl}/orders`).catch(() => null);
+    const resOrders = await apiFetch(`${baseUrl}/orders`).catch(() => null);
     if (resOrders && resOrders.ok) {
       const result = await resOrders.json();
       if (result.success && Array.isArray(result.data)) {
@@ -96,7 +106,7 @@ window.pullCloudDataToState = async function() {
     }
 
     // 2. Fetch Products
-    const resProds = await fetch(`${baseUrl}/products`).catch(() => null);
+    const resProds = await apiFetch(`${baseUrl}/products`).catch(() => null);
     if (resProds && resProds.ok) {
       const result = await resProds.json();
       if (result.success && Array.isArray(result.data)) {
@@ -113,7 +123,7 @@ window.pullCloudDataToState = async function() {
     }
 
     // 3. Fetch Departments
-    const resDepts = await fetch(`${baseUrl}/departments`).catch(() => null);
+    const resDepts = await apiFetch(`${baseUrl}/departments`).catch(() => null);
     if (resDepts && resDepts.ok) {
       const result = await resDepts.json();
       if (result.success && Array.isArray(result.data)) {
@@ -128,7 +138,7 @@ window.pullCloudDataToState = async function() {
     }
 
     // 4. Fetch Employees
-    const resEmps = await fetch(`${baseUrl}/employees`).catch(() => null);
+    const resEmps = await apiFetch(`${baseUrl}/employees`).catch(() => null);
     if (resEmps && resEmps.ok) {
       const result = await resEmps.json();
       if (result.success && Array.isArray(result.data)) {
@@ -145,7 +155,7 @@ window.pullCloudDataToState = async function() {
     }
 
     // 5. Fetch Rooms
-    const resRooms = await fetch(`${baseUrl}/rooms`).catch(() => null);
+    const resRooms = await apiFetch(`${baseUrl}/rooms`).catch(() => null);
     if (resRooms && resRooms.ok) {
       const result = await resRooms.json();
       if (result.success && Array.isArray(result.data)) {
@@ -159,7 +169,7 @@ window.pullCloudDataToState = async function() {
     }
 
     // 6. Fetch Users directly from Render Cloud API
-    const resUsers = await fetch(`${baseUrl}/users`).catch(() => null);
+    const resUsers = await apiFetch(`${baseUrl}/users`).catch(() => null);
     if (resUsers && resUsers.ok) {
       const result = await resUsers.json();
       if (result.success && Array.isArray(result.data)) {
@@ -205,7 +215,7 @@ window.syncStateToCloud = async function() {
     // Push orders
     if (state.orders && state.orders.length > 0) {
       for (const o of state.orders) {
-        await fetch(`${baseUrl}/orders`, {
+        await apiFetch(`${baseUrl}/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(o)
@@ -215,7 +225,7 @@ window.syncStateToCloud = async function() {
 
     // Push products
     if (state.products && state.products.length > 0) {
-      await fetch(`${baseUrl}/products`, {
+      await apiFetch(`${baseUrl}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state.products)
@@ -224,7 +234,7 @@ window.syncStateToCloud = async function() {
 
     // Push departments
     if (state.departments && state.departments.length > 0) {
-      await fetch(`${baseUrl}/departments`, {
+      await apiFetch(`${baseUrl}/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state.departments)
@@ -233,7 +243,7 @@ window.syncStateToCloud = async function() {
 
     // Push employees
     if (state.employees && state.employees.length > 0) {
-      await fetch(`${baseUrl}/employees`, {
+      await apiFetch(`${baseUrl}/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state.employees)
@@ -242,7 +252,7 @@ window.syncStateToCloud = async function() {
 
     // Push rooms
     if (state.rooms && state.rooms.length > 0) {
-      await fetch(`${baseUrl}/rooms`, {
+      await apiFetch(`${baseUrl}/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state.rooms)
@@ -259,7 +269,7 @@ window.cloudDeleteOrder = async function(orderId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
-    const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+    const response = await apiFetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Order could not be deleted.');
     return result.data;
@@ -272,7 +282,7 @@ window.cloudDeleteOrder = async function(orderId) {
 window.cloudSaveProduct = async function(product) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/products`, {
+  const response = await apiFetch(`${baseUrl}/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product)
@@ -292,7 +302,7 @@ window.cloudSaveRoom = async function(room) {
     roomNumber: room.roomNumber || room.room_number,
     tier: room.tier || 'Normal Room'
   };
-  const response = await fetch(`${baseUrl}/rooms`, {
+  const response = await apiFetch(`${baseUrl}/rooms`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -313,7 +323,7 @@ window.cloudSaveDepartment = async function(dept) {
     name: dept.name,
     monthlyCreditLimit: dept.monthlyCreditLimit || dept.monthly_credit_limit || 100000
   };
-  const response = await fetch(`${baseUrl}/departments`, {
+  const response = await apiFetch(`${baseUrl}/departments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -336,7 +346,7 @@ window.cloudSaveEmployee = async function(emp) {
     monthlyCreditLimit: emp.monthlyCreditLimit || emp.monthly_credit_limit || 50000,
     currentBalance: emp.currentBalance || emp.current_balance || 0
   };
-  const response = await fetch(`${baseUrl}/employees`, {
+  const response = await apiFetch(`${baseUrl}/employees`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -351,7 +361,7 @@ window.cloudSaveEmployee = async function(emp) {
 window.cloudDeleteProduct = async function(productId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
+  const response = await apiFetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE'
   });
   const result = await response.json().catch(() => null);
@@ -364,7 +374,7 @@ window.cloudDeleteDepartment = async function(deptId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
-    const response = await fetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
+    const response = await apiFetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Department could not be deleted.');
     return result.data;
@@ -378,7 +388,7 @@ window.cloudDeleteEmployee = async function(empId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
-    const response = await fetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
+    const response = await apiFetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Employee could not be deleted.');
     return result.data;
@@ -392,7 +402,7 @@ window.cloudDeleteRoom = async function(roomId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
-    const response = await fetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
+    const response = await apiFetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Room could not be deleted.');
     return result.data;
@@ -409,7 +419,7 @@ window.cloudSyncUsers = async function(users) {
   const userList = Array.isArray(users) ? users : [users];
   for (const u of userList) {
     if (!u || !u.username) continue;
-    await fetch(`${baseUrl}/users`, {
+    await apiFetch(`${baseUrl}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -429,7 +439,7 @@ window.cloudSyncUsers = async function(users) {
 window.cloudDeleteUser = async function(userId) {
   if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+  const response = await apiFetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'User could not be deleted.');
 };

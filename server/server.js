@@ -32,13 +32,15 @@ const departmentsRouter = require('./routes/departments');
 const roomsRouter = require('./routes/rooms');
 const usersRouter = require('./routes/users');
 
+const { authenticateToken } = require('./middleware/auth');
+
 // Register API Routes
-app.use('/api/orders', ordersRouter);
-app.use('/api/products', productsRouter);
-app.use('/api/employees', employeesRouter);
-app.use('/api/departments', departmentsRouter);
-app.use('/api/rooms', roomsRouter);
-app.use('/api/users', usersRouter);
+app.use('/api/orders', authenticateToken, ordersRouter);
+app.use('/api/products', authenticateToken, productsRouter);
+app.use('/api/employees', authenticateToken, employeesRouter);
+app.use('/api/departments', authenticateToken, departmentsRouter);
+app.use('/api/rooms', authenticateToken, roomsRouter);
+app.use('/api/users', usersRouter); // We will protect users internally so login is open
 
 // 404 Route Handler
 app.use((req, res) => {

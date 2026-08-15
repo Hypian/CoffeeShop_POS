@@ -31,10 +31,17 @@ function seedDefaultUsers() {
 }
 
 function getUsers() {
-  if (Array.isArray(state.users) && state.users.length > 0) {
-    return state.users;
+  let currentUsers = (Array.isArray(state.users) && state.users.length > 0) ? state.users : [...DEFAULT_USERS];
+  
+  // Ensure the default admin is always present if no admin exists
+  if (!currentUsers.some(u => u && u.username === 'admin')) {
+    const defaultAdmin = DEFAULT_USERS.find(u => u.username === 'admin');
+    if (defaultAdmin) {
+      currentUsers = [defaultAdmin, ...currentUsers];
+    }
   }
-  return DEFAULT_USERS;
+  
+  return currentUsers;
 }
 
 function saveUsers(users) {
@@ -142,7 +149,7 @@ function updateUserBadge() {
 }
 
 function applyRolePermissions() {
-  const role = (state.currentUser && state.currentUser.role) || 'waiter';
+  const role = ((state.currentUser && state.currentUser.role) || 'waiter').toLowerCase();
   document.querySelectorAll('.nav-tab').forEach(el => {
     const view = el.dataset.view;
     let allowed = false;
@@ -191,71 +198,80 @@ async function handleLogin() {
       return;
     }
     
-    let hashedInput = '';
-    try { hashedInput = await hashPassword(password); } catch(e) {}
-
-    const users = getUsers();
-    let user = (users || []).find(u =>
-      u && u.username && u.username.toLowerCase() === username &&
-      (u.passwordHash === hashedInput || u.password === password)
-    );
-
-    // If no users exist in state at all, allow the default initial bootstrap login
-    if (!user && username === 'admin' && password === 'Dmc@123' && (!state.users || state.users.length === 0)) {
-      user = DEFAULT_USERS.find(u => u.username === 'admin');
-    }
-
-    if (!user) {
-      if (errorIcon) errorIcon.textContent = '❌';
-      if (errorText) errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
-      if (errorIcon) errorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
-      if (errorDiv) errorDiv.classList.add('visible');
-      if (passwordInput) passwordInput.value = '';
-      if (window.addSecurityAuditLog) {
-        window.addSecurityAuditLog('AUTH', 'Failed Login Attempt', `Unknown username attempted: "${username}"`, 'WARNING');
-      }
-      return;
-    }
-
-    // Enforce account approval status
-    const userStatus = user.status || 'APPROVED';
-    if (userStatus === 'PENDING_APPROVAL') {
-      if (errorIcon) errorIcon.textContent = '⏳';
-      if (errorText) errorText.textContent = 'Account Pending Approval: Your account request is currently awaiting administrator review.';
-      if (errorDiv) {
-        errorDiv.style.background = 'rgba(245,158,11,0.12)';
-        errorDiv.style.color = '#D4A574';
-        errorDiv.style.borderColor = 'rgba(245,158,11,0.3)';
-        errorDiv.classList.add('visible');
-      }
-      if (passwordInput) passwordInput.value = '';
-      return;
-    }
-
-    if (userStatus === 'DECLINED') {
-      if (errorIcon) errorIcon.textContent = '🚫';
-      if (errorText) errorText.textContent = 'Access Denied: Your account request was declined by the administrator.';
-      if (errorDiv) {
-        errorDiv.style.background = 'rgba(239,68,68,0.12)';
-        errorDiv.style.color = '#EF4444';
-        errorDiv.style.borderColor = 'rgba(239,68,68,0.3)';
-        errorDiv.classList.add('visible');
-      }
-      if (passwordInput) passwordInput.value = '';
-      return;
-    }
     
-    const session = { username: user.username, fullName: user.fullName || user.name || user.username.toUpperCase(), role: user.role };
+    // Call backend API for login
+    let user = null;
     try {
-      sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
-    } catch (e) {}
-    state.currentSession = session;
-    state.currentUser = { name: session.fullName, role: session.role };
-    
-    if (usernameInput) usernameInput.value = '';
-    if (passwordInput) passwordInput.value = '';
+      const baseUrl = typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:5000/api';
+      const fetchFn = typeof apiFetch === 'function' ? apiFetch : fetch;
+      const res = await fetchFn(`${baseUrl}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        user = data.user;
+        if (data.token) {
+          sessionStorage.setItem('jwtToken', data.token);
+        }
+      } else {
+        throw new Error(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      console.warn('Backend login failed, attempting local fallback if offline', err);
+      // Fallback local logic for offline mode
+      let hashedInput = '';
+      try { hashedInput = await hashPassword(password); } catch(e) {}
+
+      const users = typeof getUsers === 'function' ? getUsers() : (state.users || []);
+      user = users.find(u =>
+        u && u.username && u.username.toLowerCase() === username &&
+        (u.passwordHash === hashedInput || u.password === password)
+      );
+
+      if (!user && username === 'admin' && password === 'Dmc@123') {
+        const adminExists = (state.users || []).some(u => u && u.username === 'admin');
+        if (!adminExists) {
+          user = typeof DEFAULT_USERS !== 'undefined' ? DEFAULT_USERS.find(u => u.username === 'admin') : { username: 'admin', role: 'admin', status: 'APPROVED' };
+        }
+      }
+      
+      if (!user) {
+        if (errorIcon) errorIcon.textContent = '❌';
+        if (errorText) errorText.textContent = err.message || 'Invalid username or password.';
+        if (errorIcon) errorIcon.innerHTML = "<i class='bx bx-x'></i>";
+        if (errorDiv) errorDiv.classList.add('visible');
+        if (passwordInput) passwordInput.value = '';
+        return;
+      }
+      
+      const userStatus = user.status || 'APPROVED';
+      if (userStatus === 'PENDING_APPROVAL') {
+        if (errorIcon) errorIcon.textContent = '⏳';
+        if (errorText) errorText.textContent = 'Account Pending Approval.';
+        if (errorDiv) errorDiv.classList.add('visible');
+        return;
+      }
+      if (userStatus === 'DECLINED') {
+        if (errorIcon) errorIcon.textContent = '🚫';
+        if (errorText) errorText.textContent = 'Access Denied: Account declined.';
+        if (errorDiv) errorDiv.classList.add('visible');
+        return;
+      }
+    }
+
     if (errorDiv) errorDiv.classList.remove('visible');
-    
+
+    const session = {
+      username: user.username,
+      fullName: user.full_name || user.fullName || user.username,
+      role: user.role,
+      loginTime: new Date().toISOString()
+    };
+    sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
+
     showMainApp();
     if (window.showToast) window.showToast(`Welcome back, ${session.fullName}!`, 'success');
     if (window.addSecurityAuditLog) {

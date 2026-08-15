@@ -5,35 +5,6 @@
 // Hardened RBAC-enforced view router
 // Defines the allowed views per role — any unlisted view is silently blocked.
 
-// --- OPTIMIZATION UTILITIES ---
-window.debounce = function(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-};
-
-window.renderWithFocusRestore = function(renderFunc) {
-  const activeId = document.activeElement ? document.activeElement.id : null;
-  const cursorStart = activeId && document.activeElement.selectionStart ? document.activeElement.selectionStart : null;
-  const cursorEnd = activeId && document.activeElement.selectionEnd ? document.activeElement.selectionEnd : null;
-  
-  renderFunc();
-  
-  if (activeId) {
-    const el = document.getElementById(activeId);
-    if (el) {
-      el.focus();
-      try {
-        if (cursorStart !== null && cursorEnd !== null && typeof el.setSelectionRange === 'function') {
-          el.setSelectionRange(cursorStart, cursorEnd);
-        }
-      } catch (e) {}
-    }
-  }
-};
-// ------------------------------
 const ROLE_ALLOWED_VIEWS = {
   admin:   ['pos', 'dashboard', 'ledgers', 'products', 'reports', 'users'],
   cashier: ['pos', 'dashboard', 'ledgers', 'products', 'reports'],
