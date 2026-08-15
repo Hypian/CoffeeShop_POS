@@ -8,6 +8,10 @@ let _isSyncingFromCloud = false;
 const RENDER_PROD_API = 'https://dmch-resto-pos-api.onrender.com/api';
 
 function getApiBaseUrl() {
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.includes('onrender')) {
+    // If testing device-to-device on local network, point to the host IP's backend
+    return `http://${window.location.hostname}:5000/api`;
+  }
   return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : RENDER_PROD_API);
 }
 
@@ -22,13 +26,12 @@ window.apiFetch = async function(url, options = {}) {
 
 
 window.initCloudDatabase = async function() {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('⚡ Running locally. Cloud sync is disabled for testing.');
-    cloudSyncActive = false;
-    return false;
+  // Cloud sync should also work on localhost if the backend is running
+  let baseUrl = getApiBaseUrl();
+  if (baseUrl === RENDER_PROD_API && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+     baseUrl = 'http://localhost:5000/api';
   }
 
-  let baseUrl = window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api');
 
   try {
     const res = await apiFetch(`${baseUrl}/health`, { method: 'GET' });
@@ -425,7 +428,7 @@ window.cloudSyncUsers = async function(users) {
       body: JSON.stringify({
         id: u.id,
         username: u.username,
-        passwordHash: u.passwordHash || u.password,
+        password: u.password || u.passwordHash,
         fullName: u.fullName || u.name || u.username,
         role: u.role || 'cashier',
         status: u.status || 'PENDING_APPROVAL'
