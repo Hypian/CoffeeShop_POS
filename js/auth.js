@@ -217,10 +217,22 @@ async function handleLogin() {
           sessionStorage.setItem('jwtToken', data.token);
         }
       } else {
-        throw new Error(data.error || 'Invalid credentials');
+        throw new Error(`BACKEND_AUTH_FAILED: ${data.error || 'Invalid credentials'}`);
       }
     } catch (err) {
       console.warn('Backend login failed, attempting local fallback if offline', err);
+      // Only fallback to local if cloud sync is disabled, or if it was a network failure
+      // If the backend actively rejected the credentials, don't let them in!
+      if (window.cloudSyncActive && err.message && err.message.startsWith('BACKEND_AUTH_FAILED:')) {
+        const errorMsg = err.message.replace('BACKEND_AUTH_FAILED: ', '');
+        if (errorIcon) errorIcon.textContent = '❌';
+        if (errorText) errorText.textContent = errorMsg;
+        if (errorIcon) errorIcon.innerHTML = "<i class='bx bx-x'></i>";
+        if (errorDiv) errorDiv.classList.add('visible');
+        if (passwordInput) passwordInput.value = '';
+        return;
+      }
+      
       // Fallback local logic for offline mode
       let hashedInput = '';
       try { hashedInput = await hashPassword(password); } catch(e) {}
@@ -391,6 +403,7 @@ function logout() {
   document.documentElement.classList.remove('authenticated-session');
   sessionStorage.removeItem('dmch_resto_session');
   sessionStorage.removeItem('coffeeshop_session');
+  sessionStorage.removeItem('jwtToken');
   state.currentSession = null;
   state.currentUser = { name: 'GUEST', role: 'cashier' };
   state.cart = [];
