@@ -4,8 +4,8 @@
 
 // Render Express Backend REST API Base URL
 const API_BASE_URL = window.API_BASE_URL || (
-  window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.includes('onrender')
-    ? `http://${window.location.hostname}:5000/api`
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:5000/api'
     : 'https://dmch-resto-pos-api.onrender.com/api'
 );
 

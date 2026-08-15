@@ -8,11 +8,10 @@ let _isSyncingFromCloud = false;
 const RENDER_PROD_API = 'https://dmch-resto-pos-api.onrender.com/api';
 
 function getApiBaseUrl() {
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.includes('onrender')) {
-    // If testing device-to-device on local network, point to the host IP's backend
-    return `http://${window.location.hostname}:5000/api`;
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
   }
-  return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : RENDER_PROD_API);
+  return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'https://dmch-resto-pos-api.onrender.com/api');
 }
 
 window.apiFetch = async function(url, options = {}) {

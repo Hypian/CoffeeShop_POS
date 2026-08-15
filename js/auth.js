@@ -272,6 +272,10 @@ async function handleLogin() {
     };
     sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
 
+    // Populate state so applyRolePermissions works immediately
+    state.currentSession = session;
+    state.currentUser = { name: session.fullName, role: session.role };
+
     showMainApp();
     if (window.showToast) window.showToast(`Welcome back, ${session.fullName}!`, 'success');
     if (window.addSecurityAuditLog) {
