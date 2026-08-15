@@ -49,8 +49,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // DELETE /api/departments/:id - Remove a department
 router.delete('/:id', async (req, res) => {
   try {
@@ -63,3 +61,6 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+module.exports = router;
+

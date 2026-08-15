@@ -364,7 +364,7 @@ window.saveNewUserByAdmin = async function() {
   const newUser = {
     id: `u-${Date.now()}`,
     username,
-    password: hashedPassword,
+    password: password,
     passwordHash: hashedPassword,
     fullName: fullName.toUpperCase(),
     role,

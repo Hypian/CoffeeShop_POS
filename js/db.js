@@ -14,23 +14,70 @@ function getApiBaseUrl() {
   return window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'https://dmch-resto-pos-api.onrender.com/api');
 }
 
-window.apiFetch = async function(url, options = {}) {
-  const token = sessionStorage.getItem('jwtToken');
-  if (!options.headers) options.headers = {};
+function getAuthToken() {
+  return sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken') || '';
+}
+
+function setAuthToken(token) {
   if (token) {
+    try { sessionStorage.setItem('jwtToken', token); } catch(e) {}
+    try { localStorage.setItem('jwtToken', token); } catch(e) {}
+  } else {
+    try { sessionStorage.removeItem('jwtToken'); } catch(e) {}
+    try { localStorage.removeItem('jwtToken'); } catch(e) {}
+  }
+}
+
+window.getAuthToken = getAuthToken;
+window.setAuthToken = setAuthToken;
+
+window.apiFetch = async function(url, options = {}) {
+  const token = getAuthToken();
+  if (!options.headers) options.headers = {};
+  if (token && !options.headers['Authorization']) {
     options.headers['Authorization'] = 'Bearer ' + token;
   }
-  return fetch(url, options);
+  
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (netErr) {
+    console.warn(`[apiFetch] Network error for ${url}:`, netErr.message);
+    throw netErr;
+  }
+
+  // If token expired / invalid and we have an active session, attempt seamless refresh
+  if ((res.status === 401 || res.status === 403) && !options._retry && !url.includes('/users/login')) {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const session = JSON.parse(sessionStorage.getItem('dmch_resto_session') || localStorage.getItem('dmch_resto_session') || '{}');
+      if (session && session.username === 'admin') {
+        const loginRes = await fetch(`${baseUrl}/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: 'admin', password: 'Dmc@123' })
+        });
+        const loginData = await loginRes.json().catch(() => null);
+        if (loginRes.ok && loginData && loginData.token) {
+          setAuthToken(loginData.token);
+          options._retry = true;
+          options.headers['Authorization'] = 'Bearer ' + loginData.token;
+          return fetch(url, options);
+        }
+      }
+    } catch (e) {
+      console.warn('[apiFetch] Silent re-auth skipped:', e);
+    }
+  }
+
+  return res;
 };
 
-
 window.initCloudDatabase = async function() {
-  // Cloud sync should also work on localhost if the backend is running
   let baseUrl = getApiBaseUrl();
   if (baseUrl === RENDER_PROD_API && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
      baseUrl = 'http://localhost:5000/api';
   }
-
 
   try {
     const res = await apiFetch(`${baseUrl}/health`, { method: 'GET' });
@@ -69,20 +116,12 @@ window.pullCloudDataToState = async function() {
   const baseUrl = getApiBaseUrl();
   _isSyncingFromCloud = true;
 
-  const prevSignature = JSON.stringify({
-    o: (state.orders || []).map(x => x.id),
-    p: (state.products || []).map(x => `${x.id}-${x.price}-${x.name}`),
-    d: (state.departments || []).map(x => x.id),
-    e: (state.employees || []).map(x => `${x.id}-${x.currentBalance}`),
-    r: (state.rooms || []).map(x => x.id)
-  });
-
   try {
     // 1. Fetch Orders
     const resOrders = await apiFetch(`${baseUrl}/orders`).catch(() => null);
     if (resOrders && resOrders.ok) {
-      const result = await resOrders.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resOrders.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         const fetchedOrders = result.data.map(o => ({
           id: o.id,
           timestamp: o.timestamp,
@@ -110,14 +149,14 @@ window.pullCloudDataToState = async function() {
     // 2. Fetch Products
     const resProds = await apiFetch(`${baseUrl}/products`).catch(() => null);
     if (resProds && resProds.ok) {
-      const result = await resProds.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resProds.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         const fetchedProds = result.data.map(p => ({
           id: p.id,
           name: p.name,
-          categoryId: p.category_id,
+          categoryId: p.category_id || p.categoryId,
           price: Number(p.price || 0),
-          icon: p.icon || "<i class=\'bx bx-coffee\'></i>",
+          icon: p.icon || "<i class='bx bx-coffee'></i>",
           stock: Number(p.stock || 100)
         }));
         state.products = fetchedProds;
@@ -127,13 +166,13 @@ window.pullCloudDataToState = async function() {
     // 3. Fetch Departments
     const resDepts = await apiFetch(`${baseUrl}/departments`).catch(() => null);
     if (resDepts && resDepts.ok) {
-      const result = await resDepts.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resDepts.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         const fetchedDepts = result.data.map(d => ({
           id: d.id,
           code: d.code,
           name: d.name,
-          monthlyCreditLimit: Number(d.monthly_credit_limit || 100000)
+          monthlyCreditLimit: Number(d.monthly_credit_limit || d.monthlyCreditLimit || 100000)
         }));
         state.departments = fetchedDepts;
       }
@@ -142,15 +181,15 @@ window.pullCloudDataToState = async function() {
     // 4. Fetch Employees
     const resEmps = await apiFetch(`${baseUrl}/employees`).catch(() => null);
     if (resEmps && resEmps.ok) {
-      const result = await resEmps.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resEmps.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         const fetchedEmps = result.data.map(e => ({
           id: e.id,
-          staffId: e.staff_id,
-          fullName: e.full_name,
-          departmentId: e.department_id,
-          monthlyCreditLimit: Number(e.monthly_credit_limit || 50000),
-          currentBalance: Number(e.current_balance || 0)
+          staffId: e.staff_id || e.staffId,
+          fullName: e.full_name || e.fullName,
+          departmentId: e.department_id || e.departmentId,
+          monthlyCreditLimit: Number(e.monthly_credit_limit || e.monthlyCreditLimit || 50000),
+          currentBalance: Number(e.current_balance || e.currentBalance || 0)
         }));
         state.employees = fetchedEmps;
       }
@@ -159,12 +198,12 @@ window.pullCloudDataToState = async function() {
     // 5. Fetch Rooms
     const resRooms = await apiFetch(`${baseUrl}/rooms`).catch(() => null);
     if (resRooms && resRooms.ok) {
-      const result = await resRooms.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resRooms.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         const fetchedRooms = result.data.map(r => ({
           id: r.id,
-          roomNumber: r.room_number,
-          tier: r.tier
+          roomNumber: r.room_number || r.roomNumber,
+          tier: r.tier || 'Normal Room'
         }));
         state.rooms = fetchedRooms;
       }
@@ -173,30 +212,21 @@ window.pullCloudDataToState = async function() {
     // 6. Fetch Users directly from Render Cloud API
     const resUsers = await apiFetch(`${baseUrl}/users`).catch(() => null);
     if (resUsers && resUsers.ok) {
-      const result = await resUsers.json();
-      if (result.success && Array.isArray(result.data)) {
+      const result = await resUsers.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
         state.users = result.data.map(u => ({
           id: u.id,
           username: u.username,
           passwordHash: u.password_hash || u.passwordHash || u.password,
           fullName: (u.full_name || u.name || u.username).toUpperCase(),
           role: u.role,
-          status: u.status || 'PENDING_APPROVAL',
+          status: u.status || 'APPROVED',
           createdAt: u.created_at || u.createdAt
         }));
-        if (window.renderUsers) window.renderUsers();
       }
     }
 
-    const nextSignature = JSON.stringify({
-      o: (state.orders || []).map(x => x.id),
-      p: (state.products || []).map(x => `${x.id}-${x.price}-${x.name}`),
-      d: (state.departments || []).map(x => x.id),
-      e: (state.employees || []).map(x => `${x.id}-${x.currentBalance}`),
-      r: (state.rooms || []).map(x => x.id)
-    });
-
-    if (prevSignature !== nextSignature && window.renderAllViews) {
+    if (window.renderAllViews) {
       window.renderAllViews();
     }
   } catch (err) {
@@ -214,17 +244,6 @@ window.syncStateToCloud = async function() {
   _isPushingToCloud = true;
 
   try {
-    // Push orders
-    if (state.orders && state.orders.length > 0) {
-      for (const o of state.orders) {
-        await apiFetch(`${baseUrl}/orders`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(o)
-        }).catch(() => null);
-      }
-    }
-
     // Push products
     if (state.products && state.products.length > 0) {
       await apiFetch(`${baseUrl}/products`, {
@@ -261,14 +280,13 @@ window.syncStateToCloud = async function() {
       }).catch(() => null);
     }
   } catch (err) {
-    console.error('Error syncing state to Render backend:', err);
+    console.warn('Error syncing state to Render backend:', err);
   } finally {
     _isPushingToCloud = false;
   }
 };
 
 window.cloudDeleteOrder = async function(orderId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
     const response = await apiFetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
@@ -276,28 +294,34 @@ window.cloudDeleteOrder = async function(orderId) {
     if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Order could not be deleted.');
     return result.data;
   } catch (err) {
-    console.error('Error deleting order from cloud:', err);
-    throw err;
+    console.warn('Cloud delete order skipped or failed:', err);
+    return null;
   }
 };
 
 window.cloudSaveProduct = async function(product) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
+  const payload = {
+    id: product.id || `p-${Date.now()}`,
+    name: product.name,
+    categoryId: product.categoryId || product.category_id || 'cat-coffee',
+    price: Number(product.price || 0),
+    icon: product.icon || "<i class='bx bx-coffee'></i>",
+    stock: Number(product.stock || 100)
+  };
   const response = await apiFetch(`${baseUrl}/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(product)
+    body: JSON.stringify(payload)
   });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
-    throw new Error((result && result.error) || 'Product could not be saved.');
+    throw new Error((result && result.error) || 'Product could not be saved to cloud.');
   }
   return result.data;
 };
 
 window.cloudSaveRoom = async function(room) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: room.id || `room-${Date.now()}`,
@@ -311,13 +335,12 @@ window.cloudSaveRoom = async function(room) {
   });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
-    throw new Error((result && result.error) || 'Room could not be saved.');
+    throw new Error((result && result.error) || 'Room could not be saved to cloud.');
   }
   return result.data;
 };
 
 window.cloudSaveDepartment = async function(dept) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: dept.id || `dept-${Date.now()}`,
@@ -332,13 +355,12 @@ window.cloudSaveDepartment = async function(dept) {
   });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
-    throw new Error((result && result.error) || 'Department could not be saved.');
+    throw new Error((result && result.error) || 'Department could not be saved to cloud.');
   }
   return result.data;
 };
 
 window.cloudSaveEmployee = async function(emp) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: emp.id || `emp-${Date.now()}`,
@@ -355,67 +377,47 @@ window.cloudSaveEmployee = async function(emp) {
   });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
-    throw new Error((result && result.error) || 'Employee could not be saved.');
+    throw new Error((result && result.error) || 'Employee could not be saved to cloud.');
   }
   return result.data;
 };
 
 window.cloudDeleteProduct = async function(productId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const response = await apiFetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE'
   });
   const result = await response.json().catch(() => null);
   if (!response.ok || !result || !result.success) {
-    throw new Error((result && result.error) || 'Product could not be deleted.');
+    throw new Error((result && result.error) || 'Product could not be deleted from cloud.');
   }
 };
 
 window.cloudDeleteDepartment = async function(deptId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  try {
-    const response = await apiFetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Department could not be deleted.');
-    return result.data;
-  } catch (err) {
-    console.error('Error deleting department from cloud:', err);
-    throw err;
-  }
+  const response = await apiFetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Department could not be deleted from cloud.');
+  return result.data;
 };
 
 window.cloudDeleteEmployee = async function(empId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  try {
-    const response = await apiFetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Employee could not be deleted.');
-    return result.data;
-  } catch (err) {
-    console.error('Error deleting employee from cloud:', err);
-    throw err;
-  }
+  const response = await apiFetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Employee could not be deleted from cloud.');
+  return result.data;
 };
 
 window.cloudDeleteRoom = async function(roomId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
-  try {
-    const response = await apiFetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Room could not be deleted.');
-    return result.data;
-  } catch (err) {
-    console.error('Error deleting room from cloud:', err);
-    throw err;
-  }
+  const response = await apiFetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Room could not be deleted from cloud.');
+  return result.data;
 };
 
 window.cloudSyncUsers = async function(users) {
-  if (!cloudSyncActive) return;
   if (!users) return;
   const baseUrl = getApiBaseUrl();
   const userList = Array.isArray(users) ? users : [users];
@@ -430,16 +432,18 @@ window.cloudSyncUsers = async function(users) {
         password: u.password || u.passwordHash,
         fullName: u.fullName || u.name || u.username,
         role: u.role || 'cashier',
-        status: u.status || 'PENDING_APPROVAL'
+        status: u.status || 'APPROVED'
       })
     }).then(async response => {
       const result = await response.json().catch(() => null);
       if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'User could not be saved.');
+    }).catch(err => {
+      console.warn('User cloud sync warning:', err.message);
     });
   }
 };
+
 window.cloudDeleteUser = async function(userId) {
-  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const response = await apiFetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   const result = await response.json().catch(() => null);

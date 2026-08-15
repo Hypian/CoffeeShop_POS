@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS orders (
     room_number VARCHAR(50),
     meal_type VARCHAR(50),
     patient_notes TEXT,
+    payer_name VARCHAR(255),
+    customer_name VARCHAR(255),
     status VARCHAR(50) DEFAULT 'COMPLETED',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -29,7 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(150) NOT NULL,
     category_id VARCHAR(50) NOT NULL,
     price NUMERIC(12,2) NOT NULL,
-    icon VARCHAR(10) DEFAULT '☕',
+    icon VARCHAR(255) DEFAULT '☕',
     stock INT DEFAULT 100,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

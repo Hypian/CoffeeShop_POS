@@ -18,9 +18,10 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const order = req.body;
-    if (!order || !order.id || !order.total) {
-      return res.status(400).json({ success: false, error: 'Invalid order payload' });
+    if (!order || !order.id || order.total === undefined || order.total === null) {
+      return res.status(400).json({ success: false, error: 'Invalid order payload: id and total required' });
     }
+
 
     if (!db.pool) return res.json({ success: true, data: order });
 

@@ -346,14 +346,6 @@ window.processTabPayment = async function() {
     state.currentTabEmployee.currentBalance = (state.currentTabEmployee.currentBalance || 0) + totals.total;
 
     const empInState = (state.employees || []).find(e => e && String(e.id) === String(state.currentTabEmployee.id));
-    if (empInState) {
-      empInState.currentBalance = state.currentTabEmployee.currentBalance;
-    }
-
-    if (window.cloudSaveEmployee) {
-      await window.cloudSaveEmployee(state.currentTabEmployee);
-    }
-    
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
     saveData();
@@ -362,13 +354,22 @@ window.processTabPayment = async function() {
     window.showToast(`Tab order authorized for ${state.currentTabEmployee.fullName}`, 'success');
     if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
+
+    try {
+      if (window.cloudSaveEmployee) {
+        await window.cloudSaveEmployee(state.currentTabEmployee);
+      }
+    } catch (e) {
+      console.warn('Cloud employee balance sync notice:', e.message);
+    }
   } catch (err) {
     console.error('Error processing staff tab payment:', err);
-    window.showToast('Could not process tab payment to cloud database.', 'error');
+    window.showToast('Could not process tab checkout. Please try again.', 'error');
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }
 };
+
 
 // Checkout - Patient Room Catering
 window.openPatientCheckoutModal = function() {

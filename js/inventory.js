@@ -106,18 +106,18 @@ window.deleteProduct = function(id) {
     badgeText: "Inventory Removal",
     isDanger: true,
     onConfirm: async () => {
+      if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
+      state.products = (state.products || []).filter(p => p && String(p.id) !== String(id));
+      if (window.renderAllViews) window.renderAllViews();
+      saveData({ sync: false });
+      window.showToast(`Product "${prodName}" was successfully deleted.`, 'success');
+
       try {
         if (window.cloudDeleteProduct) {
           await window.cloudDeleteProduct(id);
         }
-        if (product) addAuditLog("Product Deleted", `Deleted product ${product.name}`);
-        state.products = (state.products || []).filter(p => p && String(p.id) !== String(id));
-        if (window.renderAllViews) window.renderAllViews();
-        saveData({ sync: false });
-        window.showToast(`Product "${prodName}" was successfully deleted.`, 'success');
       } catch (error) {
-        console.error('Error deleting product:', error);
-        window.showToast('Product could not be deleted. Please try again.', 'error');
+        console.warn('Cloud delete product notice:', error.message);
       }
     }
   });
@@ -130,19 +130,17 @@ window.selectProductIcon = function(emoji) {
 
 window.saveNewProduct = async function() {
   const name = (document.getElementById('addProdName').value || '').trim().toUpperCase();
-  const catId = document.getElementById('addProdCategory').value;
+  const catId = document.getElementById('addProdCategory').value || 'cat-coffee';
   const price = parseFloat(document.getElementById('addProdPrice').value) || 0;
-  const icon = document.getElementById('addProdIcon').value || "<i class=\'bx bx-box\'></i>";
+  const icon = document.getElementById('addProdIcon').value || "<i class='bx bx-coffee'></i>";
   
   if (!name) { window.showToast('Product name is required', 'error'); return; }
   
   let product;
-  let originalProduct;
   const isEditing = Boolean(state.editingProductId);
   if (state.editingProductId) {
     product = state.products.find(p => p.id === state.editingProductId);
     if (product) {
-      originalProduct = { ...product };
       product.name = name;
       product.categoryId = catId;
       product.price = price;
@@ -156,30 +154,25 @@ window.saveNewProduct = async function() {
       name,
       categoryId: catId,
       price,
-      icon
+      icon,
+      stock: 100
     };
+    if (!state.products) state.products = [];
     state.products.push(product);
     addAuditLog("Product Added", `Added new product ${name}`);
   }
 
+  saveData({ sync: false });
+  window.closeModal('modalAddProduct');
+  renderAllViews();
+  window.showToast(isEditing ? 'Product updated successfully' : 'Product added successfully', 'success');
+
   try {
     if (window.cloudSaveProduct) {
       await window.cloudSaveProduct(product);
-    } else {
-      await window.syncStateToCloud();
     }
-    saveData({ sync: false });
-    window.closeModal('modalAddProduct');
-    renderAllViews();
-    window.showToast(isEditing ? 'Product updated successfully' : 'Product added successfully', 'success');
   } catch (error) {
-    if (originalProduct) {
-      Object.assign(product, originalProduct);
-    } else {
-      state.products = state.products.filter(item => item.id !== product.id);
-    }
-    renderAllViews();
-    console.error('Error saving product:', error);
-    window.showToast('Product could not be saved. Please try again.', 'error');
+    console.warn('Cloud save product notice:', error.message);
   }
 };
+

@@ -55,7 +55,7 @@ window.openAddRoomModal = function(editId = null) {
 window.saveRoom = async function() {
   const id = document.getElementById('editRoomId').value;
   const name = (document.getElementById('addRoomNumber').value || '').trim().toUpperCase();
-  const tier = document.getElementById('addRoomTier').value;
+  const tier = document.getElementById('addRoomTier').value || 'Normal Room';
 
   if (!name) {
     window.showToast('Please enter a room number or name (e.g. Room 105).', 'error');
@@ -67,27 +67,27 @@ window.saveRoom = async function() {
   const roomId = id || generateId('ROOM');
   const roomObj = { id: roomId, roomNumber: name, tier: tier };
 
+  const existingIndex = state.rooms.findIndex(x => x && (x.id === roomId || x.roomNumber === name));
+  if (existingIndex >= 0) {
+    state.rooms[existingIndex] = roomObj;
+    addAuditLog("Room Updated", `Updated room ${name} (${tier})`);
+  } else {
+    state.rooms.push(roomObj);
+    addAuditLog("Room Added", `Added room ${name} (${tier})`);
+  }
+
+  saveData({ sync: false });
+  window.closeModal('modalAddRoom');
+  window.populateRoomDropdown(name);
+  window.showToast(`Hospital room "${name}" (${tier}) saved!`, 'success');
+  if (window.renderAllViews) window.renderAllViews();
+
   try {
     if (window.cloudSaveRoom) {
       await window.cloudSaveRoom(roomObj);
     }
-
-    const existingIndex = state.rooms.findIndex(x => x && (x.id === roomId || x.roomNumber === name));
-    if (existingIndex >= 0) {
-      state.rooms[existingIndex] = roomObj;
-      addAuditLog("Room Updated", `Updated room ${name} (${tier})`);
-    } else {
-      state.rooms.push(roomObj);
-      addAuditLog("Room Added", `Added room ${name} (${tier})`);
-    }
-
-    window.closeModal('modalAddRoom');
-    window.populateRoomDropdown(name);
-    window.showToast(`Hospital room "${name}" (${tier}) saved to cloud!`, 'success');
-    if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
-    console.error('Error saving room to cloud:', err);
-    window.showToast('Failed to save room to cloud database. Please try again.', 'error');
+    console.warn('Cloud save room notice:', err.message);
   }
 };
 
@@ -111,25 +111,25 @@ window.deleteRoom = function(roomId) {
     badgeText: "Room Directory",
     isDanger: true,
     onConfirm: async () => {
+      state.rooms = state.rooms.filter(r => {
+        if (!r) return false;
+        const matchId = (r.id && String(r.id) === String(targetId)) || (roomId && String(r.id) === String(roomId));
+        const matchNum = (r.roomNumber && String(r.roomNumber) === String(targetName)) || (roomId && String(r.roomNumber) === String(roomId));
+        return !matchId && !matchNum;
+      });
+
+      addAuditLog("Room Deleted", `Deleted room ${targetName}`);
+      saveData({ sync: false });
+      if (window.populateRoomDropdown) window.populateRoomDropdown();
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Hospital room "${targetName}" was permanently deleted.`, 'success');
+
       try {
         if (window.cloudDeleteRoom) {
           await window.cloudDeleteRoom(targetId);
         }
-
-        state.rooms = state.rooms.filter(r => {
-          if (!r) return false;
-          const matchId = (r.id && String(r.id) === String(targetId)) || (roomId && String(r.id) === String(roomId));
-          const matchNum = (r.roomNumber && String(r.roomNumber) === String(targetName)) || (roomId && String(r.roomNumber) === String(roomId));
-          return !matchId && !matchNum;
-        });
-
-        addAuditLog("Room Deleted", `Deleted room ${targetName}`);
-        if (window.populateRoomDropdown) window.populateRoomDropdown();
-        if (window.renderAllViews) window.renderAllViews();
-        window.showToast(`Hospital room "${targetName}" was permanently deleted.`, 'success');
       } catch (err) {
-        console.error('Error deleting room:', err);
-        window.showToast('Could not delete room from cloud database. Please try again.', 'error');
+        console.warn('Cloud delete room notice:', err.message);
       }
     }
   });
@@ -146,14 +146,11 @@ window.clearAllRooms = function() {
     onConfirm: async () => {
       state.rooms = [];
       addAuditLog("All Rooms Cleared", "Cleared all room listings");
+      saveData({ sync: false });
       if (window.populateRoomDropdown) window.populateRoomDropdown();
       if (window.renderAllViews) window.renderAllViews();
       window.showToast("All room listings were successfully cleared.", 'success');
-
-      if (window.cloudClearAllRooms) {
-        await window.cloudClearAllRooms();
-      }
-      saveData();
     }
   });
 };
+

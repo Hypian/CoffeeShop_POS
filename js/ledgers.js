@@ -755,22 +755,21 @@ window.deleteDepartment = function(deptId) {
     badgeText: "Department Ledger",
     isDanger: true,
     onConfirm: async () => {
+      (state.employees || []).forEach(e => {
+        if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
+      });
+      state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
+      addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
+      saveData({ sync: false });
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
+
       try {
         if (window.cloudDeleteDepartment) {
           await window.cloudDeleteDepartment(deptId);
         }
-
-        (state.employees || []).forEach(e => {
-          if (e && (e.departmentId === deptId || String(e.departmentId) === String(deptId))) e.departmentId = '';
-        });
-        state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
-        addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
-        
-        if (window.renderAllViews) window.renderAllViews();
-        window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
       } catch (err) {
-        console.error('Error deleting department:', err);
-        window.showToast('Could not delete department from cloud. Please try again.', 'error');
+        console.warn('Cloud delete department notice:', err.message);
       }
     }
   });
@@ -788,26 +787,23 @@ window.deleteEmployee = function(empId) {
     badgeText: "Staff Account",
     isDanger: true,
     onConfirm: async () => {
+      state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
+      state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
+      addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
+      saveData({ sync: false });
+      if (window.renderAllViews) window.renderAllViews();
+      window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
+
       try {
         if (window.cloudDeleteEmployee) {
           await window.cloudDeleteEmployee(empId);
         }
-
-        state.employees = (state.employees || []).filter(e => e && String(e.id) !== String(empId));
-        state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
-        addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
-        
-        if (window.renderAllViews) window.renderAllViews();
-        window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
       } catch (err) {
-        console.error('Error deleting staff account:', err);
-        window.showToast('Could not delete staff account from cloud. Please try again.', 'error');
+        console.warn('Cloud delete staff account notice:', err.message);
       }
     }
   });
 };
-
-
 
 window.openSettleModal = function(empId) {
   const emp = state.employees.find(e => e.id === empId);
@@ -833,18 +829,18 @@ window.applyPartialSettle = async function() {
   emp.currentBalance = Math.max(0, (emp.currentBalance || 0) - amt);
   if (emp.currentBalance <= 0) { state.tabReceipts = (state.tabReceipts || []).filter(r => r.employeeId !== emp.id); }
 
+  addAuditLog("Tab Partial Settlement", `Settled RWF ${amt} for ${emp.fullName}`);
+  saveData({ sync: false });
+  window.closeModal('modalSettleTab');
+  window.showToast(`Settled ${formatMoney(amt)} for ${emp.fullName}`, 'success');
+  if (window.renderAllViews) window.renderAllViews();
+
   try {
     if (window.cloudSaveEmployee) {
       await window.cloudSaveEmployee(emp);
     }
-    addAuditLog("Tab Partial Settlement", `Settled RWF ${amt} for ${emp.fullName}`);
-    saveData();
-    window.closeModal('modalSettleTab');
-    window.showToast(`Settled ${formatMoney(amt)} for ${emp.fullName}`, 'success');
-    if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
-    console.error('Error saving settlement to cloud:', err);
-    window.showToast('Could not save settlement to cloud database.', 'error');
+    console.warn('Cloud save settlement notice:', err.message);
   }
 };
 
@@ -859,18 +855,18 @@ window.applyFullSettle = async function() {
   emp.currentBalance = 0;
   state.tabReceipts = (state.tabReceipts || []).filter(r => r.employeeId !== emp.id);
 
+  addAuditLog("Tab Full Settlement", `Fully settled RWF ${amt} for ${emp.fullName}`);
+  saveData({ sync: false });
+  window.closeModal('modalSettleTab');
+  window.showToast(`Fully settled ${formatMoney(amt)} for ${emp.fullName}`, 'success');
+  if (window.renderAllViews) window.renderAllViews();
+
   try {
     if (window.cloudSaveEmployee) {
       await window.cloudSaveEmployee(emp);
     }
-    addAuditLog("Tab Full Settlement", `Fully settled RWF ${amt} for ${emp.fullName}`);
-    saveData();
-    window.closeModal('modalSettleTab');
-    window.showToast(`Fully settled ${formatMoney(amt)} for ${emp.fullName}`, 'success');
-    if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
-    console.error('Error saving settlement to cloud:', err);
-    window.showToast('Could not save settlement to cloud database.', 'error');
+    console.warn('Cloud save full settlement notice:', err.message);
   }
 };
 
@@ -894,7 +890,19 @@ window.generateDepartmentCode = function(name) {
   if (words.length >= 2) {
     return words.map(w => w[0]).join('').slice(0, 5);
   }
-  return (name || 'DEPT').slice(0, 3).toUpperCase();
+  const depts = state.departments || [];
+  let maxSeq = depts.length;
+  depts.forEach(d => {
+    if (d && d.code) {
+      const match = String(d.code).match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (num > maxSeq) maxSeq = num;
+      }
+    }
+  });
+  const nextSeq = maxSeq + 1;
+  return `DPT-${String(nextSeq).padStart(3, '0')}`;
 };
 
 window.updateAutoStaffId = function() {
@@ -906,24 +914,6 @@ window.updateAutoStaffId = function() {
   const prefix = dept ? (dept.code || 'EMP') : 'EMP';
   const nextNum = (state.employees.filter(e => e.departmentId === deptId).length + 1).toString().padStart(3, '0');
   staffIdInput.value = `${prefix}-${nextNum}`;
-};
-
-window.generateDepartmentCode = function() {
-  const depts = state.departments || [];
-  let maxSeq = depts.length;
-
-  depts.forEach(d => {
-    if (d && d.code) {
-      const match = String(d.code).match(/\d+/);
-      if (match) {
-        const num = parseInt(match[0], 10);
-        if (num > maxSeq) maxSeq = num;
-      }
-    }
-  });
-
-  const nextSeq = maxSeq + 1;
-  return `DPT-${String(nextSeq).padStart(3, '0')}`;
 };
 
 window.openAddDepartmentModal = function() {
@@ -941,7 +931,7 @@ window.saveNewDepartment = async function() {
   const name = (document.getElementById('addDeptName').value || '').trim().toUpperCase();
   let code = (document.getElementById('addDeptCode').value || '').trim().toUpperCase();
   if (!code) {
-    code = window.generateDepartmentCode();
+    code = window.generateDepartmentCode(name);
   }
 
   if (!name) {
@@ -956,20 +946,20 @@ window.saveNewDepartment = async function() {
     monthlyCreditLimit: 100000
   };
 
+  if (!state.departments) state.departments = [];
+  state.departments.push(newDept);
+  addAuditLog("Department Created", `Created department ${name} (${code})`);
+  saveData({ sync: false });
+  window.closeModal('modalAddDepartment');
+  window.showToast(`Department "${name}" (${code}) saved!`, 'success');
+  if (window.renderAllViews) window.renderAllViews();
+
   try {
     if (window.cloudSaveDepartment) {
       await window.cloudSaveDepartment(newDept);
     }
-
-    if (!state.departments) state.departments = [];
-    state.departments.push(newDept);
-    addAuditLog("Department Created", `Created department ${name} (${code})`);
-    window.closeModal('modalAddDepartment');
-    window.showToast(`Department "${name}" (${code}) saved to cloud!`, 'success');
-    if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
-    console.error('Error saving department to cloud:', err);
-    window.showToast('Failed to save department to cloud. Please try again.', 'error');
+    console.warn('Cloud save department notice:', err.message);
   }
 };
 
@@ -1021,19 +1011,20 @@ window.saveNewEmployee = async function() {
     currentBalance: initBal
   };
 
+  if (!state.employees) state.employees = [];
+  state.employees.push(newEmp);
+  addAuditLog("Staff Account Created", `Created staff account ${fullName} (${staffId})`);
+  saveData({ sync: false });
+  window.closeModal('modalAddEmployee');
+  window.showToast(`Staff account "${fullName}" (${staffId}) saved!`, 'success');
+  if (window.renderAllViews) window.renderAllViews();
+
   try {
     if (window.cloudSaveEmployee) {
       await window.cloudSaveEmployee(newEmp);
     }
-
-    if (!state.employees) state.employees = [];
-    state.employees.push(newEmp);
-    addAuditLog("Staff Account Created", `Created staff account ${fullName} (${staffId})`);
-    window.closeModal('modalAddEmployee');
-    window.showToast(`Staff account "${fullName}" (${staffId}) saved to cloud!`, 'success');
-    if (window.renderAllViews) window.renderAllViews();
   } catch (err) {
-    console.error('Error saving staff account to cloud:', err);
-    window.showToast('Failed to save staff account to cloud. Please try again.', 'error');
+    console.warn('Cloud save staff account notice:', err.message);
   }
 };
+

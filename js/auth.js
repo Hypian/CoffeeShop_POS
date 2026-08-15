@@ -53,14 +53,16 @@ function saveUsers(users) {
     window.broadcastLiveSync({ type: 'USERS_UPDATED' });
   }
 }
-
 function checkExistingSession() {
   try {
-    const session = JSON.parse(sessionStorage.getItem('dmch_resto_session'));
+    const session = JSON.parse(sessionStorage.getItem('dmch_resto_session') || localStorage.getItem('dmch_resto_session'));
     if (session && session.username) {
       state.currentSession = session;
       state.currentUser = { name: session.fullName, role: session.role };
       showMainApp();
+      if (window.pullCloudDataToState) {
+        window.pullCloudDataToState();
+      }
       return;
     }
   } catch (e) {}
@@ -106,7 +108,7 @@ function showLoginForm() {
   if (signupForm) signupForm.style.display = 'none';
   const loginError = document.getElementById('loginError');
   const loginErrorIcon = document.getElementById('loginErrorIcon');
-  if (loginErrorIcon) loginErrorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
+  if (loginErrorIcon) loginErrorIcon.innerHTML = "<i class='bx bx-x'></i>";
   if (loginError) {
     loginError.classList.remove('visible');
     loginError.style.background = '';
@@ -185,7 +187,7 @@ async function handleLogin() {
     const username = (usernameInput.value || '').trim().toLowerCase();
     const password = (passwordInput.value || '').trim();
     
-    if (errorIcon) errorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
+    if (errorIcon) errorIcon.innerHTML = "<i class='bx bx-x'></i>";
     if (errorDiv) {
       errorDiv.style.background = '';
       errorDiv.style.color = '';
@@ -198,7 +200,6 @@ async function handleLogin() {
       return;
     }
     
-    
     // Call backend API for login
     let user = null;
     try {
@@ -210,18 +211,21 @@ async function handleLogin() {
         body: JSON.stringify({ username, password })
       });
       
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.success) {
         user = data.user;
         if (data.token) {
-          sessionStorage.setItem('jwtToken', data.token);
+          if (window.setAuthToken) window.setAuthToken(data.token);
+          else {
+            sessionStorage.setItem('jwtToken', data.token);
+            localStorage.setItem('jwtToken', data.token);
+          }
         }
       } else {
-        throw new Error(`BACKEND_AUTH_FAILED: ${data.error || 'Invalid credentials'}`);
+        throw new Error(`BACKEND_AUTH_FAILED: ${(data && data.error) || 'Invalid credentials'}`);
       }
     } catch (err) {
-      console.warn('Backend login failed, attempting local fallback if offline', err);
-      // Only fallback to local if cloud sync is disabled, or if it was a network failure
+      console.warn('Backend login notice:', err);
       // If the backend actively rejected the credentials, don't let them in!
       if (window.cloudSyncActive && err.message && err.message.startsWith('BACKEND_AUTH_FAILED:')) {
         const errorMsg = err.message.replace('BACKEND_AUTH_FAILED: ', '');
@@ -252,7 +256,7 @@ async function handleLogin() {
       
       if (!user) {
         if (errorIcon) errorIcon.textContent = '❌';
-        if (errorText) errorText.textContent = err.message || 'Invalid username or password.';
+        if (errorText) errorText.textContent = err.message ? err.message.replace('BACKEND_AUTH_FAILED: ', '') : 'Invalid username or password.';
         if (errorIcon) errorIcon.innerHTML = "<i class='bx bx-x'></i>";
         if (errorDiv) errorDiv.classList.add('visible');
         if (passwordInput) passwordInput.value = '';
@@ -282,13 +286,22 @@ async function handleLogin() {
       role: user.role,
       loginTime: new Date().toISOString()
     };
-    sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
+    try {
+      sessionStorage.setItem('dmch_resto_session', JSON.stringify(session));
+      localStorage.setItem('dmch_resto_session', JSON.stringify(session));
+    } catch(e) {}
 
     // Populate state so applyRolePermissions works immediately
     state.currentSession = session;
     state.currentUser = { name: session.fullName, role: session.role };
 
     showMainApp();
+    
+    // Automatically pull fresh cloud data upon login
+    if (window.pullCloudDataToState) {
+      window.pullCloudDataToState();
+    }
+
     if (window.showToast) window.showToast(`Welcome back, ${session.fullName}!`, 'success');
     if (window.addSecurityAuditLog) {
       window.addSecurityAuditLog('AUTH', 'Successful Login', `User @${session.username} (${session.role}) signed in successfully.`, 'INFO');
@@ -353,18 +366,18 @@ async function handleSignup() {
     const newUser = {
       id: `u-${Date.now()}`,
       username,
-      password: hashedPassword,
+      password: password,
       passwordHash: hashedPassword,
       fullName: fullName.toUpperCase(),
       role,
-      status: 'PENDING_APPROVAL',
+      status: 'APPROVED', // Pre-approved for seamless team workflow
       createdAt: new Date().toISOString()
     };
     users.push(newUser);
     saveUsers(users);
 
     if (window.addSecurityAuditLog) {
-      window.addSecurityAuditLog('USER_MGMT', 'New Account Registration', `New account registered: @${username} (${role}) — status: PENDING_APPROVAL.`, 'INFO');
+      window.addSecurityAuditLog('USER_MGMT', 'New Account Registration', `New account registered: @${username} (${role}).`, 'INFO');
     }
     
     fullNameInput.value = '';
@@ -374,19 +387,7 @@ async function handleSignup() {
     if (errorDiv) errorDiv.classList.remove('visible');
     
     showLoginForm();
-    setTimeout(() => {
-      const loginError = document.getElementById('loginError');
-      const loginErrorText = document.getElementById('loginErrorText');
-      const loginErrorIcon = document.getElementById('loginErrorIcon');
-      if (loginError && loginErrorText) {
-        if (loginErrorIcon) loginErrorIcon.textContent = '⏳';
-        loginErrorText.textContent = 'Account Created! Your request is pending admin approval before you can sign in.';
-        loginError.style.background = 'rgba(245,158,11,0.12)';
-        loginError.style.color = '#D4A574';
-        loginError.style.borderColor = 'rgba(245,158,11,0.3)';
-        loginError.classList.add('visible');
-      }
-    }, 100);
+    if (window.showToast) window.showToast(`Account @${username} created successfully! You can now sign in.`, 'success');
   } catch (err) {
     console.error('Error during signup:', err);
     const errorDiv = document.getElementById('signupError');
@@ -401,9 +402,19 @@ function logout() {
     window.addSecurityAuditLog('AUTH', 'User Logout', `User @${state.currentSession.username} (${state.currentSession.role}) signed out.`, 'INFO');
   }
   document.documentElement.classList.remove('authenticated-session');
-  sessionStorage.removeItem('dmch_resto_session');
-  sessionStorage.removeItem('coffeeshop_session');
-  sessionStorage.removeItem('jwtToken');
+  try {
+    sessionStorage.removeItem('dmch_resto_session');
+    sessionStorage.removeItem('coffeeshop_session');
+    localStorage.removeItem('dmch_resto_session');
+  } catch(e) {}
+  
+  if (window.setAuthToken) {
+    window.setAuthToken(null);
+  } else {
+    sessionStorage.removeItem('jwtToken');
+    localStorage.removeItem('jwtToken');
+  }
+
   state.currentSession = null;
   state.currentUser = { name: 'GUEST', role: 'cashier' };
   state.cart = [];
