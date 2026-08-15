@@ -39,25 +39,25 @@ window.showToast = function(message, type = 'success', duration = 4000) {
 
   switch(type) {
     case 'success': 
-      bgClass = 'bg-[#0F172A] text-white'; 
-      icon = '✅'; 
+      bgClass = 'bg-[#1A3A52] text-white'; 
+      icon = "<i class=\'bx bx-check\'></i>"; 
       borderClass = 'border-emerald-500/40 shadow-emerald-500/20';
       badgeTitle = 'Action Verified';
       break;
     case 'warning': 
-      bgClass = 'bg-[#F59E0B] text-slate-950'; 
-      icon = '⚠️'; 
+      bgClass = 'bg-[#1A3A52] text-slate-950'; 
+      icon = "<i class=\'bx bx-error\'></i>"; 
       borderClass = 'border-amber-600/40 shadow-amber-500/20';
       badgeTitle = 'System Alert';
       break;
     case 'error': 
       bgClass = 'bg-[#EF4444] text-white'; 
-      icon = '❌'; 
+      icon = "<i class=\'bx bx-x\'></i>"; 
       borderClass = 'border-rose-600/40 shadow-rose-500/20';
       badgeTitle = 'Action Error';
       break;
     case 'info': 
-      bgClass = 'bg-[#0F172A] text-white'; 
+      bgClass = 'bg-[#1A3A52] text-white'; 
       icon = 'ℹ️'; 
       borderClass = 'border-blue-500/40 shadow-blue-500/20';
       badgeTitle = 'Information';
@@ -235,15 +235,9 @@ window.addSecurityAuditLog = function(category, action, details, severity = 'INF
   if (window.saveData) window.saveData();
 };
 
-// Storage Data Persistence & Cloud Synchronization — 100% Render Cloud Engine
+// Storage Data Persistence & Cloud Synchronization
 window.loadStorageData = function() {
-  // Clear any legacy offline storage data so we only serve fresh cloud data
-  try {
-    localStorage.removeItem('dmch_resto_posData');
-    localStorage.removeItem('posData');
-    localStorage.removeItem('dmch_resto_users');
-  } catch(e) {}
-
+  // 1. Initialize empty state
   state.categories = [...DEFAULT_CATEGORIES];
   state.products = [];
   state.departments = [];
@@ -255,7 +249,27 @@ window.loadStorageData = function() {
   state.tabReceipts = [];
   state.lastActiveDate = new Date().toLocaleDateString();
 
-  // Initialize Cloud Database Connection & Fetch Live PostgreSQL Data
+  // 2. Try to load from localStorage
+  try {
+    const localData = localStorage.getItem('dmch_resto_posData');
+    if (localData) {
+      const parsed = JSON.parse(localData);
+      // Preserve current active session and user before assigning
+      const activeSession = state.currentSession;
+      const activeUser = state.currentUser;
+      
+      Object.assign(state, parsed);
+      
+      // Restore active session and user
+      if (activeSession) state.currentSession = activeSession;
+      if (activeUser) state.currentUser = activeUser;
+    }
+  } catch(e) {}
+  
+  // 2b. Reset volatile UI state flags that should not persist across sessions/reloads
+  state.isProcessingPayment = false;
+
+  // 3. Initialize Cloud Database Connection & Fetch Live PostgreSQL Data
   if (window.initCloudDatabase) {
     window.initCloudDatabase();
   }
@@ -273,6 +287,10 @@ window.loadStorageData = function() {
 
 window.saveData = function({ sync = true } = {}) {
   if (!state.lastActiveDate) state.lastActiveDate = new Date().toLocaleDateString();
+
+  try {
+    localStorage.setItem('dmch_resto_posData', JSON.stringify(state));
+  } catch(e) {}
 
   // Broadcast live sync event across connected terminals
   if (window.broadcastLiveSync) {

@@ -12,6 +12,12 @@ function getApiBaseUrl() {
 }
 
 window.initCloudDatabase = async function() {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('⚡ Running locally. Cloud sync is disabled for testing.');
+    cloudSyncActive = false;
+    return false;
+  }
+
   let baseUrl = window.API_BASE_URL || (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api');
 
   try {
@@ -24,7 +30,7 @@ window.initCloudDatabase = async function() {
       return true;
     }
   } catch (err) {
-    console.warn(`⚠️ Local API (${baseUrl}) unavailable. Fallback to Render Cloud backend...`);
+    console.warn(`<i class='bx bx-error'></i> Local API (${baseUrl}) unavailable. Fallback to Render Cloud backend...`);
   }
 
   // Automatic Fallback to Live Render Cloud API if localhost:5000 is not running
@@ -39,7 +45,7 @@ window.initCloudDatabase = async function() {
         return true;
       }
     } catch (errProd) {
-      console.error('⚠️ Could not connect to Render Cloud API either:', errProd);
+      console.error("<i class='bx bx-error'></i> Could not connect to Render Cloud API either:", errProd);
     }
   }
 
@@ -99,7 +105,7 @@ window.pullCloudDataToState = async function() {
           name: p.name,
           categoryId: p.category_id,
           price: Number(p.price || 0),
-          icon: p.icon || '☕',
+          icon: p.icon || "<i class=\'bx bx-coffee\'></i>",
           stock: Number(p.stock || 100)
         }));
         state.products = fetchedProds;
@@ -250,6 +256,7 @@ window.syncStateToCloud = async function() {
 };
 
 window.cloudDeleteOrder = async function(orderId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
     const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
@@ -263,6 +270,7 @@ window.cloudDeleteOrder = async function(orderId) {
 };
 
 window.cloudSaveProduct = async function(product) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/products`, {
     method: 'POST',
@@ -277,6 +285,7 @@ window.cloudSaveProduct = async function(product) {
 };
 
 window.cloudSaveRoom = async function(room) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: room.id || `room-${Date.now()}`,
@@ -296,6 +305,7 @@ window.cloudSaveRoom = async function(room) {
 };
 
 window.cloudSaveDepartment = async function(dept) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: dept.id || `dept-${Date.now()}`,
@@ -316,6 +326,7 @@ window.cloudSaveDepartment = async function(dept) {
 };
 
 window.cloudSaveEmployee = async function(emp) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const payload = {
     id: emp.id || `emp-${Date.now()}`,
@@ -338,6 +349,7 @@ window.cloudSaveEmployee = async function(emp) {
 };
 
 window.cloudDeleteProduct = async function(productId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE'
@@ -349,6 +361,7 @@ window.cloudDeleteProduct = async function(productId) {
 };
 
 window.cloudDeleteDepartment = async function(deptId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
     const response = await fetch(`${baseUrl}/departments/${encodeURIComponent(deptId)}`, { method: 'DELETE' });
@@ -362,6 +375,7 @@ window.cloudDeleteDepartment = async function(deptId) {
 };
 
 window.cloudDeleteEmployee = async function(empId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
     const response = await fetch(`${baseUrl}/employees/${encodeURIComponent(empId)}`, { method: 'DELETE' });
@@ -375,6 +389,7 @@ window.cloudDeleteEmployee = async function(empId) {
 };
 
 window.cloudDeleteRoom = async function(roomId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   try {
     const response = await fetch(`${baseUrl}/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
@@ -388,6 +403,7 @@ window.cloudDeleteRoom = async function(roomId) {
 };
 
 window.cloudSyncUsers = async function(users) {
+  if (!cloudSyncActive) return;
   if (!users) return;
   const baseUrl = getApiBaseUrl();
   const userList = Array.isArray(users) ? users : [users];
@@ -411,6 +427,7 @@ window.cloudSyncUsers = async function(users) {
   }
 };
 window.cloudDeleteUser = async function(userId) {
+  if (!cloudSyncActive) return;
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   const result = await response.json().catch(() => null);

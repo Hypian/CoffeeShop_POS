@@ -99,7 +99,7 @@ function showLoginForm() {
   if (signupForm) signupForm.style.display = 'none';
   const loginError = document.getElementById('loginError');
   const loginErrorIcon = document.getElementById('loginErrorIcon');
-  if (loginErrorIcon) loginErrorIcon.textContent = '❌';
+  if (loginErrorIcon) loginErrorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
   if (loginError) {
     loginError.classList.remove('visible');
     loginError.style.background = '';
@@ -130,13 +130,13 @@ function updateUserBadge() {
     const roleUpper = (user.role || 'cashier').toUpperCase();
     if (user.role === 'admin') {
       badgeEl.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20';
-      badgeEl.textContent = `👑 ${roleUpper}`;
+      badgeEl.innerHTML = `<i class='bx bx-crown'></i> ${roleUpper}`;
     } else if (user.role === 'cashier') {
       badgeEl.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20';
-      badgeEl.textContent = `💵 ${roleUpper}`;
+      badgeEl.innerHTML = `<i class='bx bx-money'></i> ${roleUpper}`;
     } else {
       badgeEl.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-500/20';
-      badgeEl.textContent = `👤 ${roleUpper}`;
+      badgeEl.innerHTML = `<i class='bx bx-user'></i> ${roleUpper}`;
     }
   }
 }
@@ -178,7 +178,7 @@ async function handleLogin() {
     const username = (usernameInput.value || '').trim().toLowerCase();
     const password = (passwordInput.value || '').trim();
     
-    if (errorIcon) errorIcon.textContent = '❌';
+    if (errorIcon) errorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
     if (errorDiv) {
       errorDiv.style.background = '';
       errorDiv.style.color = '';
@@ -194,27 +194,21 @@ async function handleLogin() {
     let hashedInput = '';
     try { hashedInput = await hashPassword(password); } catch(e) {}
 
-    const isDefaultAdmin = username === 'admin' && (
-      password === 'Dmc@123' ||
-      hashedInput === '0097fbb12c3c7e6937143229912a1eb54c95a0934f93ce6c07a72f796cd8b8fb'
+    const users = getUsers();
+    let user = (users || []).find(u =>
+      u && u.username && u.username.toLowerCase() === username &&
+      (u.passwordHash === hashedInput || u.password === password)
     );
 
-    let user = null;
-    if (isDefaultAdmin) {
+    // If no users exist in state at all, allow the default initial bootstrap login
+    if (!user && username === 'admin' && password === 'Dmc@123' && (!state.users || state.users.length === 0)) {
       user = DEFAULT_USERS.find(u => u.username === 'admin');
     }
 
     if (!user) {
-      const users = getUsers();
-      user = (users || []).find(u =>
-        u && u.username && u.username.toLowerCase() === username &&
-        (u.password === password || u.password === hashedInput || u.passwordHash === hashedInput || u.passwordHash === password)
-      );
-    }
-    
-    if (!user) {
-      if (errorText) errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
       if (errorIcon) errorIcon.textContent = '❌';
+      if (errorText) errorText.textContent = 'Invalid username or password. Click "Create Account" below to register a valid account.';
+      if (errorIcon) errorIcon.innerHTML = "<i class=\'bx bx-x\'></i>";
       if (errorDiv) errorDiv.classList.add('visible');
       if (passwordInput) passwordInput.value = '';
       if (window.addSecurityAuditLog) {
@@ -230,7 +224,7 @@ async function handleLogin() {
       if (errorText) errorText.textContent = 'Account Pending Approval: Your account request is currently awaiting administrator review.';
       if (errorDiv) {
         errorDiv.style.background = 'rgba(245,158,11,0.12)';
-        errorDiv.style.color = '#D97706';
+        errorDiv.style.color = '#D4A574';
         errorDiv.style.borderColor = 'rgba(245,158,11,0.3)';
         errorDiv.classList.add('visible');
       }
@@ -356,7 +350,7 @@ async function handleSignup() {
         if (loginErrorIcon) loginErrorIcon.textContent = '⏳';
         loginErrorText.textContent = 'Account Created! Your request is pending admin approval before you can sign in.';
         loginError.style.background = 'rgba(245,158,11,0.12)';
-        loginError.style.color = '#D97706';
+        loginError.style.color = '#D4A574';
         loginError.style.borderColor = 'rgba(245,158,11,0.3)';
         loginError.classList.add('visible');
       }

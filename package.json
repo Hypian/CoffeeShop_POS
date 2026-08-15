@@ -15,5 +15,8 @@
     "rwanda"
   ],
   "author": "DMCH IT Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
 }

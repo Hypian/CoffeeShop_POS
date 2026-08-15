@@ -4,6 +4,36 @@
 
 // Hardened RBAC-enforced view router
 // Defines the allowed views per role — any unlisted view is silently blocked.
+
+// --- OPTIMIZATION UTILITIES ---
+window.debounce = function(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+};
+
+window.renderWithFocusRestore = function(renderFunc) {
+  const activeId = document.activeElement ? document.activeElement.id : null;
+  const cursorStart = activeId && document.activeElement.selectionStart ? document.activeElement.selectionStart : null;
+  const cursorEnd = activeId && document.activeElement.selectionEnd ? document.activeElement.selectionEnd : null;
+  
+  renderFunc();
+  
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) {
+      el.focus();
+      try {
+        if (cursorStart !== null && cursorEnd !== null && typeof el.setSelectionRange === 'function') {
+          el.setSelectionRange(cursorStart, cursorEnd);
+        }
+      } catch (e) {}
+    }
+  }
+};
+// ------------------------------
 const ROLE_ALLOWED_VIEWS = {
   admin:   ['pos', 'dashboard', 'ledgers', 'products', 'reports', 'users'],
   cashier: ['pos', 'dashboard', 'ledgers', 'products', 'reports'],
@@ -67,18 +97,25 @@ window.toggleMobileMenu = function() {
 };
 
 window.renderAllViews = function() {
-  // Core POS components always rendered
-  if (window.renderCategoryPills) window.renderCategoryPills();
-  if (window.renderProductGrid) window.renderProductGrid();
-  if (window.renderCart) window.renderCart();
+  const activeTab = state.activeTab || 'pos';
+
+  // Only render POS components if POS is the active view
+  if (activeTab === 'pos') {
+    if (window.renderCategoryPills) window.renderCategoryPills();
+    if (window.renderProductGrid) window.renderProductGrid();
+    if (window.renderCart) window.renderCart();
+  }
 
   // Render active tab view to eliminate unnecessary DOM recalculations
-  const activeTab = state.activeTab || 'pos';
   if (activeTab === 'dashboard' && window.renderDashboard) window.renderDashboard();
   else if (activeTab === 'ledgers' && window.renderDepartmentLedgers) window.renderDepartmentLedgers();
   else if (activeTab === 'products' && window.renderProductManagement) window.renderProductManagement();
   else if (activeTab === 'reports' && window.renderReports) window.renderReports();
-  else if (activeTab === 'users' && window.renderUsers) window.renderUsers();
+  else if (activeTab === 'users' && window.debouncedRenderUsers) {
+    window.debouncedRenderUsers();
+  } else if (activeTab === 'users' && window.renderUsers) {
+    window.renderUsers();
+  }
 };
 
 window.forceRenderAllViews = function() {
@@ -99,10 +136,10 @@ window.setupEventListeners = function() {
   
   const searchInput = document.getElementById('productSearchInput');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', window.debounce((e) => {
       state.searchQuery = e.target.value;
       renderProductGrid();
-    });
+    }, 250));
   }
   
   const deptSelect = document.getElementById('checkoutDeptSelect');
@@ -172,4 +209,29 @@ document.addEventListener('DOMContentLoaded', () => {
   seedDefaultUsers();
   checkExistingSession();
   if (window.checkAutoRollover) window.checkAutoRollover();
+  
+  // Ripple Effect for buttons
+  document.body.addEventListener('click', function(e) {
+    const target = e.target.closest('button, .nav-tab, .product-card, .cat-pill');
+    if (!target) return;
+    
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    
+    // Ensure the ripple is large enough to cover the whole element
+    const diameter = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = `${diameter}px`;
+    ripple.style.left = `${x - diameter/2}px`;
+    ripple.style.top = `${y - diameter/2}px`;
+    
+    target.appendChild(ripple);
+    
+    setTimeout(() => {
+      ripple.remove();
+    }, 500);
+  });
 });

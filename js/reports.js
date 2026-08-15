@@ -394,21 +394,21 @@ window.printHRReport = function() {
           </div>
         </div>
         
-        <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:15px; margin:20px 0; border-radius:8px; display:flex; justify-content:space-between;">
+        <div style="background-color:#FEF3C7; border:1px solid #1A3A52; padding:15px; margin:20px 0; border-radius:8px; display:flex; justify-content:space-between;">
           <div>
-            <h2 style="margin:0 0 6px 0; font-size:18px; color:#0F172A;">${emp.fullName}</h2>
+            <h2 style="margin:0 0 6px 0; font-size:18px; color:#1A3A52;">${emp.fullName}</h2>
             <p style="margin:0 0 4px 0; font-size:13px;"><strong>Staff ID:</strong> ${emp.staffId || 'N/A'}</p>
             <p style="margin:0; font-size:13px;"><strong>Department:</strong> ${dept ? dept.name : 'Unknown'}</p>
           </div>
           <div style="text-align:right;">
             <p style="margin:0 0 4px 0; font-size:13px;"><strong>Total Products Consumed:</strong> ${totalProducts} items</p>
-            <p style="margin:0; font-size:18px; color:#D97706;"><strong>Grand Total to Deduct: ${formatMoney(emp.currentBalance)}</strong></p>
+            <p style="margin:0; font-size:18px; color:#D4A574;"><strong>Grand Total to Deduct: ${formatMoney(emp.currentBalance)}</strong></p>
           </div>
         </div>
         
         <h3 style="margin-top:30px; border-bottom:1px solid #ccc; padding-bottom:5px;">Itemized Receipt History</h3>
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
-          <tr style="border-bottom:2px solid #000; background-color:#f8fafc;">
+          <tr style="border-bottom:2px solid #000; background-color:#FFFFFF;">
             <th style="text-align:left; padding:8px;">Date & Time</th>
             <th style="text-align:left; padding:8px;">Order ID</th>
             <th style="text-align:left; padding:8px;">Items Consumed</th>
@@ -431,10 +431,10 @@ window.printHRReport = function() {
         `;
       });
       printHtml += `
-          <tr style="font-weight:bold; background-color:#FEF3C7; color:#92400E; font-size:14px; border-top:2px solid #F59E0B;">
+          <tr style="font-weight:bold; background-color:#FEF3C7; color:#92400E; font-size:14px; border-top:2px solid #1A3A52;">
             <td colspan="2" style="padding:10px 8px;">GRAND TOTAL (${receipts.length} Orders)</td>
             <td style="padding:10px 8px;">${totalProducts} Total Products Consumed</td>
-            <td style="text-align:right; padding:10px 8px; font-size:15px; color:#D97706;">${formatMoney(sum)}</td>
+            <td style="text-align:right; padding:10px 8px; font-size:15px; color:#D4A574;">${formatMoney(sum)}</td>
           </tr>
       `;
     } else {
@@ -488,7 +488,7 @@ window.printHRReport = function() {
     if (emps.length > 0) {
       hasData = true;
       printHtml += `
-        <h3 style="margin-top:20px; background-color:#f1f5f9; padding:8px 12px; font-size:16px;">Department: ${d.name} (${d.code})</h3>
+        <h3 style="margin-top:20px; background-color:#F8FAFC; padding:8px 12px; font-size:16px;">Department: ${d.name} (${d.code})</h3>
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;">
           <tr style="border-bottom:2px solid #000;">
             <th style="text-align:left; padding:8px;">Staff ID</th>
@@ -510,7 +510,7 @@ window.printHRReport = function() {
         `;
       });
       printHtml += `
-          <tr style="font-weight:bold; background-color:#f8fafc;">
+          <tr style="font-weight:bold; background-color:#FFFFFF;">
             <td colspan="2" style="padding:8px; text-align:right;">Department Total:</td>
             <td style="text-align:right; padding:8px;">${formatMoney(deptTotal)}</td>
           </tr>
@@ -524,9 +524,9 @@ window.printHRReport = function() {
   }
 
   printHtml += `
-      <div style="margin-top:30px; font-size:16px; font-weight:bold; background-color:#FEF3C7; border:1px solid #F59E0B; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="margin-top:30px; font-size:16px; font-weight:bold; background-color:#FEF3C7; border:1px solid #1A3A52; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
         <span>GRAND TOTAL PAYROLL DEDUCTIONS (${overallStaffCount} Staff Members):</span>
-        <span style="font-size:20px; color:#D97706;">${formatMoney(overallTotal)}</span>
+        <span style="font-size:20px; color:#D4A574;">${formatMoney(overallTotal)}</span>
       </div>
       
       <div style="margin-top:60px; display:flex; justify-content:space-between; font-size:14px;">
@@ -803,16 +803,16 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
   const displayDate = new Date(dateSub + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   let printHtml = `
-    <div style="font-family:sans-serif; color:#0F172A; padding:24px; max-width:900px; margin:0 auto; background:#fff;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #0F172A; padding-bottom:14px; margin-bottom:20px;">
+    <div style="font-family:sans-serif; color:#1A3A52; padding:24px; max-width:900px; margin:0 auto; background:#fff;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #1A3A52; padding-bottom:14px; margin-bottom:20px;">
         <div>
           <img src="${APP_LOGO_DATA_URI}" style="max-height:55px; width:auto; display:block; margin-bottom:8px;" alt="Logo">
-          <h2 style="margin:0; font-size:22px; font-weight:800; color:#0F172A;">DMCH RESTO</h2>
-          <p style="margin:2px 0 0 0; font-size:12px; color:#475569; font-weight:600;">Dream Medical Center Hospital — Staff Lounge & Cafeteria</p>
+          <h2 style="margin:0; font-size:22px; font-weight:800; color:#1A3A52;">DMCH RESTO</h2>
+          <p style="margin:2px 0 0 0; font-size:12px; color:#6B7280; font-weight:600;">Dream Medical Center Hospital — Staff Lounge & Cafeteria</p>
         </div>
         <div style="text-align:right;">
-          <h1 style="margin:0; font-size:20px; font-weight:800; color:#0F172A;">${filterTitle}</h1>
-          <div style="display:inline-block; background:#FEF3C7; color:#D97706; border:1px solid #F59E0B; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold; margin-top:6px;">
+          <h1 style="margin:0; font-size:20px; font-weight:800; color:#1A3A52;">${filterTitle}</h1>
+          <div style="display:inline-block; background:#FEF3C7; color:#D4A574; border:1px solid #1A3A52; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold; margin-top:6px;">
             Date: ${displayDate} | Filter: ${sub.toUpperCase()}
           </div>
           <p style="margin:6px 0 0 0; font-size:11px; color:#64748B;">Generated: ${new Date().toLocaleString()}</p>
@@ -841,10 +841,10 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
 
     printHtml += `
       <div style="margin-bottom:24px;">
-        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Product Sales Breakdown</h3>
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#1A3A52; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Product Sales Breakdown</h3>
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
           <thead>
-            <tr style="background:#0F172A; color:#FFFFFF;">
+            <tr style="background:#1A3A52; color:#FFFFFF;">
               <th style="padding:8px; text-align:left;">Product Name</th>
               <th style="padding:8px; text-align:center;">Quantity Sold</th>
               <th style="padding:8px; text-align:right;">Total Revenue (RWF)</th>
@@ -857,21 +857,21 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
       productList.forEach((p, idx) => {
         totalQty += p.qty;
         totalRevProduct += p.revenue;
-        const bgColor = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+        const bgColor = idx % 2 === 0 ? '#FFFFFF' : '#FFFFFF';
         printHtml += `
           <tr style="background:${bgColor}; border-bottom:1px solid #E2E8F0;">
             <td style="padding:8px; font-weight:bold;">${p.name}</td>
             <td style="padding:8px; text-align:center; font-family:monospace;">${p.qty} units</td>
-            <td style="padding:8px; text-align:right; font-family:monospace; font-weight:bold; color:#D97706;">${formatMoney(p.revenue)}</td>
+            <td style="padding:8px; text-align:right; font-family:monospace; font-weight:bold; color:#D4A574;">${formatMoney(p.revenue)}</td>
           </tr>
         `;
       });
 
       printHtml += `
-        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #F59E0B;">
+        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #1A3A52;">
           <td style="padding:10px;">TOTAL (${productList.length} Products)</td>
           <td style="padding:10px; text-align:center; font-family:monospace;">${totalQty} Total Units</td>
-          <td style="text-align:right; padding:10px; font-size:14px; color:#D97706; font-family:monospace;">${formatMoney(totalRevProduct)}</td>
+          <td style="text-align:right; padding:10px; font-size:14px; color:#D4A574; font-family:monospace;">${formatMoney(totalRevProduct)}</td>
         </tr>
       `;
     } else {
@@ -886,25 +886,25 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
   } else {
     printHtml += `
       <div style="margin-bottom:24px;">
-        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Financial Breakdown</h3>
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#1A3A52; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Financial Breakdown</h3>
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
-          <tr style="background:#F8FAFC; border:1px solid #CBD5E1;">
+          <tr style="background:#FFFFFF; border:1px solid #CBD5E1;">
             <td style="padding:10px; font-weight:bold;">Total Filter Volume</td>
             <td style="padding:10px; font-weight:extrabold; text-align:right; color:#10B981; font-size:15px;">${formatMoney(totalRev)}</td>
           </tr>
           <tr style="border:1px solid #E2E8F0;">
-            <td style="padding:8px 10px;">💵 Direct Sales (Cash & Mobile Register)</td>
-            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#3B82F6;">${formatMoney(revDirect)}</td>
+            <td style="padding:8px 10px;"><i class='bx bx-money'></i> Direct Sales (Cash & Mobile Register)</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#1A3A52;">${formatMoney(revDirect)}</td>
           </tr>
           <tr style="border:1px solid #E2E8F0;">
-            <td style="padding:8px 10px;">💳 Institutional Staff Tabs (Payroll Deductions)</td>
-            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#F59E0B;">${formatMoney(revTab)}</td>
+            <td style="padding:8px 10px;"><i class='bx bx-credit-card'></i> Institutional Staff Tabs (Payroll Deductions)</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#1A3A52;">${formatMoney(revTab)}</td>
           </tr>
           <tr style="border:1px solid #E2E8F0;">
             <td style="padding:8px 10px;">🏥 Hospital Inpatient Catering (Covered Room Perks)</td>
-            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#8B5CF6;">${formatMoney(revPatient)}</td>
+            <td style="padding:8px 10px; text-align:right; font-weight:bold; color:#1A3A52;">${formatMoney(revPatient)}</td>
           </tr>
-          <tr style="background:#F8FAFC; border:1px solid #CBD5E1; font-weight:bold;">
+          <tr style="background:#FFFFFF; border:1px solid #CBD5E1; font-weight:bold;">
             <td style="padding:8px 10px;">Total Receipts Processed</td>
             <td style="padding:8px 10px; text-align:right;">${orders.length} Orders</td>
           </tr>
@@ -912,10 +912,10 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
       </div>
 
       <div style="margin-bottom:24px;">
-        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Itemized Daily Transactions (${orders.length})</h3>
+        <h3 style="margin:0 0 12px 0; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#1A3A52; border-bottom:1px solid #E2E8F0; padding-bottom:6px;">Itemized Daily Transactions (${orders.length})</h3>
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
           <thead>
-            <tr style="background:#0F172A; color:#FFFFFF;">
+            <tr style="background:#1A3A52; color:#FFFFFF;">
               <th style="padding:8px; text-align:left;">Order ID</th>
               <th style="padding:8px; text-align:left;">Time</th>
               <th style="padding:8px; text-align:left;">Mode</th>
@@ -944,7 +944,7 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
         else if (o.payerName || o.customerName) clientText = `${o.payerName || o.customerName}`;
 
         const itemsStr = Array.isArray(o.items) ? o.items.map(i => `${i.qty}x ${i.name || 'Item'}`).join(', ') : 'N/A';
-        const bgColor = isVoided ? '#FEF2F2' : (index % 2 === 0 ? '#FFFFFF' : '#F8FAFC');
+        const bgColor = isVoided ? '#FEF2F2' : (index % 2 === 0 ? '#FFFFFF' : '#FFFFFF');
 
         printHtml += `
           <tr style="background:${bgColor}; border-bottom:1px solid #E2E8F0;">
@@ -959,10 +959,10 @@ window.exportDailyReportPDF = function(targetDateStr = null, subfolderFilter = n
       });
 
       printHtml += `
-        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #F59E0B;">
+        <tr style="font-weight:bold; background:#FEF3C7; color:#92400E; border-top:2px solid #1A3A52;">
           <td colspan="4" style="padding:10px;">GRAND TOTAL (${orders.length} Transactions)</td>
           <td style="padding:10px;">Filter Volume</td>
-          <td style="text-align:right; padding:10px; font-size:14px; color:#D97706; font-family:monospace;">${formatMoney(totalRev)}</td>
+          <td style="text-align:right; padding:10px; font-size:14px; color:#D4A574; font-family:monospace;">${formatMoney(totalRev)}</td>
         </tr>
       `;
     } else {
@@ -1050,21 +1050,21 @@ window.renderReports = function() {
     <!-- Top Date Subfolder & Report Selector -->
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-[#0F172A] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📄</div>
+        <div class="w-14 h-14 rounded-2xl bg-[#1A3A52] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📄</div>
         <div>
           <div class="flex items-center gap-2">
             <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-500/30">Official Audit Reports</span>
             <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Branded PDF & Excel</span>
           </div>
-          <h2 class="text-xl font-bold text-[#0F172A] mt-1">Daily Audit Report & Historical Subfolders</h2>
-          <p class="text-xs text-[#475569]">Select any day subfolder & filter below to view transactions and extract matching PDF or Excel downloads.</p>
+          <h2 class="text-xl font-bold text-[#1A3A52] mt-1">Daily Audit Report & Historical Subfolders</h2>
+          <p class="text-xs text-[#6B7280]">Select any day subfolder & filter below to view transactions and extract matching PDF or Excel downloads.</p>
         </div>
       </div>
 
       <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
-        <div class="flex items-center gap-2 bg-[#F8FAFC] border border-black/[0.1] rounded-xl px-3 py-2 w-full sm:w-auto">
-          <span class="text-xs font-bold text-[#475569]">📅 Day Subfolder:</span>
-          <select class="bg-transparent border-none text-xs font-extrabold text-[#0F172A] focus:outline-none cursor-pointer" onchange="window.setSelectedReportDate(this.value)">
+        <div class="flex items-center gap-2 bg-[#FFFFFF] border border-black/[0.1] rounded-xl px-3 py-2 w-full sm:w-auto">
+          <span class="text-xs font-bold text-[#6B7280]">📅 Day Subfolder:</span>
+          <select class="bg-transparent border-none text-xs font-extrabold text-[#1A3A52] focus:outline-none cursor-pointer" onchange="window.setSelectedReportDate(this.value)">
             ${availableDates.map(d => `
               <option value="${d}" ${d === selectedDate ? 'selected' : ''}>
                 ${d === todayStr ? `Today (${d})` : d}
@@ -1074,7 +1074,7 @@ window.renderReports = function() {
         </div>
 
         <div class="flex items-center gap-2 w-full sm:w-auto">
-          <button onclick="exportDailyReportExcel('${selectedDate}', '${selectedSub}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 w-full sm:w-auto">
+          <button onclick="exportDailyReportExcel('${selectedDate}', '${selectedSub}')" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 w-full sm:w-auto">
             <span>📈</span> Export Excel Report
           </button>
         </div>
@@ -1083,45 +1083,45 @@ window.renderReports = function() {
 
     <!-- Filter Pills for Reports View -->
     <div class="flex items-center gap-2 bg-[#FFFFFF] p-2 rounded-2xl border border-black/[0.1] shadow-xs flex-wrap">
-      <span class="text-xs font-extrabold text-[#0F172A] px-2">Filter View:</span>
-      <button onclick="setSelectedReportSubfolder('all')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+      <span class="text-xs font-extrabold text-[#1A3A52] px-2">Filter View:</span>
+      <button onclick="setSelectedReportSubfolder('all')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'all' ? 'bg-[#1A3A52] text-slate-950 shadow-md' : 'text-[#6B7280] hover:bg-[#F8FAFC]'}">
         🗂️ All Receipts
       </button>
-      <button onclick="setSelectedReportSubfolder('direct')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'direct' ? 'bg-[#10B981] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
-        💵 Direct Sales
+      <button onclick="setSelectedReportSubfolder('direct')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'direct' ? 'bg-[#10B981] text-white shadow-md' : 'text-[#6B7280] hover:bg-[#F8FAFC]'}">
+        <i class='bx bx-money'></i> Direct Sales
       </button>
-      <button onclick="setSelectedReportSubfolder('tab')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'tab' ? 'bg-[#D97706] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
-        💳 Staff Tabs
+      <button onclick="setSelectedReportSubfolder('tab')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'tab' ? 'bg-[#D4A574] text-white shadow-md' : 'text-[#6B7280] hover:bg-[#F8FAFC]'}">
+        <i class='bx bx-credit-card'></i> Staff Tabs
       </button>
-      <button onclick="setSelectedReportSubfolder('patient')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'patient' ? 'bg-[#8B5CF6] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
+      <button onclick="setSelectedReportSubfolder('patient')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'patient' ? 'bg-[#1A3A52] text-white shadow-md' : 'text-[#6B7280] hover:bg-[#F8FAFC]'}">
         🏥 Inpatient Perks
       </button>
-      <button onclick="setSelectedReportSubfolder('items')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'items' ? 'bg-[#64748B] text-white shadow-md' : 'text-[#475569] hover:bg-[#F1F5F9]'}">
-        📦 Product Log
+      <button onclick="setSelectedReportSubfolder('items')" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${selectedSub === 'items' ? 'bg-[#64748B] text-white shadow-md' : 'text-[#6B7280] hover:bg-[#F8FAFC]'}">
+        <i class='bx bx-box'></i> Product Log
       </button>
     </div>
 
     <!-- Summary Metrics for Selected Date -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
-        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Day Volume (${selectedDate})</div>
+        <div class="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-1">Day Volume (${selectedDate})</div>
         <div class="text-2xl font-extrabold text-[#10B981]">${formatMoney(totalRev)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">${totalOrders} transactions on ${formattedSelectedDate}</div>
+        <div class="text-[0.7rem] text-[#6B7280] mt-1">${totalOrders} transactions on ${formattedSelectedDate}</div>
       </div>
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
-        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Direct Sales (Cash/Momo)</div>
-        <div class="text-2xl font-extrabold text-[#3B82F6]">${formatMoney(revDirect)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">Direct register payments</div>
+        <div class="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-1">Direct Sales (Cash/Momo)</div>
+        <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(revDirect)}</div>
+        <div class="text-[0.7rem] text-[#6B7280] mt-1">Direct register payments</div>
       </div>
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
-        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Staff Payroll Tabs</div>
-        <div class="text-2xl font-extrabold text-[#F59E0B]">${formatMoney(revTab)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">Institutional staff credit</div>
+        <div class="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-1">Staff Payroll Tabs</div>
+        <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(revTab)}</div>
+        <div class="text-[0.7rem] text-[#6B7280] mt-1">Institutional staff credit</div>
       </div>
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-xs">
-        <div class="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1">Hospital Room Perks</div>
-        <div class="text-2xl font-extrabold text-[#8B5CF6]">${formatMoney(revPatient)}</div>
-        <div class="text-[0.7rem] text-[#475569] mt-1">Covered inpatient catering</div>
+        <div class="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-1">Hospital Room Perks</div>
+        <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(revPatient)}</div>
+        <div class="text-[0.7rem] text-[#6B7280] mt-1">Covered inpatient catering</div>
       </div>
     </div>
 
@@ -1129,11 +1129,11 @@ window.renderReports = function() {
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2">
-            <span>${selectedSub === 'items' ? '📦' : '📜'}</span>
+          <h3 class="text-base font-bold text-[#1A3A52] flex items-center gap-2">
+            <span>${selectedSub === 'items' ? "<i class=\'bx bx-box\'></i>" : '📜'}</span>
             ${selectedSub === 'items' ? 'Itemized Product Sales Log' : `Transactions Log — Date: ${selectedDate}`}
           </h3>
-          <p class="text-xs text-[#475569]">Showing data for subfolder filter <strong class="text-amber-600 font-mono font-bold">${selectedSub.toUpperCase()}</strong> on ${formattedSelectedDate}</p>
+          <p class="text-xs text-[#6B7280]">Showing data for subfolder filter <strong class="text-amber-600 font-mono font-bold">${selectedSub.toUpperCase()}</strong> on ${formattedSelectedDate}</p>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
@@ -1162,7 +1162,7 @@ window.renderReports = function() {
           return `
             <table class="data-table w-full text-left text-sm">
               <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
+                <tr class="text-[#6B7280] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Product Name</th>
                   <th class="py-3 px-4 font-semibold">Quantity Sold</th>
                   <th class="py-3 px-4 font-semibold">Total Revenue (RWF)</th>
@@ -1176,7 +1176,7 @@ window.renderReports = function() {
                     <td class="font-mono font-extrabold text-amber-600">${formatMoney(p.revenue)}</td>
                   </tr>
                 `).join('') : `
-                  <tr><td colspan="3" class="py-8 text-center text-[#475569] italic">No product sales recorded for this date & filter.</td></tr>
+                  <tr><td colspan="3" class="py-8 text-center text-[#6B7280] italic">No product sales recorded for this date & filter.</td></tr>
                 `}
               </tbody>
             </table>
@@ -1184,7 +1184,7 @@ window.renderReports = function() {
         })() : `
           <table class="data-table w-full text-left text-sm">
             <thead>
-              <tr class="text-[#475569] border-b border-black/[0.1]">
+              <tr class="text-[#6B7280] border-b border-black/[0.1]">
                 <th class="py-3 px-4 font-semibold">Order ID</th>
                 <th class="py-3 px-4 font-semibold">Time</th>
                 <th class="py-3 px-4 font-semibold">Mode</th>
@@ -1233,14 +1233,14 @@ window.renderReports = function() {
                       <div class="flex items-center justify-end gap-1.5">
                         <button onclick="reprintReceipt('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all cursor-pointer shadow-xs active:scale-95">📄 Receipt</button>
                         ${!isVoided ? `<button onclick="openVoidOrderModal('${o.id}')" title="Void / Refund Order" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 cursor-pointer transition-all active:scale-95">🔄 Void</button>` : ''}
-                        <button onclick="deleteOrder('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️</button>
+                        <button onclick="deleteOrder('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-trash'></i></button>
                       </div>
                     </td>
                   </tr>
                 `;
               }).join('') : `
                 <tr>
-                  <td colspan="7" class="py-8 text-center text-[#475569] italic">No transactions recorded for subfolder filter ${selectedSub.toUpperCase()} on ${selectedDate}.</td>
+                  <td colspan="7" class="py-8 text-center text-[#6B7280] italic">No transactions recorded for subfolder filter ${selectedSub.toUpperCase()} on ${selectedDate}.</td>
                 </tr>
               `}
             </tbody>
@@ -1252,24 +1252,24 @@ window.renderReports = function() {
     <!-- HR Payroll & Statement Export Section -->
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-6">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl">👥</div>
+        <div class="w-12 h-12 rounded-xl bg-[#1A3A52]/10 text-[#1A3A52] flex items-center justify-center text-2xl"><i class='bx bx-group'></i></div>
         <div>
-          <h3 class="text-base font-bold text-[#0F172A]">HR Payroll & Statement Export</h3>
-          <p class="text-xs text-[#475569]">Print grouped department reports or detailed individual staff statements.</p>
+          <h3 class="text-base font-bold text-[#1A3A52]">HR Payroll & Statement Export</h3>
+          <p class="text-xs text-[#6B7280]">Print grouped department reports or detailed individual staff statements.</p>
         </div>
       </div>
       <div class="flex flex-col md:flex-row gap-2 items-center w-full md:w-auto">
-        <select id="hrFilterDept" class="bg-[#F8FAFC] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B5CF6] w-full md:w-auto" onchange="window.updateHREmployeeDropdown()">
+        <select id="hrFilterDept" class="bg-[#FFFFFF] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A3A52] w-full md:w-auto" onchange="window.updateHREmployeeDropdown()">
           <option value="ALL">All Departments</option>
           ${state.departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
         </select>
-        <select id="hrFilterEmp" class="bg-[#F8FAFC] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B5CF6] w-full md:w-auto" disabled>
+        <select id="hrFilterEmp" class="bg-[#FFFFFF] border border-black/[0.1] text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A3A52] w-full md:w-auto" disabled>
           <option value="ALL">All Staff</option>
         </select>
         <button onclick="exportHRExcel()" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-[#10B981]/20 w-full md:w-auto">
           📊 Excel (.xlsx)
         </button>
-        <button onclick="printHRReport()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-[#8B5CF6]/20 w-full md:w-auto">
+        <button onclick="printHRReport()" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-6 py-3 text-sm font-extrabold cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-[#1A3A52]/20 w-full md:w-auto">
           🖨 Export
         </button>
       </div>
@@ -1278,8 +1278,8 @@ window.renderReports = function() {
     <!-- Department Tab Ledger Summary -->
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 mt-6">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>🏛️</span> Department Tab Ledger Summary</h3>
-        <span class="text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/10 px-3 py-1 rounded-full border border-[#F59E0B]/20">Total Outstanding: ${formatMoney(totalOutstanding)}</span>
+        <h3 class="text-base font-bold text-[#1A3A52] flex items-center gap-2"><span><i class='bx bx-building-house'></i></span> Department Tab Ledger Summary</h3>
+        <span class="text-xs font-semibold text-[#1A3A52] bg-[#1A3A52]/10 px-3 py-1 rounded-full border border-[#1A3A52]/20">Total Outstanding: ${formatMoney(totalOutstanding)}</span>
       </div>
       <div class="overflow-x-auto">
         <table class="data-table w-full text-left text-sm">
@@ -1309,8 +1309,8 @@ window.renderReports = function() {
                   </td>
                   <td class="text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-2">
-                      <button onclick="openSettleModal('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
-                      <button onclick="deleteEmployee('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+                      <button onclick="openSettleModal('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-money'></i> Settle Tab</button>
+                      <button onclick="deleteEmployee('${e.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-trash'></i> Delete</button>
                     </div>
                   </td>
                 </tr>

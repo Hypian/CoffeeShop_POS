@@ -19,70 +19,70 @@ window.renderDepartmentLedgers = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#0F172A] text-white flex items-center justify-center text-2xl shadow-lg">🖥️</div>
+            <div class="w-14 h-14 rounded-2xl bg-[#1A3A52] text-white flex items-center justify-center text-2xl shadow-lg"><i class='bx bx-desktop'></i></div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-[#F59E0B]/15 text-[#D97706] px-2.5 py-0.5 rounded-full border border-[#F59E0B]/30">Department & Staff Ledgers</span>
+                <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-[#1A3A52]/15 text-[#D4A574] px-2.5 py-0.5 rounded-full border border-[#1A3A52]/30">Department & Staff Ledgers</span>
               </div>
-              <h2 class="text-xl font-bold text-[#0F172A] mt-1">Department & Staff Ledgers</h2>
-              <p class="text-xs text-[#475569]">Select a section below to browse department accounts, staff balances, or reports.</p>
+              <h2 class="text-xl font-bold text-[#1A3A52] mt-1">Department & Staff Ledgers</h2>
+              <p class="text-xs text-[#6B7280]">Select a section below to browse department accounts, staff balances, or reports.</p>
             </div>
           </div>
           
           <div class="flex items-center gap-2 flex-wrap w-full md:w-auto">
-            <button onclick="openAddDepartmentModal()" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 shadow-sm">
-              <span>➕</span> Add Department
+            <button onclick="openAddDepartmentModal()" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 shadow-sm">
+              <span><i class='bx bx-plus'></i></span> Add Department
             </button>
-            <button onclick="openAddEmployeeModal()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/10">
-              <span>👤</span> Add Staff Account
+            <button onclick="openAddEmployeeModal()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/10">
+              <span><i class='bx bx-user'></i></span> Add Staff Account
             </button>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div onclick="setLedgerMode('departments')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#F59E0B] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
-            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#F59E0B]/10 text-9xl font-extrabold transition-colors">🏛️</div>
+          <div onclick="setLedgerMode('departments')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#1A3A52] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
+            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#1A3A52]/10 text-9xl font-extrabold transition-colors"><i class='bx bx-building-house'></i></div>
             <div>
               <div class="flex justify-between items-center mb-3">
-                <div class="w-12 h-12 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] group-hover:bg-[#F59E0B] group-hover:text-[#111827] flex items-center justify-center text-2xl transition-all shadow-sm">📁</div>
-                <span class="text-xs font-bold bg-[#F8FAFC] border border-black/[0.08] text-[#0F172A] px-3 py-1 rounded-full">${state.departments.length} Folders</span>
+                <div class="w-12 h-12 rounded-xl bg-[#1A3A52]/10 text-[#1A3A52] group-hover:bg-[#1A3A52] group-hover:text-[#111827] flex items-center justify-center text-2xl transition-all shadow-sm"><i class='bx bx-folder'></i></div>
+                <span class="text-xs font-bold bg-[#FFFFFF] border border-black/[0.08] text-[#1A3A52] px-3 py-1 rounded-full">${state.departments.length} Folders</span>
               </div>
-              <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#F59E0B] transition-colors">Department Accounts</h3>
-              <p class="text-xs text-[#475569] mt-1.5 leading-relaxed">Browse department folders, pull consumption lists, and export Excel reports.</p>
+              <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#1A3A52] transition-colors">Department Accounts</h3>
+              <p class="text-xs text-[#6B7280] mt-1.5 leading-relaxed">Browse department folders, pull consumption lists, and export Excel reports.</p>
             </div>
-            <div class="flex items-center gap-1 text-xs font-bold text-[#F59E0B] group-hover:translate-x-1 transition-transform">
+            <div class="flex items-center gap-1 text-xs font-bold text-[#1A3A52] group-hover:translate-x-1 transition-transform">
               <span>Browse Departments</span>
               <span>→</span>
             </div>
           </div>
 
-          <div onclick="setLedgerMode('staff')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#8B5CF6] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
-            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#8B5CF6]/10 text-9xl font-extrabold transition-colors">👥</div>
+          <div onclick="setLedgerMode('staff')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#1A3A52] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
+            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#1A3A52]/10 text-9xl font-extrabold transition-colors"><i class='bx bx-group'></i></div>
             <div>
               <div class="flex justify-between items-center mb-3">
-                <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] group-hover:bg-[#8B5CF6] group-hover:text-white flex items-center justify-center text-2xl transition-all shadow-sm">👤</div>
-                <span class="text-xs font-bold bg-[#F8FAFC] border border-black/[0.08] text-[#0F172A] px-3 py-1 rounded-full">${state.employees.length} Accounts</span>
+                <div class="w-12 h-12 rounded-xl bg-[#1A3A52]/10 text-[#1A3A52] group-hover:bg-[#1A3A52] group-hover:text-white flex items-center justify-center text-2xl transition-all shadow-sm"><i class='bx bx-user'></i></div>
+                <span class="text-xs font-bold bg-[#FFFFFF] border border-black/[0.08] text-[#1A3A52] px-3 py-1 rounded-full">${state.employees.length} Accounts</span>
               </div>
-              <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#8B5CF6] transition-colors">Staff Accounts Directory</h3>
-              <p class="text-xs text-[#475569] mt-1.5 leading-relaxed">View staff credit balances, settle tabs, and manage account access.</p>
+              <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#1A3A52] transition-colors">Staff Accounts Directory</h3>
+              <p class="text-xs text-[#6B7280] mt-1.5 leading-relaxed">View staff credit balances, settle tabs, and manage account access.</p>
             </div>
-            <div class="flex items-center gap-1 text-xs font-bold text-[#8B5CF6] group-hover:translate-x-1 transition-transform">
+            <div class="flex items-center gap-1 text-xs font-bold text-[#1A3A52] group-hover:translate-x-1 transition-transform">
               <span>View Staff Accounts</span>
               <span>→</span>
             </div>
           </div>
 
-          <div onclick="setLedgerMode('patients')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#8B5CF6] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
-            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#8B5CF6]/10 text-9xl font-extrabold transition-colors">🏥</div>
+          <div onclick="setLedgerMode('patients')" class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#1A3A52] rounded-2xl p-6 cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden flex flex-col justify-between h-56">
+            <div class="absolute -right-6 -bottom-6 text-black/[0.03] group-hover:text-[#1A3A52]/10 text-9xl font-extrabold transition-colors">🏥</div>
             <div>
               <div class="flex justify-between items-center mb-3">
-                <div class="w-12 h-12 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] group-hover:bg-[#8B5CF6] group-hover:text-white flex items-center justify-center text-2xl transition-all shadow-sm">🏥</div>
-                <span class="text-xs font-bold bg-[#8B5CF6]/10 text-[#8B5CF6] px-3 py-1 rounded-full border border-[#8B5CF6]/20">Inpatient Catering</span>
+                <div class="w-12 h-12 rounded-xl bg-[#1A3A52]/10 text-[#1A3A52] group-hover:bg-[#1A3A52] group-hover:text-white flex items-center justify-center text-2xl transition-all shadow-sm">🏥</div>
+                <span class="text-xs font-bold bg-[#1A3A52]/10 text-[#1A3A52] px-3 py-1 rounded-full border border-[#1A3A52]/20">Inpatient Catering</span>
               </div>
-              <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#8B5CF6] transition-colors">Patient Room Catering</h3>
-              <p class="text-xs text-[#475569] mt-1.5 leading-relaxed">Track food & tea orders delivered to hospital rooms (Breakfast/Lunch/Dinner) & monthly reports.</p>
+              <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#1A3A52] transition-colors">Patient Room Catering</h3>
+              <p class="text-xs text-[#6B7280] mt-1.5 leading-relaxed">Track food & tea orders delivered to hospital rooms (Breakfast/Lunch/Dinner) & monthly reports.</p>
             </div>
-            <div class="flex items-center gap-1 text-xs font-bold text-[#8B5CF6] group-hover:translate-x-1 transition-transform">
+            <div class="flex items-center gap-1 text-xs font-bold text-[#1A3A52] group-hover:translate-x-1 transition-transform">
               <span>View Room Ledgers</span>
               <span>→</span>
             </div>
@@ -95,12 +95,12 @@ window.renderDepartmentLedgers = function() {
                 <div class="w-12 h-12 rounded-xl bg-[#10B981]/10 text-[#10B981] group-hover:bg-[#10B981] group-hover:text-white flex items-center justify-center text-2xl transition-all shadow-sm">📊</div>
                 <span class="text-xs font-bold bg-[#10B981]/10 text-[#10B981] px-3 py-1 rounded-full border border-[#10B981]/20">Active</span>
               </div>
-              <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#10B981] transition-colors">Reports & HR Exports</h3>
-              <p class="text-xs text-[#475569] mt-1.5 leading-relaxed">Generate payroll deduction reports and detailed A4 audit statements.</p>
+              <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#10B981] transition-colors">Reports & HR Exports</h3>
+              <p class="text-xs text-[#6B7280] mt-1.5 leading-relaxed">Generate payroll deduction reports and detailed A4 audit statements.</p>
             </div>
             <div class="flex items-center justify-between text-xs font-bold text-[#10B981]">
               <span class="group-hover:translate-x-1 transition-transform">Launch Reports →</span>
-              <span class="font-mono text-[#0F172A]">${formatMoney(totalOutstanding)}</span>
+              <span class="font-mono text-[#1A3A52]">${formatMoney(totalOutstanding)}</span>
             </div>
           </div>
         </div>
@@ -120,32 +120,32 @@ window.renderDepartmentLedgers = function() {
       const totalConsumed = staffList.reduce((s, e) => s + e.currentBalance, 0);
 
       return `
-        <div class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#F59E0B] rounded-2xl p-5 transition-all hover:shadow-lg flex flex-col justify-between gap-4 group">
+        <div class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#1A3A52] rounded-2xl p-5 transition-all hover:shadow-lg flex flex-col justify-between gap-4 group">
           <div>
             <div class="flex items-center justify-between mb-3">
-              <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-1 rounded-lg">${d.code}</span>
+              <span class="font-mono font-extrabold text-xs bg-[#1A3A52] text-white px-2.5 py-1 rounded-lg">${d.code}</span>
               <div class="flex items-center gap-1">
-                <button onclick="event.stopPropagation(); openAddEmployeeModal('${d.id}')" title="Add Staff to ${d.code}" class="p-1.5 text-xs text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">👤 +Staff</button>
-                <button onclick="event.stopPropagation(); pullDepartmentConsumedList('${d.id}')" title="Print Consumed List" class="p-1.5 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Report</button>
+                <button onclick="event.stopPropagation(); openAddEmployeeModal('${d.id}')" title="Add Staff to ${d.code}" class="p-1.5 text-xs text-[#1A3A52] hover:bg-[#1A3A52]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold"><i class='bx bx-user'></i> +Staff</button>
+                <button onclick="event.stopPropagation(); pullDepartmentConsumedList('${d.id}')" title="Print Consumed List" class="p-1.5 text-xs text-[#1A3A52] hover:bg-[#1A3A52]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Report</button>
                 <button onclick="event.stopPropagation(); exportDepartmentExcel('${d.id}')" title="Export Excel" class="p-1.5 text-xs text-[#10B981] hover:bg-[#10B981]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Excel</button>
-                <button onclick="event.stopPropagation(); deleteDepartment('${d.id}')" title="Delete Department" class="p-1.5 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️</button>
+                <button onclick="event.stopPropagation(); deleteDepartment('${d.id}')" title="Delete Department" class="p-1.5 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer font-bold"><i class='bx bx-trash'></i></button>
               </div>
             </div>
             
             <div onclick="setLedgerMode('dept_detail', '${d.id}')" class="cursor-pointer">
               <div class="flex items-center gap-3">
-                <div class="text-3xl group-hover:scale-110 transition-transform">📁</div>
+                <div class="text-3xl group-hover:scale-110 transition-transform"><i class='bx bx-folder'></i></div>
                 <div>
-                  <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#F59E0B] transition-colors line-clamp-1">${d.name}</h3>
-                  <p class="text-xs text-[#475569] mt-0.5">${staffList.length} Staff Member${staffList.length !== 1 ? 's' : ''}</p>
+                  <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#1A3A52] transition-colors line-clamp-1">${d.name}</h3>
+                  <p class="text-xs text-[#6B7280] mt-0.5">${staffList.length} Staff Member${staffList.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div onclick="setLedgerMode('dept_detail', '${d.id}')" class="cursor-pointer pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs">
-            <span class="text-[#475569]">Unpaid Balance:</span>
-            <span class="font-bold ${totalConsumed > 0 ? 'text-[#F59E0B]' : 'text-[#10B981]'}">${formatMoney(totalConsumed)}</span>
+            <span class="text-[#6B7280]">Unpaid Balance:</span>
+            <span class="font-bold ${totalConsumed > 0 ? 'text-[#1A3A52]' : 'text-[#10B981]'}">${formatMoney(totalConsumed)}</span>
           </div>
         </div>
       `;
@@ -155,29 +155,29 @@ window.renderDepartmentLedgers = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
-            <button onclick="setLedgerMode('home')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="setLedgerMode('home')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>←</span> Overview
             </button>
             <div class="h-5 w-px bg-black/10"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
               <span>Ledgers</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>📁</span> Department Accounts</span>
+              <span class="font-bold text-[#1A3A52] flex items-center gap-1"><span><i class='bx bx-folder'></i></span> Department Accounts</span>
             </div>
           </div>
 
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <input type="text" placeholder="Search department name or code..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#F59E0B] w-full sm:w-64">
-            <button onclick="openAddDepartmentModal()" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
-              ➕ Add Dept
+            <input type="text" placeholder="Search department name or code..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full sm:w-64">
+            <button onclick="openAddDepartmentModal()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-[#111827] border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
+              <i class='bx bx-plus'></i> Add Dept
             </button>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
           ${filteredDepts.length > 0 ? folderCardsHtml : `
-            <div class="col-span-full bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-12 text-center text-[#475569]">
-              <div class="text-4xl mb-2">📁</div>
+            <div class="col-span-full bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-12 text-center text-[#6B7280]">
+              <div class="text-4xl mb-2"><i class='bx bx-folder'></i></div>
               <p class="font-bold text-sm">No departments found.</p>
               <p class="text-xs mt-1">Click "+ Add Dept" to create a new hospital department folder.</p>
             </div>
@@ -202,8 +202,8 @@ window.renderDepartmentLedgers = function() {
         <td><span class="font-mono font-extrabold ${emp.currentBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatMoney(emp.currentBalance)}</span></td>
         <td class="text-right whitespace-nowrap">
           <div class="flex items-center justify-end gap-2">
-            <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
-            <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+            <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-money'></i> Settle Tab</button>
+            <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-trash'></i> Delete</button>
           </div>
         </td>
       </tr>
@@ -213,56 +213,56 @@ window.renderDepartmentLedgers = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
-            <button onclick="setLedgerMode('departments')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="setLedgerMode('departments')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>←</span> Departments
             </button>
             <div class="h-5 w-px bg-black/10"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
               <span>Departments</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>📁</span> ${dept.name} (${dept.code})</span>
+              <span class="font-bold text-[#1A3A52] flex items-center gap-1"><span><i class='bx bx-folder'></i></span> ${dept.name} (${dept.code})</span>
             </div>
           </div>
         </div>
 
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center text-3xl font-extrabold">📁</div>
+            <div class="w-14 h-14 rounded-2xl bg-[#1A3A52]/10 text-[#1A3A52] flex items-center justify-center text-3xl font-extrabold"><i class='bx bx-folder'></i></div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded">${dept.code}</span>
-                <span class="text-xs text-[#475569] font-medium">${staffList.length} Assigned Staff Member${staffList.length !== 1 ? 's' : ''}</span>
+                <span class="font-mono font-extrabold text-xs bg-[#1A3A52] text-white px-2.5 py-0.5 rounded">${dept.code}</span>
+                <span class="text-xs text-[#6B7280] font-medium">${staffList.length} Assigned Staff Member${staffList.length !== 1 ? 's' : ''}</span>
               </div>
-              <h2 class="text-xl font-bold text-[#0F172A] mt-1">${dept.name}</h2>
-              <p class="text-xs text-[#475569] mt-0.5">Total Unpaid Balance: <strong class="text-amber-600 font-mono font-bold">${formatMoney(totalConsumed)}</strong></p>
+              <h2 class="text-xl font-bold text-[#1A3A52] mt-1">${dept.name}</h2>
+              <p class="text-xs text-[#6B7280] mt-0.5">Total Unpaid Balance: <strong class="text-amber-600 font-mono font-bold">${formatMoney(totalConsumed)}</strong></p>
             </div>
           </div>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-            <button onclick="openAddEmployeeModal('${dept.id}')" class="bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
-              <span>👤</span> Add Staff Account
+            <button onclick="openAddEmployeeModal('${dept.id}')" class="bg-[#1A3A52] hover:bg-[#D4A574] text-[#111827] border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
+              <span><i class='bx bx-user'></i></span> Add Staff Account
             </button>
-            <button onclick="pullDepartmentConsumedList('${dept.id}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
+            <button onclick="pullDepartmentConsumedList('${dept.id}')" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
               <span>📊</span> Pull Consumed List
             </button>
             <button onclick="exportDepartmentExcel('${dept.id}')" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5">
               <span>📊</span> Excel (.xlsx)
             </button>
             <button onclick="deleteDepartment('${dept.id}')" class="bg-[#EF4444]/10 hover:bg-[#EF4444] text-[#EF4444] hover:text-white border border-[#EF4444]/20 rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5">
-              <span>🗑️</span> Delete Dept
+              <span><i class='bx bx-trash'></i></span> Delete Dept
             </button>
           </div>
         </div>
 
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>👤</span> Staff Accounts in ${dept.name}</h3>
-            <button onclick="openAddEmployeeModal('${dept.id}')" class="text-xs font-bold text-[#F59E0B] hover:underline cursor-pointer bg-transparent border-none">+ Add Staff Account</button>
+            <h3 class="text-base font-bold text-[#1A3A52] flex items-center gap-2"><span><i class='bx bx-user'></i></span> Staff Accounts in ${dept.name}</h3>
+            <button onclick="openAddEmployeeModal('${dept.id}')" class="text-xs font-bold text-[#1A3A52] hover:underline cursor-pointer bg-transparent border-none">+ Add Staff Account</button>
           </div>
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
               <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
+                <tr class="text-[#6B7280] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Staff ID</th>
                   <th class="py-3 px-4 font-semibold">Employee Name</th>
                   <th class="py-3 px-4 font-semibold">Unpaid Balance</th>
@@ -272,7 +272,7 @@ window.renderDepartmentLedgers = function() {
               <tbody class="divide-y divide-black/[0.1]">
                 ${staffList.length > 0 ? staffRowsHtml : `
                   <tr>
-                    <td colspan="4" class="py-8 text-center text-[#475569] italic">No staff assigned to this department yet. Click "+ Add Staff Account" to assign employees.</td>
+                    <td colspan="4" class="py-8 text-center text-[#6B7280] italic">No staff assigned to this department yet. Click "+ Add Staff Account" to assign employees.</td>
                   </tr>
                 `}
               </tbody>
@@ -303,8 +303,8 @@ window.renderDepartmentLedgers = function() {
           <td><span class="font-mono font-extrabold ${emp.currentBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatMoney(emp.currentBalance)}</span></td>
           <td class="text-right whitespace-nowrap">
             <div class="flex items-center justify-end gap-2">
-              <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95">💵 Settle Tab</button>
-              <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">🗑️ Delete</button>
+              <button onclick="openSettleModal('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-money'></i> Settle Tab</button>
+              <button onclick="deleteEmployee('${emp.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95"><i class='bx bx-trash'></i> Delete</button>
             </div>
           </td>
         </tr>
@@ -315,21 +315,21 @@ window.renderDepartmentLedgers = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
-            <button onclick="setLedgerMode('home')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="setLedgerMode('home')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>←</span> Overview
             </button>
             <div class="h-5 w-px bg-black/10"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
               <span>Ledgers</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>👥</span> Staff Account Directory</span>
+              <span class="font-bold text-[#1A3A52] flex items-center gap-1"><span><i class='bx bx-group'></i></span> Staff Account Directory</span>
             </div>
           </div>
 
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <input type="text" placeholder="Search staff name or ID..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8B5CF6] w-full sm:w-64">
-            <button onclick="openAddEmployeeModal()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
-              👤 Add Staff
+            <input type="text" placeholder="Search staff name or ID..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full sm:w-64">
+            <button onclick="openAddEmployeeModal()" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
+              <i class='bx bx-user'></i> Add Staff
             </button>
           </div>
         </div>
@@ -338,7 +338,7 @@ window.renderDepartmentLedgers = function() {
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
               <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
+                <tr class="text-[#6B7280] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Staff ID</th>
                   <th class="py-3 px-4 font-semibold">Employee Name</th>
                   <th class="py-3 px-4 font-semibold">Department</th>
@@ -349,7 +349,7 @@ window.renderDepartmentLedgers = function() {
               <tbody class="divide-y divide-black/[0.1]">
                 ${filteredStaff.length > 0 ? staffRowsHtml : `
                   <tr>
-                    <td colspan="5" class="py-8 text-center text-[#475569] italic">No staff accounts found matching your search.</td>
+                    <td colspan="5" class="py-8 text-center text-[#6B7280] italic">No staff accounts found matching your search.</td>
                   </tr>
                 `}
               </tbody>
@@ -413,20 +413,20 @@ window.renderDepartmentLedgers = function() {
 
     const tierIcon = (tier) => {
       if (tier === 'VVIP Room') return '🌟';
-      if (tier === 'VIP Room') return '👑';
+      if (tier === 'VIP Room') return "<i class=\'bx bx-crown\'></i>";
       if (tier === 'Private Room') return '🔒';
       return '🏨';
     };
 
     const roomCardsHtml = filteredRooms.map(r => `
-      <div class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#8B5CF6] rounded-2xl p-5 transition-all hover:shadow-lg flex flex-col justify-between gap-4 group">
+      <div class="bg-[#FFFFFF] border border-black/[0.1] hover:border-[#1A3A52] rounded-2xl p-5 transition-all hover:shadow-lg flex flex-col justify-between gap-4 group">
         <div>
           <div class="flex items-center justify-between mb-3">
             <span class="font-mono font-extrabold text-[0.7rem] px-2 py-0.5 rounded border ${tierBadgeClass(r.tier)}">${tierIcon(r.tier)} ${r.tier}</span>
             <div class="flex items-center gap-1">
               <button onclick="event.stopPropagation(); exportPatientCateringExcel('${r.roomNumber}')" title="Export Excel for ${r.roomNumber}" class="p-1 text-xs text-[#10B981] hover:bg-[#10B981]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">📊 Excel</button>
-              <button onclick="event.stopPropagation(); openAddRoomModal('${r.id || r.roomNumber}')" title="Edit Room" class="p-1 text-xs text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">✏️ Edit</button>
-              <button onclick="event.stopPropagation(); deleteRoom('${r.id || r.roomNumber}')" title="Delete Room" class="p-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">🗑️ Delete</button>
+              <button onclick="event.stopPropagation(); openAddRoomModal('${r.id || r.roomNumber}')" title="Edit Room" class="p-1 text-xs text-[#1A3A52] hover:bg-[#1A3A52]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold">✏️ Edit</button>
+              <button onclick="event.stopPropagation(); deleteRoom('${r.id || r.roomNumber}')" title="Delete Room" class="p-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded transition-colors border-none bg-transparent cursor-pointer font-bold"><i class='bx bx-trash'></i> Delete</button>
             </div>
           </div>
           
@@ -434,8 +434,8 @@ window.renderDepartmentLedgers = function() {
             <div class="flex items-center gap-3">
               <div class="text-3xl group-hover:scale-110 transition-transform">${tierIcon(r.tier)}</div>
               <div>
-                <h3 class="text-base font-bold text-[#0F172A] group-hover:text-[#8B5CF6] transition-colors line-clamp-1">${r.roomNumber}</h3>
-                <p class="text-xs text-[#475569] mt-0.5">${r.count} Catering Deliveries</p>
+                <h3 class="text-base font-bold text-[#1A3A52] group-hover:text-[#1A3A52] transition-colors line-clamp-1">${r.roomNumber}</h3>
+                <p class="text-xs text-[#6B7280] mt-0.5">${r.count} Catering Deliveries</p>
               </div>
             </div>
 
@@ -443,14 +443,14 @@ window.renderDepartmentLedgers = function() {
               <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">🌅 ${r.breakfastCount} Bkfast</span>
               <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">☀️ ${r.lunchCount} Lunch</span>
               <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">🌙 ${r.dinnerCount} Dinner</span>
-              <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">☕ ${r.teaCount} Tea</span>
+              <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200"><i class='bx bx-coffee'></i> ${r.teaCount} Tea</span>
             </div>
           </div>
         </div>
 
         <div onclick="setLedgerMode('patient_room_detail', '${r.roomNumber}')" class="cursor-pointer pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs">
-          <span class="text-[#475569]">Total Covered Perks:</span>
-          <span class="font-mono font-extrabold text-[#8B5CF6]">${formatMoney(r.totalRev)}</span>
+          <span class="text-[#6B7280]">Total Covered Perks:</span>
+          <span class="font-mono font-extrabold text-[#1A3A52]">${formatMoney(r.totalRev)}</span>
         </div>
       </div>
     `).join('');
@@ -459,21 +459,21 @@ window.renderDepartmentLedgers = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
-            <button onclick="setLedgerMode('home')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="setLedgerMode('home')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>←</span> Overview
             </button>
             <div class="h-5 w-px bg-black/10"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
               <span>Ledgers</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>🏥</span> Patient Room Directory</span>
+              <span class="font-bold text-[#1A3A52] flex items-center gap-1"><span>🏥</span> Patient Room Directory</span>
             </div>
           </div>
 
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <input type="text" placeholder="Search room number or tier..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8B5CF6] w-full sm:w-64">
-            <button onclick="openAddRoomModal()" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
-              ➕ Add Room
+            <input type="text" placeholder="Search room number or tier..." value="${state.ledgerSearchQuery || ''}" oninput="state.ledgerSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full sm:w-64">
+            <button onclick="openAddRoomModal()" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
+              <i class='bx bx-plus'></i> Add Room
             </button>
             <button onclick="exportPatientCateringExcel()" class="bg-[#10B981] hover:bg-[#059669] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap shadow-md">
               📊 Monthly Excel
@@ -487,11 +487,11 @@ window.renderDepartmentLedgers = function() {
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-3.5 shadow-xs">
           <div class="flex items-center gap-2 overflow-x-auto text-xs font-bold w-full sm:w-auto pb-1 sm:pb-0">
             <span class="text-slate-400 font-semibold px-1 flex items-center gap-1 shrink-0">🏷️ Tiers:</span>
-            <button onclick="state.selectedRoomTierFilter='ALL'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='ALL'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">All Rooms (${roomCards.length})</button>
-            <button onclick="state.selectedRoomTierFilter='Normal Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Normal Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Normal Room</button>
-            <button onclick="state.selectedRoomTierFilter='Private Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Private Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Private Room</button>
-            <button onclick="state.selectedRoomTierFilter='VIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VIP Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">VIP Room</button>
-            <button onclick="state.selectedRoomTierFilter='VVIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VVIP Room'?'bg-[#0F172A] text-white shadow-xs font-extrabold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">VVIP Room</button>
+            <button onclick="state.selectedRoomTierFilter='ALL'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='ALL'?'bg-[#1A3A52] text-white shadow-xs font-extrabold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">All Rooms (${roomCards.length})</button>
+            <button onclick="state.selectedRoomTierFilter='Normal Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Normal Room'?'bg-[#1A3A52] text-white shadow-xs font-extrabold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">Normal Room</button>
+            <button onclick="state.selectedRoomTierFilter='Private Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='Private Room'?'bg-[#1A3A52] text-white shadow-xs font-extrabold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">Private Room</button>
+            <button onclick="state.selectedRoomTierFilter='VIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VIP Room'?'bg-[#1A3A52] text-white shadow-xs font-extrabold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">VIP Room</button>
+            <button onclick="state.selectedRoomTierFilter='VVIP Room'; renderDepartmentLedgers();" class="px-3.5 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${selectedTierFilter==='VVIP Room'?'bg-[#1A3A52] text-white shadow-xs font-extrabold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">VVIP Room</button>
           </div>
           <div class="text-xs text-slate-500 font-semibold px-2 shrink-0">
             Showing <strong class="text-slate-900 font-extrabold">${filteredRooms.length}</strong> of ${state.rooms.length} Rooms
@@ -500,7 +500,7 @@ window.renderDepartmentLedgers = function() {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
           ${filteredRooms.length > 0 ? roomCardsHtml : `
-            <div class="col-span-full bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-12 text-center text-[#475569]">
+            <div class="col-span-full bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-12 text-center text-[#6B7280]">
               <div class="text-4xl mb-2">🏥</div>
               <p class="font-bold text-sm">No hospital rooms found matching your filter.</p>
               <p class="text-xs mt-1">Click "+ Add Room" to register a new room (Normal, Private, VIP, VVIP).</p>
@@ -526,7 +526,7 @@ window.renderDepartmentLedgers = function() {
 
     const tierIcon = (tier) => {
       if (tier === 'VVIP Room') return '🌟';
-      if (tier === 'VIP Room') return '👑';
+      if (tier === 'VIP Room') return "<i class=\'bx bx-crown\'></i>";
       if (tier === 'Private Room') return '🔒';
       return '🏨';
     };
@@ -611,14 +611,14 @@ window.renderDepartmentLedgers = function() {
         <!-- Breadcrumbs -->
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
-            <button onclick="setLedgerMode('patients')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="setLedgerMode('patients')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>←</span> Patient Rooms
             </button>
             <div class="h-5 w-px bg-black/10"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
               <span>Patient Catering</span>
               <span>/</span>
-              <span class="font-bold text-[#0F172A] flex items-center gap-1">${roomNum} Statement</span>
+              <span class="font-bold text-[#1A3A52] flex items-center gap-1">${roomNum} Statement</span>
             </div>
           </div>
         </div>
@@ -626,23 +626,23 @@ window.renderDepartmentLedgers = function() {
         <!-- Room Header Summary Card -->
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center text-2xl shrink-0 border border-[#8B5CF6]/20 shadow-xs">
+            <div class="w-14 h-14 rounded-2xl bg-[#1A3A52]/10 text-[#1A3A52] flex items-center justify-center text-2xl shrink-0 border border-[#1A3A52]/20 shadow-xs">
               ${tierIcon(roomObj.tier)}
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded shadow-xs">${roomNum}</span>
+                <span class="font-mono font-extrabold text-xs bg-[#1A3A52] text-white px-2.5 py-0.5 rounded shadow-xs">${roomNum}</span>
                 <span class="font-mono font-extrabold text-[0.7rem] px-2.5 py-0.5 rounded border ${tierBadgeClass(roomObj.tier)}">${tierIcon(roomObj.tier)} ${roomObj.tier || 'Room'}</span>
-                <span class="text-xs text-[#475569] font-medium">• ${allRoomOrders.length} Total Deliveries</span>
+                <span class="text-xs text-[#6B7280] font-medium">• ${allRoomOrders.length} Total Deliveries</span>
               </div>
-              <h2 class="text-xl font-bold text-[#0F172A] mt-1">Catering Statement for Room ${roomNum}</h2>
+              <h2 class="text-xl font-bold text-[#1A3A52] mt-1">Catering Statement for Room ${roomNum}</h2>
               <div class="flex items-center gap-3 flex-wrap mt-2">
-                <p class="text-xs text-[#475569]">Filtered Perk Total: <strong class="text-[#8B5CF6] font-mono font-bold text-sm">${formatMoney(totalRev)}</strong></p>
+                <p class="text-xs text-[#6B7280]">Filtered Perk Total: <strong class="text-[#1A3A52] font-mono font-bold text-sm">${formatMoney(totalRev)}</strong></p>
                 <div class="flex items-center gap-1.5 text-[0.65rem] font-bold">
                   <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">🌅 ${bkCount} Bkfast</span>
                   <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">☀️ ${luCount} Lunch</span>
                   <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">🌙 ${dnCount} Dinner</span>
-                  <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">☕ ${teaCount} Tea</span>
+                  <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200"><i class='bx bx-coffee'></i> ${teaCount} Tea</span>
                 </div>
               </div>
             </div>
@@ -661,36 +661,36 @@ window.renderDepartmentLedgers = function() {
             <!-- Date Filter Pills -->
             <div class="flex items-center gap-2 overflow-x-auto text-xs font-bold scrollbar-none">
               <span class="text-slate-400 font-semibold px-1 flex items-center gap-1 shrink-0">📅 Date:</span>
-              <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='ALL'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">All Time</button>
-              <button onclick="state.patientDateFilter='TODAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='TODAY'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Today</button>
-              <button onclick="state.patientDateFilter='YESTERDAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='YESTERDAY'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">Yesterday</button>
-              <button onclick="state.patientDateFilter='THIS_MONTH'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='THIS_MONTH'?'bg-[#0F172A] text-white shadow-xs font-bold':'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9]'}">This Month</button>
-              <input type="date" value="${customDate}" onchange="state.patientDateFilter='CUSTOM'; state.patientCustomDateFilter=this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-slate-300 text-slate-900 font-semibold rounded-xl px-2.5 py-1 text-xs focus:outline-none focus:border-[#8B5CF6]">
+              <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='ALL'?'bg-[#1A3A52] text-white shadow-xs font-bold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">All Time</button>
+              <button onclick="state.patientDateFilter='TODAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='TODAY'?'bg-[#1A3A52] text-white shadow-xs font-bold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">Today</button>
+              <button onclick="state.patientDateFilter='YESTERDAY'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='YESTERDAY'?'bg-[#1A3A52] text-white shadow-xs font-bold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">Yesterday</button>
+              <button onclick="state.patientDateFilter='THIS_MONTH'; state.patientCustomDateFilter=''; renderDepartmentLedgers();" class="px-3 py-1.5 rounded-xl border border-black/[0.1] transition-all cursor-pointer whitespace-nowrap ${dateFilter==='THIS_MONTH'?'bg-[#1A3A52] text-white shadow-xs font-bold':'bg-[#FFFFFF] text-[#6B7280] hover:bg-[#F8FAFC]'}">This Month</button>
+              <input type="date" value="${customDate}" onchange="state.patientDateFilter='CUSTOM'; state.patientCustomDateFilter=this.value; renderDepartmentLedgers();" class="bg-[#FFFFFF] border border-slate-300 text-slate-900 font-semibold rounded-xl px-2.5 py-1 text-xs focus:outline-none focus:border-[#1A3A52]">
             </div>
 
             <!-- Meal Category Filters -->
-            <div class="flex items-center gap-1 overflow-x-auto text-xs font-bold bg-[#F8FAFC] border border-black/[0.1] rounded-xl p-1 scrollbar-none">
-              <span class="text-slate-400 font-semibold px-2 shrink-0">🍽️ Meal:</span>
-              <button onclick="state.patientMealFilter='ALL'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='ALL'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">All</button>
-              <button onclick="state.patientMealFilter='Breakfast'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Breakfast'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌅 Breakfast</button>
-              <button onclick="state.patientMealFilter='Lunch'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Lunch'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">☀️ Lunch</button>
-              <button onclick="state.patientMealFilter='Dinner'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Dinner'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌙 Dinner</button>
-              <button onclick="state.patientMealFilter='Tea'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Tea'?'bg-[#8B5CF6] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">☕ Tea/Snack</button>
+            <div class="flex items-center gap-1 overflow-x-auto text-xs font-bold bg-[#FFFFFF] border border-black/[0.1] rounded-xl p-1 scrollbar-none">
+              <span class="text-slate-400 font-semibold px-2 shrink-0"><i class='bx bx-restaurant'></i> Meal:</span>
+              <button onclick="state.patientMealFilter='ALL'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='ALL'?'bg-[#1A3A52] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">All</button>
+              <button onclick="state.patientMealFilter='Breakfast'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Breakfast'?'bg-[#1A3A52] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌅 Breakfast</button>
+              <button onclick="state.patientMealFilter='Lunch'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Lunch'?'bg-[#1A3A52] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">☀️ Lunch</button>
+              <button onclick="state.patientMealFilter='Dinner'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Dinner'?'bg-[#1A3A52] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}">🌙 Dinner</button>
+              <button onclick="state.patientMealFilter='Tea'; renderDepartmentLedgers();" class="px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${mealFilter==='Tea'?'bg-[#1A3A52] text-white shadow-xs':'text-slate-600 hover:bg-slate-200/60'}"><i class='bx bx-coffee'></i> Tea/Snack</button>
             </div>
           </div>
 
           <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
             <!-- In-Room Search Input -->
             <div class="relative w-full sm:w-80">
-              <input type="text" placeholder="🔍 Search patient name, ID or items..." value="${state.patientRoomSearchQuery || ''}" oninput="state.patientRoomSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8B5CF6] w-full pr-8">
+              <input type="text" placeholder="🔍 Search patient name, ID or items..." value="${state.patientRoomSearchQuery || ''}" oninput="state.patientRoomSearchQuery = this.value; renderDepartmentLedgers();" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full pr-8">
               ${state.patientRoomSearchQuery ? `
                 <button onclick="state.patientRoomSearchQuery=''; renderDepartmentLedgers();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs border-none bg-transparent cursor-pointer font-bold">✕</button>
               ` : ''}
             </div>
 
             <!-- In-Room Filter Status & Reset -->
-            <div class="flex items-center gap-2 text-xs font-semibold text-[#475569] w-full sm:w-auto justify-between sm:justify-end">
-              <span>Showing <strong class="text-[#0F172A] font-extrabold">${roomOrders.length}</strong> of ${allRoomOrders.length} deliveries</span>
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280] w-full sm:w-auto justify-between sm:justify-end">
+              <span>Showing <strong class="text-[#1A3A52] font-extrabold">${roomOrders.length}</strong> of ${allRoomOrders.length} deliveries</span>
               ${(dateFilter !== 'ALL' || mealFilter !== 'ALL' || state.patientRoomSearchQuery || customDate) ? `
                 <button onclick="state.patientDateFilter='ALL'; state.patientCustomDateFilter=''; state.patientMealFilter='ALL'; state.patientRoomSearchQuery=''; renderDepartmentLedgers();" class="text-xs font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer border-none bg-transparent ml-2">Reset Filters</button>
               ` : ''}
@@ -703,7 +703,7 @@ window.renderDepartmentLedgers = function() {
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
               <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
+                <tr class="text-[#6B7280] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Order ID</th>
                   <th class="py-3 px-4 font-semibold">Date & Time</th>
                   <th class="py-3 px-4 font-semibold">Patient ID</th>
@@ -717,7 +717,7 @@ window.renderDepartmentLedgers = function() {
               <tbody class="divide-y divide-black/[0.1]">
                 ${roomOrders.length > 0 ? orderRowsHtml : `
                   <tr>
-                    <td colspan="8" class="py-10 text-center text-[#475569]">
+                    <td colspan="8" class="py-10 text-center text-[#6B7280]">
                       <div class="text-2xl mb-1">🔍</div>
                       <p class="font-bold text-xs">No catering orders found for room ${roomNum} matching your active filters.</p>
                       ${(dateFilter !== 'ALL' || mealFilter !== 'ALL' || state.patientRoomSearchQuery || customDate) ? `
@@ -748,10 +748,10 @@ window.deleteDepartment = function(deptId) {
     : `Are you sure you want to delete department "${dept.name}" (${dept.code})?`;
 
   window.showConfirmModal({
-    title: "🏛️ Delete Department",
+    title: "<i class='bx bx-building-house'></i> Delete Department",
     message: confirmMsg,
     confirmText: "Yes, Delete Department",
-    icon: "🏛️",
+    icon: "<i class='bx bx-building-house'></i>",
     badgeText: "Department Ledger",
     isDanger: true,
     onConfirm: async () => {
@@ -781,10 +781,10 @@ window.deleteEmployee = function(empId) {
   if (!emp) return;
 
   window.showConfirmModal({
-    title: "👤 Delete Staff Account",
+    title: "<i class='bx bx-user'></i> Delete Staff Account",
     message: `Are you sure you want to delete staff account "${emp.fullName}" (${emp.staffId})?`,
     confirmText: "Yes, Delete Staff Account",
-    icon: "👤",
+    icon: "<i class='bx bx-user'></i>",
     badgeText: "Staff Account",
     isDanger: true,
     onConfirm: async () => {

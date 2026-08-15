@@ -221,7 +221,7 @@ function renderItemizedProductRows(periodOrders) {
   if (productList.length === 0) {
     return `
       <tr>
-        <td colspan="4" class="py-8 text-center text-[#475569] italic">
+        <td colspan="4" class="py-8 text-center text-[#6B7280] italic">
           No product sales recorded in this timeframe${search ? ' matching search' : ''}.
         </td>
       </tr>
@@ -234,7 +234,7 @@ function renderItemizedProductRows(periodOrders) {
       <td class="font-mono text-slate-600 font-bold">${p.qty} units sold</td>
       <td class="font-mono font-extrabold text-amber-600">${formatMoney(p.revenue)}</td>
       <td class="text-right whitespace-nowrap">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">📦 Item Log</span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700"><i class='bx bx-box'></i> Item Log</span>
       </td>
     </tr>
   `).join('');
@@ -270,7 +270,7 @@ function renderDashboardOrderRows() {
   if (filteredOrders.length === 0) {
     return `
       <tr>
-        <td colspan="6" class="py-8 text-center text-[#475569] italic">
+        <td colspan="6" class="py-8 text-center text-[#6B7280] italic">
           No transactions found for subfolder (${subfolder.toUpperCase()})${search ? ' matching search' : ''}.
         </td>
       </tr>
@@ -328,7 +328,7 @@ function renderDashboardOrderRows() {
               </button>
             ` : ''}
             <button onclick="deleteOrder('${o.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 cursor-pointer transition-all active:scale-95">
-              <span>🗑️</span>
+              <span><i class='bx bx-trash'></i></span>
             </button>
           </div>
         </td>
@@ -351,22 +351,22 @@ window.renderDashboard = function() {
       <div class="flex flex-col gap-6">
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#0F172A] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📈</div>
+            <div class="w-14 h-14 rounded-2xl bg-[#1A3A52] text-amber-400 flex items-center justify-center text-3xl font-extrabold shadow-lg">📈</div>
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-500/30">Sales & Revenue</span>
                 <span class="text-xs text-slate-400 font-mono hidden sm:inline">• Live Dashboard</span>
               </div>
-              <h2 class="text-xl font-extrabold text-[#0F172A] mt-1">Cafeteria Sales Overview</h2>
-              <p class="text-xs text-[#475569]">Select any sales timeframe below to view detailed transactions, cash sales, and credit logs.</p>
+              <h2 class="text-xl font-extrabold text-[#1A3A52] mt-1">Cafeteria Sales Overview</h2>
+              <p class="text-xs text-[#6B7280]">Select any sales timeframe below to view detailed transactions, cash sales, and credit logs.</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2 flex-wrap w-full md:w-auto">
-            <button onclick="switchView('pos')" class="bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-md transition-colors flex items-center gap-1.5">
-              <span>➕</span> New Sale (F2)
+            <button onclick="switchView('pos')" class="bg-[#1A3A52] hover:bg-[#D4A574] text-slate-950 rounded-xl px-4 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-md transition-colors flex items-center gap-1.5">
+              <span><i class='bx bx-plus'></i></span> New Sale (F2)
             </button>
-            <button onclick="switchView('reports')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
+            <button onclick="switchView('reports')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
               <span>📊</span> Reports Center
             </button>
           </div>
@@ -375,60 +375,60 @@ window.renderDashboard = function() {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div onclick="openDashboardFolder('daily')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-amber-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
             <div class="flex items-start justify-between gap-2">
-              <div class="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">📁</div>
+              <div class="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs"><i class='bx bx-folder'></i></div>
               <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-md border border-amber-500/20">Today</span>
             </div>
             <div>
-              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-amber-600 transition-colors flex items-center gap-1">Daily Sales</h3>
-              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Today's transactions & receipts</p>
+              <h3 class="text-sm font-bold text-[#1A3A52] group-hover:text-amber-600 transition-colors flex items-center gap-1">Daily Sales</h3>
+              <p class="text-[0.65rem] text-[#6B7280] mt-0.5 leading-tight">Today's transactions & receipts</p>
             </div>
             <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
-              <span class="font-medium text-[#0F172A] text-[0.7rem]">${todayStats.count} Orders</span>
+              <span class="font-medium text-[#1A3A52] text-[0.7rem]">${todayStats.count} Orders</span>
               <span class="font-mono font-bold text-amber-600 text-[0.75rem]">${formatMoney(todayStats.totalRev)}</span>
             </div>
           </div>
 
           <div onclick="openDashboardFolder('weekly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-blue-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
             <div class="flex items-start justify-between gap-2">
-              <div class="w-10 h-10 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">📁</div>
+              <div class="w-10 h-10 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs"><i class='bx bx-folder'></i></div>
               <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-700 px-2 py-0.5 rounded-md border border-blue-500/20">7 Days</span>
             </div>
             <div>
-              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-blue-600 transition-colors flex items-center gap-1">Weekly Sales</h3>
-              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Current week revenue logs</p>
+              <h3 class="text-sm font-bold text-[#1A3A52] group-hover:text-blue-600 transition-colors flex items-center gap-1">Weekly Sales</h3>
+              <p class="text-[0.65rem] text-[#6B7280] mt-0.5 leading-tight">Current week revenue logs</p>
             </div>
             <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
-              <span class="font-medium text-[#0F172A] text-[0.7rem]">${weekStats.count} Orders</span>
+              <span class="font-medium text-[#1A3A52] text-[0.7rem]">${weekStats.count} Orders</span>
               <span class="font-mono font-bold text-blue-600 text-[0.75rem]">${formatMoney(weekStats.totalRev)}</span>
             </div>
           </div>
 
           <div onclick="openDashboardFolder('monthly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-purple-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
             <div class="flex items-start justify-between gap-2">
-              <div class="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">📁</div>
+              <div class="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs"><i class='bx bx-folder'></i></div>
               <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-700 px-2 py-0.5 rounded-md border border-purple-500/20">30 Days</span>
             </div>
             <div>
-              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors flex items-center gap-1">Monthly Sales</h3>
-              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Month payroll deductions & sales</p>
+              <h3 class="text-sm font-bold text-[#1A3A52] group-hover:text-purple-600 transition-colors flex items-center gap-1">Monthly Sales</h3>
+              <p class="text-[0.65rem] text-[#6B7280] mt-0.5 leading-tight">Month payroll deductions & sales</p>
             </div>
             <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
-              <span class="font-medium text-[#0F172A] text-[0.7rem]">${monthStats.count} Orders</span>
+              <span class="font-medium text-[#1A3A52] text-[0.7rem]">${monthStats.count} Orders</span>
               <span class="font-mono font-bold text-purple-600 text-[0.75rem]">${formatMoney(monthStats.totalRev)}</span>
             </div>
           </div>
 
           <div onclick="openDashboardFolder('yearly')" class="group bg-[#FFFFFF] hover:bg-slate-50/80 border border-black/[0.1] hover:border-emerald-500/50 rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative overflow-hidden active:scale-98">
             <div class="flex items-start justify-between gap-2">
-              <div class="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs">📁</div>
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-xs"><i class='bx bx-folder'></i></div>
               <span class="text-[0.6rem] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-200">Fiscal Year</span>
             </div>
             <div>
-              <h3 class="text-sm font-bold text-[#0F172A] group-hover:text-emerald-600 transition-colors flex items-center gap-1">Yearly Sales</h3>
-              <p class="text-[0.65rem] text-[#475569] mt-0.5 leading-tight">Annual sales & archived logs</p>
+              <h3 class="text-sm font-bold text-[#1A3A52] group-hover:text-emerald-600 transition-colors flex items-center gap-1">Yearly Sales</h3>
+              <p class="text-[0.65rem] text-[#6B7280] mt-0.5 leading-tight">Annual sales & archived logs</p>
             </div>
             <div class="pt-2 border-t border-black/[0.06] flex items-center justify-between text-xs">
-              <span class="font-medium text-[#0F172A] text-[0.7rem]">${yearStats.count} Orders</span>
+              <span class="font-medium text-[#1A3A52] text-[0.7rem]">${yearStats.count} Orders</span>
               <span class="font-mono font-bold text-emerald-600 text-[0.75rem]">${formatMoney(yearStats.totalRev)}</span>
             </div>
           </div>
@@ -437,19 +437,19 @@ window.renderDashboard = function() {
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
             <div>
-              <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2"><span>🕒</span> Recent System Transactions</h3>
-              <p class="text-xs text-[#475569]">All-time real-time transaction history</p>
+              <h3 class="text-base font-bold text-[#1A3A52] flex items-center gap-2"><span>🕒</span> Recent System Transactions</h3>
+              <p class="text-xs text-[#6B7280]">All-time real-time transaction history</p>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-              <input type="text" placeholder="Search order ID or staff..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#F59E0B] w-full sm:w-64">
-              <button onclick="switchView('reports')" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-4 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap">View All Reports →</button>
+              <input type="text" placeholder="Search order ID or staff..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full sm:w-64">
+              <button onclick="switchView('reports')" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap">View All Reports →</button>
             </div>
           </div>
 
           <div class="overflow-x-auto">
             <table class="data-table w-full text-left text-sm">
               <thead>
-                <tr class="text-[#475569] border-b border-black/[0.1]">
+                <tr class="text-[#6B7280] border-b border-black/[0.1]">
                   <th class="py-3 px-4 font-semibold">Order ID</th>
                   <th class="py-3 px-4 font-semibold">Time</th>
                   <th class="py-3 px-4 font-semibold">Mode</th>
@@ -486,57 +486,57 @@ window.renderDashboard = function() {
     <div class="flex flex-col gap-6">
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
         <div class="flex items-center gap-3">
-          <button onclick="closeDashboardFolder()" class="bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
+          <button onclick="closeDashboardFolder()" class="bg-[#F8FAFC] hover:bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center gap-1.5">
             <span>←</span> All Timeframes
           </button>
           <div class="h-5 w-px bg-black/10"></div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-[#475569]">
+          <div class="flex items-center gap-2 text-xs font-semibold text-[#6B7280]">
             <span>Sales Dashboard</span>
             <span>/</span>
-            <span class="font-bold text-[#0F172A] flex items-center gap-1"><span>📁</span> ${folderTitle}</span>
-            ${timeSubfolder ? `<span>/</span><span class="font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">📁 ${timeSubfolder}</span>` : ''}
+            <span class="font-bold text-[#1A3A52] flex items-center gap-1"><span><i class='bx bx-folder'></i></span> ${folderTitle}</span>
+            ${timeSubfolder ? `<span>/</span><span class="font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md"><i class='bx bx-folder'></i> ${timeSubfolder}</span>` : ''}
           </div>
         </div>
 
         <div class="flex items-center gap-2 w-full sm:w-auto">
-          <input type="text" placeholder="Search in this view..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#0F172A] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#F59E0B] w-full sm:w-64">
+          <input type="text" placeholder="Search in this view..." value="${state.dashboardSearchQuery || ''}" oninput="filterDashboardOrders(this.value)" class="bg-[#FFFFFF] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#1A3A52] w-full sm:w-64">
         </div>
       </div>
 
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
         <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/30 flex items-center justify-center text-3xl font-extrabold shadow-sm">📁</div>
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/30 flex items-center justify-center text-3xl font-extrabold shadow-sm"><i class='bx bx-folder'></i></div>
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-mono font-extrabold text-xs bg-[#0F172A] text-white px-2.5 py-0.5 rounded uppercase">${folder} Records</span>
-              <span class="text-xs text-[#475569] font-medium">${folderStats.count} Receipts & Orders</span>
+              <span class="font-mono font-extrabold text-xs bg-[#1A3A52] text-white px-2.5 py-0.5 rounded uppercase">${folder} Records</span>
+              <span class="text-xs text-[#6B7280] font-medium">${folderStats.count} Receipts & Orders</span>
             </div>
-            <h2 class="text-xl font-bold text-[#0F172A] mt-1">${folderTitle} ${timeSubfolder ? `- Subfolder: ${timeSubfolder}` : ''}</h2>
-            <p class="text-xs text-[#475569] mt-0.5">Total Revenue: <strong class="text-amber-600 font-mono font-bold">${formatMoney(folderStats.totalRev)}</strong></p>
+            <h2 class="text-xl font-bold text-[#1A3A52] mt-1">${folderTitle} ${timeSubfolder ? `- Subfolder: ${timeSubfolder}` : ''}</h2>
+            <p class="text-xs text-[#6B7280] mt-0.5">Total Revenue: <strong class="text-amber-600 font-mono font-bold">${formatMoney(folderStats.totalRev)}</strong></p>
           </div>
         </div>
 
         <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-          <div class="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-black/[0.08] flex-wrap w-full sm:w-auto">
-            <button onclick="setDashboardSubfolder('all')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'all' ? 'bg-[#F59E0B] text-slate-950 shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+          <div class="flex items-center gap-1.5 bg-[#F8FAFC] p-1.5 rounded-2xl border border-black/[0.08] flex-wrap w-full sm:w-auto">
+            <button onclick="setDashboardSubfolder('all')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'all' ? 'bg-[#1A3A52] text-slate-950 shadow-md scale-105' : 'text-[#6B7280] hover:bg-[#E2E8F0]'}">
               🗂️ All Receipts
             </button>
-            <button onclick="setDashboardSubfolder('direct')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'direct' ? 'bg-[#10B981] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-              💵 Direct Sales
+            <button onclick="setDashboardSubfolder('direct')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'direct' ? 'bg-[#10B981] text-white shadow-md scale-105' : 'text-[#6B7280] hover:bg-[#E2E8F0]'}">
+              <i class='bx bx-money'></i> Direct Sales
             </button>
-            <button onclick="setDashboardSubfolder('tab')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'tab' ? 'bg-[#D97706] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-              💳 Staff Tabs
+            <button onclick="setDashboardSubfolder('tab')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'tab' ? 'bg-[#D4A574] text-white shadow-md scale-105' : 'text-[#6B7280] hover:bg-[#E2E8F0]'}">
+              <i class='bx bx-credit-card'></i> Staff Tabs
             </button>
-            <button onclick="setDashboardSubfolder('patient')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'patient' ? 'bg-[#8B5CF6] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
+            <button onclick="setDashboardSubfolder('patient')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'patient' ? 'bg-[#1A3A52] text-white shadow-md scale-105' : 'text-[#6B7280] hover:bg-[#E2E8F0]'}">
               🏥 Inpatient Perks
             </button>
-            <button onclick="setDashboardSubfolder('items')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'items' ? 'bg-[#64748B] text-white shadow-md scale-105' : 'text-[#475569] hover:bg-[#E2E8F0]'}">
-              📦 Product Log
+            <button onclick="setDashboardSubfolder('items')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${subfolder === 'items' ? 'bg-[#64748B] text-white shadow-md scale-105' : 'text-[#6B7280] hover:bg-[#E2E8F0]'}">
+              <i class='bx bx-box'></i> Product Log
             </button>
           </div>
 
           <div class="flex items-center gap-1.5 w-full sm:w-auto">
-            <button onclick="exportDailyReportExcel('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-purple-500/20">
+            <button onclick="exportDailyReportExcel('${timeSubfolder || (folder === 'daily' ? getDateKey(new Date().toISOString()) : '')}', '${subfolder}', '${folder}')" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white border-none rounded-xl px-3.5 py-2 text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1 whitespace-nowrap shadow-md shadow-purple-500/20">
               <span>📈</span> Export Excel Report
             </button>
           </div>
@@ -545,7 +545,7 @@ window.renderDashboard = function() {
 
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+          <h3 class="text-sm font-bold text-[#1A3A52] flex items-center gap-1.5">
             <span>📂</span> ${folderTitle} Subfolders (${subfolderCats.length} Available)
           </h3>
           ${timeSubfolder ? `
@@ -559,7 +559,7 @@ window.renderDashboard = function() {
           ${subfolderCats.length > 0 ? subfolderCats.map(sf => `
             <div onclick="setDashboardTimeSubfolder('${sf.key}')" class="p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2 group ${timeSubfolder === sf.key ? 'bg-amber-500/10 border-amber-500 shadow-md ring-2 ring-amber-500/30' : 'bg-slate-50/70 hover:bg-slate-100 border-black/[0.08]'}">
               <div class="flex items-center justify-between">
-                <span class="text-xl group-hover:scale-110 transition-transform">📁</span>
+                <span class="text-xl group-hover:scale-110 transition-transform"><i class='bx bx-folder'></i></span>
                 <span class="text-[0.6rem] font-bold text-slate-500 font-mono">${sf.count} orders</span>
               </div>
               <div>
@@ -580,30 +580,30 @@ window.renderDashboard = function() {
             <span class="text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Volume</span>
           </div>
           <div>
-            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Total System Volume</div>
-            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.totalRev)}</div>
+            <div class="text-[0.65rem] text-[#6B7280] font-bold uppercase tracking-widest mb-1">Total System Volume</div>
+            <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(folderStats.totalRev)}</div>
           </div>
         </div>
 
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl">💵</div>
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl"><i class='bx bx-money'></i></div>
             <span class="text-[0.7rem] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">Cash / Mobile</span>
           </div>
           <div>
-            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Direct Sales</div>
-            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.directRev)}</div>
+            <div class="text-[0.65rem] text-[#6B7280] font-bold uppercase tracking-widest mb-1">Direct Sales</div>
+            <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(folderStats.directRev)}</div>
           </div>
         </div>
 
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl">💳</div>
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl"><i class='bx bx-credit-card'></i></div>
             <span class="text-[0.7rem] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Staff Tab</span>
           </div>
           <div>
-            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Payroll Deduction</div>
-            <div class="text-2xl font-extrabold text-[#0F172A]">${formatMoney(folderStats.tabRev)}</div>
+            <div class="text-[0.65rem] text-[#6B7280] font-bold uppercase tracking-widest mb-1">Payroll Deduction</div>
+            <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(folderStats.tabRev)}</div>
           </div>
         </div>
 
@@ -613,27 +613,27 @@ window.renderDashboard = function() {
             <span class="text-[0.7rem] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Room Billing</span>
           </div>
           <div>
-            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Hospital Room Perks</div>
-            <div class="text-2xl font-extrabold text-[#8B5CF6]">${formatMoney(folderStats.patientRev)}</div>
+            <div class="text-[0.65rem] text-[#6B7280] font-bold uppercase tracking-widest mb-1">Hospital Room Perks</div>
+            <div class="text-2xl font-extrabold text-[#1A3A52]">${formatMoney(folderStats.patientRev)}</div>
           </div>
         </div>
 
         <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
-            <div class="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center text-xl">📦</div>
+            <div class="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center text-xl"><i class='bx bx-box'></i></div>
             <span class="text-[0.7rem] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">${folderStats.itemsCount} Items</span>
           </div>
           <div>
-            <div class="text-[0.65rem] text-[#475569] font-bold uppercase tracking-widest mb-1">Receipts Logged</div>
-            <div class="text-2xl font-extrabold text-[#0F172A]">${folderStats.count}</div>
+            <div class="text-[0.65rem] text-[#6B7280] font-bold uppercase tracking-widest mb-1">Receipts Logged</div>
+            <div class="text-2xl font-extrabold text-[#1A3A52]">${folderStats.count}</div>
           </div>
         </div>
       </div>
 
       <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-base font-bold text-[#0F172A] flex items-center gap-2">
-            <span>${subfolder === 'items' ? '📦' : '📜'}</span>
+          <h3 class="text-base font-bold text-[#1A3A52] flex items-center gap-2">
+            <span>${subfolder === 'items' ? "<i class=\'bx bx-box\'></i>" : '📜'}</span>
             ${subfolder === 'items' ? 'Itemized Product Sales Log' : subfolder === 'direct' ? 'Direct Cash/Mobile Receipts' : subfolder === 'tab' ? 'Institutional Tab Credit Receipts' : 'All Folder Receipts'}
           </h3>
           <span class="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">Subfolder: ${subfolder.toUpperCase()}</span>
@@ -642,7 +642,7 @@ window.renderDashboard = function() {
         <div class="overflow-x-auto">
           <table class="data-table w-full text-left text-sm">
             <thead>
-              <tr class="text-[#475569] border-b border-black/[0.1]">
+              <tr class="text-[#6B7280] border-b border-black/[0.1]">
                 ${subfolder === 'items' ? `
                   <th class="py-3 px-4 font-semibold">Product Name</th>
                   <th class="py-3 px-4 font-semibold">Quantity Sold</th>

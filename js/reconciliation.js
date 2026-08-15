@@ -74,7 +74,7 @@ window.deleteOrder = function(orderId) {
   if (!order) return;
 
   window.showConfirmModal({
-    title: "🗑️ Delete Transaction",
+    title: "<i class='bx bx-trash'></i> Delete Transaction",
     message: `Are you sure you want to delete financial transaction "${order.id}" (${formatMoney(order.total)})?`,
     confirmText: "Yes, Delete Transaction",
     icon: "🧾",
@@ -140,13 +140,13 @@ window.calculateShiftVariance = function() {
   const varEl = document.getElementById('shiftVarianceText');
   if (varEl) {
     if (variance === 0) {
-      varEl.textContent = 'RWF 0 (Balanced ✅)';
+      varEl.innerHTML = "RWF 0 (Balanced <i class='bx bx-check'></i>)";
       varEl.className = 'font-mono font-extrabold text-emerald-600 text-base';
     } else if (variance > 0) {
       varEl.textContent = `+${formatMoney(variance)} (Overage 📈)`;
       varEl.className = 'font-mono font-extrabold text-blue-600 text-base';
     } else {
-      varEl.textContent = `${formatMoney(variance)} (Shortage ⚠️)`;
+      varEl.innerHTML = `${formatMoney(variance)} (Shortage <i class='bx bx-error'></i>)`;
       varEl.className = 'font-mono font-extrabold text-rose-600 text-base';
     }
   }

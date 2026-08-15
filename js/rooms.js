@@ -104,7 +104,7 @@ window.deleteRoom = function(roomId) {
   const targetName = room.roomNumber || roomId;
 
   window.showConfirmModal({
-    title: "🗑️ Delete Hospital Room",
+    title: "<i class='bx bx-trash'></i> Delete Hospital Room",
     message: `Are you sure you want to delete room "${targetName}" (${room.tier || 'Room'})?`,
     confirmText: "Yes, Delete Room",
     icon: "🏥",

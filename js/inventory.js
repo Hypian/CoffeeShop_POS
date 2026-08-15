@@ -68,11 +68,11 @@ window.openAddProductModal = function() {
     const el = document.getElementById(id);
     if (el) {
       if (el.tagName === 'INPUT') el.value = '';
-      else if (id === 'addProdIconPreview') el.textContent = '☕';
+      else if (id === 'addProdIconPreview') el.innerHTML = "<i class=\'bx bx-coffee\'></i>";
     }
   });
   window.populateCategoryDropdown();
-  document.getElementById('addProdIcon').value = '☕';
+  document.getElementById('addProdIcon').value = "<i class=\'bx bx-coffee\'></i>";
   window.openModal('modalAddProduct');
 };
 
@@ -88,7 +88,7 @@ window.editProduct = function(id) {
   
   document.getElementById('addProdName').value = product.name;
   document.getElementById('addProdPrice').value = product.price;
-  document.getElementById('addProdIconPreview').textContent = product.icon;
+  document.getElementById('addProdIconPreview').innerHTML = product.icon;
   document.getElementById('addProdIcon').value = product.icon;
   
   window.openModal('modalAddProduct');
@@ -125,14 +125,14 @@ window.deleteProduct = function(id) {
 
 window.selectProductIcon = function(emoji) {
   document.getElementById('addProdIcon').value = emoji;
-  document.getElementById('addProdIconPreview').textContent = emoji;
+  document.getElementById('addProdIconPreview').innerHTML = emoji;
 };
 
 window.saveNewProduct = async function() {
   const name = (document.getElementById('addProdName').value || '').trim().toUpperCase();
   const catId = document.getElementById('addProdCategory').value;
   const price = parseFloat(document.getElementById('addProdPrice').value) || 0;
-  const icon = document.getElementById('addProdIcon').value || '📦';
+  const icon = document.getElementById('addProdIcon').value || "<i class=\'bx bx-box\'></i>";
   
   if (!name) { window.showToast('Product name is required', 'error'); return; }
   

@@ -30,20 +30,20 @@ window.renderProductGrid = function() {
   });
   
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#475569]">No products found.</div>`;
+    grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#6B7280]">No products found.</div>`;
     return;
   }
   
   grid.innerHTML = filtered.map(p => {
     const safeProdId = String(p.id).replace(/'/g, "\\'");
     return `
-    <div class="product-card bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 cursor-pointer relative select-none" onclick="addToCart('${safeProdId}')">
-      <div class="w-12 h-12 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center text-2xl mb-3">${p.icon}</div>
-      <div class="font-bold text-sm text-[#0F172A] mb-1">${p.name}</div>
-      <div class="text-[0.7rem] text-[#475569] font-medium mb-3">${getCategoryName(p.categoryId)}</div>
-      <div class="flex items-center justify-between pt-2 border-t border-black/[0.1]">
-        <div class="font-extrabold text-base text-[#F59E0B]">${formatMoney(p.price)}</div>
-        <button class="w-8 h-8 rounded-lg bg-[#F59E0B] text-black flex items-center justify-center font-bold text-lg hover:bg-[#FBBF24] transition-colors" onclick="event.stopPropagation(); addToCart('${safeProdId}')">+</button>
+    <div class="product-card bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 cursor-pointer relative select-none flex flex-col hover:border-[#1A3A52]/30 hover:shadow-lg transition-all" onclick="addToCart('${safeProdId}')">
+      <div class="w-12 h-12 mx-auto rounded-xl bg-[#1A3A52]/5 text-[#1A3A52] flex items-center justify-center text-2xl mb-3 shadow-sm border border-black/[0.05]">${p.icon}</div>
+      <div class="font-bold text-sm text-[#1A3A52] mb-0.5 text-center leading-tight truncate">${p.name}</div>
+      <div class="text-[0.65rem] text-[#6B7280] font-semibold mb-3 text-center uppercase tracking-wider truncate">${getCategoryName(p.categoryId)}</div>
+      <div class="mt-auto flex items-center justify-between pt-2.5 border-t border-black/[0.05]">
+        <div class="font-extrabold text-sm text-[#1A3A52]">${formatMoney(p.price)}</div>
+        <button class="w-7 h-7 rounded-md bg-[#1A3A52] text-[#D4A574] flex items-center justify-center font-bold text-base hover:bg-[#D4A574] hover:text-[#1A3A52] transition-colors shadow-sm" onclick="event.stopPropagation(); addToCart('${safeProdId}')">+</button>
       </div>
     </div>
   `}).join('');
@@ -105,7 +105,7 @@ window.renderCart = function() {
 
   if (state.cart.length === 0) {
     list.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-full text-[#475569] text-center gap-3 py-10">
+      <div class="flex flex-col items-center justify-center h-full text-[#6B7280] text-center gap-3 py-10">
         <div class="text-5xl opacity-40">🛒</div>
         <p class="font-medium">Your order cart is empty.</p>
         <span class="text-xs text-[#64748B]">Tap items on the left to start building an order.</span>
@@ -122,17 +122,17 @@ window.renderCart = function() {
   list.innerHTML = state.cart.map(item => {
     const safeProdId = String(item.productId).replace(/'/g, "\\'");
     return `
-    <div class="cart-item-row flex items-center justify-between p-3 rounded-xl bg-[#F1F5F9] border border-black/[0.1]">
+    <div class="cart-item-row flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] border border-black/[0.1]">
       <div class="flex-1 pr-3">
-        <div class="font-bold text-sm text-[#0F172A]">${item.name}</div>
-        <div class="text-xs text-[#475569]">${formatMoney(item.price)} each</div>
+        <div class="font-bold text-sm text-[#1A3A52]">${item.name}</div>
+        <div class="text-xs text-[#6B7280]">${formatMoney(item.price)} each</div>
       </div>
       <div class="flex items-center gap-2">
-        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',-1)">−</button>
+        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#1A3A52] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',-1)">−</button>
         <span class="text-sm font-bold w-5 text-center">${item.qty}</span>
-        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#0F172A] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#F59E0B] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',1)">+</button>
+        <button class="w-7 h-7 rounded-lg bg-[#E2E8F0] border border-black/[0.1] text-[#1A3A52] font-bold text-sm flex items-center justify-center cursor-pointer hover:bg-[#1A3A52] hover:text-black transition-colors" onclick="updateCartQty('${safeProdId}',1)">+</button>
       </div>
-      <div class="font-extrabold text-sm text-[#F59E0B] ml-3 min-w-[55px] text-right">${formatMoney(item.subtotal)}</div>
+      <div class="font-extrabold text-sm text-[#1A3A52] ml-3 min-w-[55px] text-right">${formatMoney(item.subtotal)}</div>
     </div>
   `}).join('');
 
@@ -146,12 +146,10 @@ window.renderCart = function() {
 
 // Checkout - Direct Payment
 window.handlePaymentMethodChange = function() {
-  const method = document.getElementById('directPaymentMethod')?.value || 'CASH';
-  const cashBox = document.getElementById('paymentDetailsCash');
+  const method = document.getElementById('directPaymentMethod')?.value || 'CARD';
   const cardBox = document.getElementById('paymentDetailsCard');
   const momoBox = document.getElementById('paymentDetailsMomo');
   
-  if (cashBox) cashBox.classList.toggle('hidden', method !== 'CASH');
   if (cardBox) cardBox.classList.toggle('hidden', method !== 'CARD');
   if (momoBox) momoBox.classList.toggle('hidden', method !== 'MOBILE_MONEY');
 };
@@ -166,12 +164,10 @@ window.openDirectCheckoutModal = function() {
   const tenderedEl = document.getElementById('directCashTendered');
   
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
-  if (tenderedEl) tenderedEl.value = '';
   const methodSelect = document.getElementById('directPaymentMethod');
-  if (methodSelect) methodSelect.value = 'CASH';
+  if (methodSelect) methodSelect.value = 'CARD';
   
   window.handlePaymentMethodChange();
-  window.calculateCashChange();
   window.openModal('modalDirectCheckout');
 };
 
@@ -544,12 +540,12 @@ window.showReceiptModal = function(order) {
   container.innerHTML = `
     <div style="text-align:center; padding-bottom:8px; border-bottom:1px dashed #000; margin-bottom:10px;">
       <img src="${logoSrc}" style="max-height:48px; width:auto; display:block; margin:0 auto 6px auto; object-fit:contain;" alt="DMCH Logo" onerror="this.style.display='none'">
-      <div style="font-size:15px; font-weight:900; letter-spacing:1px; color:#0F172A;">DMCH RESTO</div>
-      <div style="font-size:10px; text-transform:uppercase; color:#475569; font-weight:700;">Dream Medical Center Hospital</div>
+      <div style="font-size:15px; font-weight:900; letter-spacing:1px; color:#1A3A52;">DMCH RESTO</div>
+      <div style="font-size:10px; text-transform:uppercase; color:#6B7280; font-weight:700;">Dream Medical Center Hospital</div>
       <div style="font-size:9px; color:#64748B; margin-top:2px;">Kigali, Rwanda • MIS POS Terminal</div>
     </div>
 
-    <div style="font-size:11px; margin-bottom:8px; line-height:1.5; color:#0F172A;">
+    <div style="font-size:11px; margin-bottom:8px; line-height:1.5; color:#1A3A52;">
       <div><strong>Receipt #:</strong> ${order.id}</div>
       <div><strong>Date & Time:</strong> ${dateStr}</div>
       <div><strong>Cashier:</strong> ${cashierName}</div>
@@ -563,14 +559,14 @@ window.showReceiptModal = function(order) {
       ${itemsHtml}
     </div>
 
-    <div style="font-size:12px; font-weight:bold; display:flex; justify-content:space-between; margin-bottom:4px; color:#0F172A;">
+    <div style="font-size:12px; font-weight:bold; display:flex; justify-content:space-between; margin-bottom:4px; color:#1A3A52;">
       <span>TOTAL AMOUNT:</span>
-      <span style="font-size:14px; font-weight:900; color:#D97706;">${formatMoney(order.total)}</span>
+      <span style="font-size:14px; font-weight:900; color:#D4A574;">${formatMoney(order.total)}</span>
     </div>
 
-    <div style="font-size:10px; color:#475569; text-align:center; margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
+    <div style="font-size:10px; color:#6B7280; text-align:center; margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
       <div>Thank you for dining at DMCH Resto!</div>
-      <div style="font-size:9px; margin-top:2px; font-weight:700; color:#0F172A;">~ Official Hospital Catering Ticket ~</div>
+      <div style="font-size:9px; margin-top:2px; font-weight:700; color:#1A3A52;">~ Official Hospital Catering Ticket ~</div>
     </div>
   `;
 
