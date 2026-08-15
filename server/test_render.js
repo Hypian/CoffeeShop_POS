@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const token = jwt.sign({ id: 1, username: 'admin', role: 'admin' }, 'dmch-resto-super-secret-key-2026', { expiresIn: '1h' });
 
-const payload = { id: `dept-${Date.now()}`, code: 'TEST_API', name: 'TEST_API', monthlyCreditLimit: 1000 };
+const payload = { id: `prod-${Date.now()}`, name: 'TEST_PROD', categoryId: 'cat-all', price: 1000, icon: "<i class='bx bx-box'></i>", stock: 100 };
 
-fetch('https://dmch-resto-pos-api.onrender.com/api/departments', {
+fetch('https://dmch-resto-pos-api.onrender.com/api/products', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ' + token,

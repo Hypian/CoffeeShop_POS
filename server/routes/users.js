@@ -91,7 +91,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/users - Create or sync user account
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { id, username, password, fullName, role, status } = req.body;
     if (!username) {

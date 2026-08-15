@@ -57,7 +57,8 @@ async function runMigrations() {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`,
     `ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_name VARCHAR(255)`,
-    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`
+    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`,
+    `ALTER TABLE products ALTER COLUMN icon TYPE VARCHAR(100)`
   ];
 
   for (const sql of migrations) {

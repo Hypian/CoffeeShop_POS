@@ -90,8 +90,6 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // DELETE /api/orders/:id - Remove an order/receipt
 router.delete('/:id', async (req, res) => {
   try {
@@ -104,3 +102,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+module.exports = router;
