@@ -226,7 +226,9 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    if (window.renderAllViews) {
+    if (window.refreshAllStaffDropdownsAndViews) {
+      window.refreshAllStaffDropdownsAndViews();
+    } else if (window.renderAllViews) {
       window.renderAllViews();
     }
   } catch (err) {

@@ -340,7 +340,29 @@ window.deleteUserAccount = function(userId) {
 };
 
 window.openAddUserModal = function() {
+  const userStaffList = document.getElementById('userStaffDatalist');
+  if (userStaffList) {
+    userStaffList.innerHTML = (state.employees || []).map(e => {
+      const dept = (state.departments || []).find(d => d && d.id === e.departmentId);
+      const deptTag = dept ? ` [${dept.code}]` : '';
+      return `<option value="${window.escapeHTML(e.fullName)}">${e.staffId}${deptTag}</option>`;
+    }).join('');
+  }
   openModal('modalAddUser');
+};
+
+window.handleAdminUserStaffSelect = function(val) {
+  if (!val) return;
+  const cleanName = val.trim();
+  const usernameInput = document.getElementById('adminNewUserUsername');
+  if (!usernameInput || usernameInput.value) return; // don't override if user already typed one
+
+  const parts = cleanName.toLowerCase().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    usernameInput.value = `${parts[0]}.${parts[parts.length - 1]}`;
+  } else if (parts.length === 1) {
+    usernameInput.value = parts[0];
+  }
 };
 
 window.saveNewUserByAdmin = async function() {

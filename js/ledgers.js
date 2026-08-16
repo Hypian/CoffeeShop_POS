@@ -761,7 +761,8 @@ window.deleteDepartment = function(deptId) {
       state.departments = (state.departments || []).filter(d => d && String(d.id) !== String(deptId));
       addAuditLog("Department Deleted", `Deleted department ${dept.name} (${dept.code})`);
       saveData({ sync: false });
-      if (window.renderAllViews) window.renderAllViews();
+      if (window.refreshAllStaffDropdownsAndViews) window.refreshAllStaffDropdownsAndViews();
+      else if (window.renderAllViews) window.renderAllViews();
       window.showToast(`Department "${dept.name}" was successfully deleted.`, 'success');
 
       try {
@@ -791,7 +792,8 @@ window.deleteEmployee = function(empId) {
       state.tabReceipts = (state.tabReceipts || []).filter(r => r && String(r.employeeId) !== String(empId));
       addAuditLog("Staff Deleted", `Deleted staff account ${emp.fullName}`);
       saveData({ sync: false });
-      if (window.renderAllViews) window.renderAllViews();
+      if (window.refreshAllStaffDropdownsAndViews) window.refreshAllStaffDropdownsAndViews();
+      else if (window.renderAllViews) window.renderAllViews();
       window.showToast(`Staff account "${emp.fullName}" was successfully deleted.`, 'success');
 
       try {
@@ -961,16 +963,79 @@ window.saveNewDepartment = async function() {
   } catch (err) {
     console.warn('Cloud save department notice:', err.message);
   }
+
+  if (window.refreshAllStaffDropdownsAndViews) {
+    window.refreshAllStaffDropdownsAndViews(null, newDept.id);
+  }
 };
 
-window.openAddEmployeeModal = function(defaultDeptId = null) {
+window.refreshAllStaffDropdownsAndViews = function(selectedEmpId = null, selectedDeptId = null) {
+  // 1. Refresh POS Tab Checkout Dropdowns and Search Datalist
+  if (window.populateTabCheckoutDropdowns) {
+    window.populateTabCheckoutDropdowns(selectedDeptId || '', selectedEmpId || '');
+  }
+
+  // 2. Refresh Direct Checkout Payer Datalist
+  const payerList = document.getElementById('payerNamesDatalist');
+  if (payerList) {
+    const names = new Set();
+    (state.employees || []).forEach(e => { if (e && e.fullName) names.add(e.fullName); });
+    (state.orders || []).forEach(o => {
+      if (o && (o.payerName || o.customerName)) names.add(o.payerName || o.customerName);
+    });
+    payerList.innerHTML = Array.from(names).slice(0, 50).map(n => `<option value="${window.escapeHTML(n)}"></option>`).join('');
+  }
+
+  // 3. Refresh User Management Staff Datalist
+  const userStaffList = document.getElementById('userStaffDatalist');
+  if (userStaffList) {
+    userStaffList.innerHTML = (state.employees || []).map(e => {
+      const dept = (state.departments || []).find(d => d && d.id === e.departmentId);
+      const deptTag = dept ? ` [${dept.code}]` : '';
+      return `<option value="${window.escapeHTML(e.fullName)}">${e.staffId}${deptTag}</option>`;
+    }).join('');
+  }
+
+  // 4. Refresh Reports Department & Staff Dropdowns
+  const hrDeptSelect = document.getElementById('hrFilterDept');
+  if (hrDeptSelect) {
+    const currentHrDept = hrDeptSelect.value || 'ALL';
+    hrDeptSelect.innerHTML = `<option value="ALL">All Departments (${state.departments.length})</option>` +
+      (state.departments || []).map(d => `<option value="${d.id}" ${d.id === currentHrDept ? 'selected' : ''}>${d.name} (${d.code})</option>`).join('');
+    if (window.updateHREmployeeDropdown) {
+      window.updateHREmployeeDropdown();
+    }
+  }
+
+  // 5. Update Add Employee Department Select if modal is open
+  const addEmpDeptSelect = document.getElementById('addEmpDeptSelect');
+  if (addEmpDeptSelect && state.departments && state.departments.length > 0) {
+    const currVal = addEmpDeptSelect.value;
+    addEmpDeptSelect.innerHTML = (state.departments || []).map(d => `<option value="${d.id}" ${d.id === currVal ? 'selected' : ''}>${d.name} (${d.code})</option>`).join('');
+  }
+
+  // 6. Re-render active views
+  if (window.renderAllViews) {
+    window.renderAllViews();
+  }
+};
+
+window.openAddEmployeeModal = function(defaultDeptId = null, source = null) {
   const currentRole = state.currentSession ? state.currentSession.role : (state.currentUser ? state.currentUser.role : 'admin');
   if (currentRole !== 'admin' && currentRole !== 'manager' && currentRole !== 'cashier') {
     window.showToast('Only authorized staff can add staff accounts.', 'warning');
     return;
   }
 
-  const deptIdToUse = defaultDeptId || (state.ledgerMode === 'dept_detail' ? state.selectedLedgerDeptId : null);
+  state._addEmpSource = source; // Track if opened from 'pos_tab'
+
+  if (!state.departments || state.departments.length === 0) {
+    window.showToast('Please create at least one department first.', 'warning');
+    window.openAddDepartmentModal();
+    return;
+  }
+
+  const deptIdToUse = defaultDeptId || (state.ledgerMode === 'dept_detail' ? state.selectedLedgerDeptId : state.departments[0].id);
 
   const deptSelect = document.getElementById('addEmpDeptSelect');
   if (deptSelect) {
@@ -980,25 +1045,36 @@ window.openAddEmployeeModal = function(defaultDeptId = null) {
     }
   }
 
-  document.getElementById('addEmpFullName').value = '';
-  document.getElementById('addEmpInitialBalance').value = '0';
+  const nameInput = document.getElementById('addEmpFullName');
+  const initBalInput = document.getElementById('addEmpInitialBalance');
+  if (nameInput) nameInput.value = '';
+  if (initBalInput) initBalInput.value = '0';
+
   if (window.updateAutoStaffId) window.updateAutoStaffId();
   window.openModal('modalAddEmployee');
 };
 
 window.saveNewEmployee = async function() {
   const fullName = (document.getElementById('addEmpFullName').value || '').trim().toUpperCase();
-  const deptId = document.getElementById('addEmpDeptSelect').value;
-  const staffId = (document.getElementById('addEmpStaffId').value || '').trim().toUpperCase();
+  const deptSelect = document.getElementById('addEmpDeptSelect');
+  const deptId = deptSelect ? deptSelect.value : '';
+  let staffId = (document.getElementById('addEmpStaffId').value || '').trim().toUpperCase();
   const initBal = parseFloat(document.getElementById('addEmpInitialBalance').value) || 0;
 
-  if (!fullName || !staffId || !deptId) {
-    window.showToast('Full name, department, and staff ID are required.', 'error');
+  if (!fullName || !deptId) {
+    window.showToast('Full name and department are required.', 'error');
     return;
   }
 
+  if (!staffId) {
+    const dept = (state.departments || []).find(d => d.id === deptId);
+    const prefix = dept ? (dept.code || 'EMP') : 'EMP';
+    const nextNum = ((state.employees || []).filter(e => e.departmentId === deptId).length + 1).toString().padStart(3, '0');
+    staffId = `${prefix}-${nextNum}`;
+  }
+
   if ((state.employees || []).some(e => e && e.staffId === staffId)) {
-    window.showToast(`Staff ID "${staffId}" already exists.`, 'error');
+    window.showToast(`Staff ID "${staffId}" already exists. Please choose or generate another ID.`, 'error');
     return;
   }
 
@@ -1016,9 +1092,23 @@ window.saveNewEmployee = async function() {
   addAuditLog("Staff Account Created", `Created staff account ${fullName} (${staffId})`);
   saveData({ sync: false });
   window.closeModal('modalAddEmployee');
-  window.showToast(`Staff account "${fullName}" (${staffId}) saved!`, 'success');
-  if (window.renderAllViews) window.renderAllViews();
+  
+  // Instantly refresh all dropdowns, datalists, and views across the whole application
+  if (window.refreshAllStaffDropdownsAndViews) {
+    window.refreshAllStaffDropdownsAndViews(newEmp.id, newEmp.departmentId);
+  }
 
+  window.showToast(`Staff account "${fullName}" (${staffId}) created!`, 'success');
+
+  // If opened directly from Tab Checkout, return back and auto-select the new staff member!
+  if (state._addEmpSource === 'pos_tab') {
+    state._addEmpSource = null;
+    if (window.openTabCheckoutModal) {
+      window.openTabCheckoutModal(newEmp.id);
+    }
+  }
+
+  // Non-blocking cloud persistence
   try {
     if (window.cloudSaveEmployee) {
       await window.cloudSaveEmployee(newEmp);

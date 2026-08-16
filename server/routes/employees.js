@@ -22,6 +22,7 @@ router.post('/', async (req, res) => {
 
     const results = [];
     for (const emp of employees) {
+      const empId = emp.id || `emp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       const text = `
         INSERT INTO employees (id, staff_id, full_name, department_id, monthly_credit_limit, current_balance, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -35,7 +36,7 @@ router.post('/', async (req, res) => {
         RETURNING *;
       `;
       const values = [
-        emp.id,
+        empId,
         emp.staffId || emp.staff_id,
         emp.fullName || emp.full_name,
         emp.departmentId || emp.department_id,

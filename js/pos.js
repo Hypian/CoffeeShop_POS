@@ -166,6 +166,17 @@ window.openDirectCheckoutModal = function() {
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
   const methodSelect = document.getElementById('directPaymentMethod');
   if (methodSelect) methodSelect.value = 'CARD';
+
+  // Populate Payer Datalist with all employees and past clients for instant autofill
+  const payerList = document.getElementById('payerNamesDatalist');
+  if (payerList) {
+    const names = new Set();
+    (state.employees || []).forEach(e => { if (e && e.fullName) names.add(e.fullName); });
+    (state.orders || []).forEach(o => {
+      if (o && (o.payerName || o.customerName)) names.add(o.payerName || o.customerName);
+    });
+    payerList.innerHTML = Array.from(names).slice(0, 50).map(n => `<option value="${window.escapeHTML(n)}"></option>`).join('');
+  }
   
   window.handlePaymentMethodChange();
   window.openModal('modalDirectCheckout');
@@ -250,63 +261,199 @@ window.processDirectPayment = function() {
   }
 };
 
-// Checkout - Staff Tab
-window.openTabCheckoutModal = function() {
+// ==========================================================================
+// Checkout - Institutional Staff Tab (Smart Bidirectional Autofill Engine)
+// ==========================================================================
+
+window.populateTabCheckoutDropdowns = function(selectedDeptId = '', selectedEmpId = '') {
+  const deptSelect = document.getElementById('checkoutDeptSelect');
+  const empSelect = document.getElementById('checkoutEmpSelect');
+  const datalist = document.getElementById('staffAutofillDatalist');
+  const searchInput = document.getElementById('checkoutStaffSearch');
+
+  const depts = state.departments || [];
+  const emps = state.employees || [];
+
+  // 1. Populate Department Dropdown
+  if (deptSelect) {
+    deptSelect.innerHTML = `<option value="">-- All Departments (${depts.length}) --</option>` + 
+      depts.map(d => `<option value="${d.id}" ${d.id === selectedDeptId ? 'selected' : ''}>${d.name} (${d.code})</option>`).join('');
+    if (selectedDeptId) deptSelect.value = selectedDeptId;
+  }
+
+  // 2. Populate Employee Dropdown (Filtered by dept if selected, or all emps)
+  if (empSelect) {
+    const filteredEmps = selectedDeptId ? emps.filter(e => e && e.departmentId === selectedDeptId) : emps;
+    empSelect.innerHTML = `<option value="">-- Select Staff Account (${filteredEmps.length}) --</option>` + 
+      filteredEmps.map(e => {
+        const dept = depts.find(d => d.id === e.departmentId);
+        const deptCode = dept ? ` [${dept.code}]` : '';
+        return `<option value="${e.id}" ${e.id === selectedEmpId ? 'selected' : ''}>${e.fullName} (${e.staffId})${deptCode}</option>`;
+      }).join('');
+
+    if (selectedEmpId) {
+      empSelect.value = selectedEmpId;
+    }
+  }
+
+  // 3. Populate Search Autocomplete Datalist
+  if (datalist) {
+    datalist.innerHTML = emps.map(e => {
+      const dept = depts.find(d => d.id === e.departmentId);
+      const deptText = dept ? `${dept.name} (${dept.code})` : 'Unassigned';
+      return `<option value="${e.fullName} (${e.staffId})">${deptText}</option><option value="${e.staffId}">${e.fullName} - ${deptText}</option>`;
+    }).join('');
+  }
+
+  // 4. Update Search Input Text if an employee is selected
+  if (searchInput && selectedEmpId) {
+    const targetEmp = emps.find(e => e && e.id === selectedEmpId);
+    if (targetEmp) {
+      searchInput.value = `${targetEmp.fullName} (${targetEmp.staffId})`;
+    }
+  }
+};
+
+window.openTabCheckoutModal = function(initialEmpId = null) {
   if (state.cart.length === 0) {
     window.showToast('Your cart is empty! Tap menu items on the left to add them.', 'warning');
     return;
   }
   const totals = calculateCartTotals();
   const totalEl = document.getElementById('tabTotalText');
-  const deptSelect = document.getElementById('checkoutDeptSelect');
+  const searchInput = document.getElementById('checkoutStaffSearch');
   
   if (totalEl) totalEl.textContent = formatMoney(totals.total);
-  
-  if (deptSelect) {
-    deptSelect.innerHTML = `<option value="">-- Select Department --</option>` + 
-      state.departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-    deptSelect.value = '';
-  }
-  
-  const empSelect = document.getElementById('checkoutEmpSelect');
-  if (empSelect) {
-    empSelect.innerHTML = `<option value="">-- Select Employee --</option>`;
-    empSelect.disabled = true;
-  }
-  
-  state.currentTabEmployee = null;
-  window.updateEmployeeTabPreview(null);
+  if (searchInput && !initialEmpId) searchInput.value = '';
+
+  const targetEmp = initialEmpId ? (state.employees || []).find(e => e && e.id === initialEmpId) : state.currentTabEmployee;
+  const initialDeptId = targetEmp ? targetEmp.departmentId : '';
+  const empIdToUse = targetEmp ? targetEmp.id : '';
+
+  window.populateTabCheckoutDropdowns(initialDeptId, empIdToUse);
+  window.updateEmployeeTabPreview(empIdToUse || null);
   window.openModal('modalTabCheckout');
 };
 
-window.populateEmployeeDropdown = function(deptId) {
-  const empSelect = document.getElementById('checkoutEmpSelect');
-  if (!empSelect) return;
-  if (!deptId) {
-    empSelect.innerHTML = `<option value="">-- Select Employee --</option>`;
-    empSelect.disabled = true;
-    window.updateEmployeeTabPreview(null);
-    return;
+window.handleStaffSearchAutofill = function(query) {
+  if (!query) return;
+  const cleanQuery = query.trim().toLowerCase();
+  if (cleanQuery.length === 0) return;
+
+  const emps = state.employees || [];
+  // Search by exact staffId, staffId substring, fullName substring, or full display format "NAME (ID)"
+  const matchedEmp = emps.find(e => {
+    if (!e) return false;
+    const nameMatch = (e.fullName || '').toLowerCase().includes(cleanQuery);
+    const idMatch = (e.staffId || '').toLowerCase().includes(cleanQuery);
+    const fullTag = `${(e.fullName || '').toLowerCase()} (${(e.staffId || '').toLowerCase()})`;
+    return nameMatch || idMatch || fullTag.includes(cleanQuery) || cleanQuery.includes((e.staffId || '').toLowerCase());
+  });
+
+  if (matchedEmp) {
+    state.currentTabEmployee = matchedEmp;
+    const deptSelect = document.getElementById('checkoutDeptSelect');
+    const empSelect = document.getElementById('checkoutEmpSelect');
+
+    if (deptSelect && matchedEmp.departmentId) {
+      deptSelect.value = matchedEmp.departmentId;
+    }
+    if (empSelect) {
+      window.populateTabCheckoutDropdowns(matchedEmp.departmentId, matchedEmp.id);
+    }
+    window.updateEmployeeTabPreview(matchedEmp.id);
   }
-  const emps = state.employees.filter(e => e.departmentId === deptId);
-  empSelect.innerHTML = `<option value="">-- Select Employee --</option>` + 
-    emps.map(e => `<option value="${e.id}">${e.fullName} (${e.staffId})</option>`).join('');
-  empSelect.disabled = false;
+};
+
+window.onCheckoutDepartmentChange = function(deptId) {
+  const empSelect = document.getElementById('checkoutEmpSelect');
+  const searchInput = document.getElementById('checkoutStaffSearch');
+  
+  window.populateTabCheckoutDropdowns(deptId, '');
+  if (searchInput) searchInput.value = '';
+  state.currentTabEmployee = null;
   window.updateEmployeeTabPreview(null);
 };
 
+window.onCheckoutEmployeeSelect = function(empId) {
+  if (!empId) {
+    state.currentTabEmployee = null;
+    window.updateEmployeeTabPreview(null);
+    return;
+  }
+  const emp = (state.employees || []).find(e => e && e.id === empId);
+  if (emp) {
+    state.currentTabEmployee = emp;
+    const deptSelect = document.getElementById('checkoutDeptSelect');
+    if (deptSelect && emp.departmentId && deptSelect.value !== emp.departmentId) {
+      deptSelect.value = emp.departmentId;
+    }
+    const searchInput = document.getElementById('checkoutStaffSearch');
+    if (searchInput) {
+      searchInput.value = `${emp.fullName} (${emp.staffId})`;
+    }
+    window.updateEmployeeTabPreview(emp.id);
+  }
+};
+
+window.quickAddStaffFromCheckout = function() {
+  const currentDept = document.getElementById('checkoutDeptSelect')?.value || null;
+  window.closeModal('modalTabCheckout');
+  window.openAddEmployeeModal(currentDept, 'pos_tab');
+};
+
+window.populateEmployeeDropdown = function(deptId) {
+  window.onCheckoutDepartmentChange(deptId);
+};
+
 window.updateEmployeeTabPreview = function(empId) {
-  state.currentTabEmployee = state.employees.find(e => e.id === empId) || null;
+  state.currentTabEmployee = (state.employees || []).find(e => e && e.id === empId) || null;
   const badge = document.getElementById('tabEmpCreditBadge');
   if (!badge) return;
   
   if (!state.currentTabEmployee) {
-    badge.innerHTML = '';
+    badge.innerHTML = `
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 flex items-center gap-2">
+        <span><i class='bx bx-info-circle text-base text-slate-400'></i></span>
+        <span>Search or select a staff member above to verify approved tab limit and balance.</span>
+      </div>
+    `;
     return;
   }
-  
-  const totalAfter = state.currentTabEmployee.currentBalance + calculateCartTotals().total;
-  badge.innerHTML = `<span class="bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full text-xs font-bold border border-[#10B981]/30">Approved (New Balance: ${formatMoney(totalAfter)})</span>`;
+
+  const emp = state.currentTabEmployee;
+  const dept = (state.departments || []).find(d => d && d.id === emp.departmentId);
+  const cartTotal = calculateCartTotals().total;
+  const currBal = emp.currentBalance || 0;
+  const newBal = currBal + cartTotal;
+  const limit = emp.monthlyCreditLimit || 50000;
+  const isNearLimit = newBal >= (limit * 0.9);
+
+  badge.innerHTML = `
+    <div class="bg-emerald-50/80 border border-emerald-300/80 rounded-xl p-3.5 flex flex-col gap-2 shadow-xs animate-toast-in">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold flex items-center justify-center text-xs shadow-xs"><i class='bx bx-user-check'></i></span>
+          <div>
+            <div class="text-xs font-extrabold text-emerald-950">${window.escapeHTML(emp.fullName)} <span class="font-mono text-[0.7rem] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-300 font-bold">${emp.staffId}</span></div>
+            <div class="text-[0.68rem] text-emerald-700 font-semibold">${dept ? `${dept.name} (${dept.code})` : 'Hospital Staff'}</div>
+          </div>
+        </div>
+        <span class="text-[0.65rem] font-extrabold uppercase px-2 py-0.5 rounded-full ${isNearLimit ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">Approved Tab</span>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/60 text-xs">
+        <div>
+          <span class="text-[0.65rem] text-slate-500 font-medium block">Current Tab:</span>
+          <span class="font-mono font-extrabold text-slate-900">${formatMoney(currBal)}</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[0.65rem] text-slate-500 font-medium block">New Balance After:</span>
+          <span class="font-mono font-extrabold text-emerald-800 text-sm">${formatMoney(newBal)}</span>
+        </div>
+      </div>
+    </div>
+  `;
 };
 
 window.processTabPayment = async function() {
@@ -316,13 +463,14 @@ window.processTabPayment = async function() {
   try {
     if (window.checkAutoRollover) window.checkAutoRollover();
     if (!state.currentTabEmployee) {
-      window.showToast('Please select an employee for tab checkout', 'error');
+      window.showToast('Please search or select an authorized staff member for tab charge.', 'error');
       state.isProcessingPayment = false;
       return;
     }
     
     const totals = calculateCartTotals();
-    const dept = (state.departments || []).find(d => d && d.id === state.currentTabEmployee.departmentId);
+    const emp = state.currentTabEmployee;
+    const dept = (state.departments || []).find(d => d && d.id === emp.departmentId);
     const cashierName = state.currentUser ? (state.currentUser.name || state.currentUser.username || 'Cashier') : 'Cashier';
 
     const order = {
@@ -333,9 +481,9 @@ window.processTabPayment = async function() {
       paymentMethod: 'PAYROLL_DEDUCTION',
       departmentId: dept ? dept.id : null,
       departmentName: dept ? dept.name : 'Hospital Dept',
-      employeeId: state.currentTabEmployee.id,
-      employeeName: state.currentTabEmployee.fullName,
-      staffId: state.currentTabEmployee.staffId,
+      employeeId: emp.id,
+      employeeName: emp.fullName,
+      staffId: emp.staffId,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,
@@ -343,21 +491,25 @@ window.processTabPayment = async function() {
       status: 'COMPLETED'
     };
 
-    state.currentTabEmployee.currentBalance = (state.currentTabEmployee.currentBalance || 0) + totals.total;
+    emp.currentBalance = (emp.currentBalance || 0) + totals.total;
 
-    const empInState = (state.employees || []).find(e => e && String(e.id) === String(state.currentTabEmployee.id));
+    const empInState = (state.employees || []).find(e => e && String(e.id) === String(emp.id));
+    if (empInState) {
+      empInState.currentBalance = emp.currentBalance;
+    }
+
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
     saveData();
     window.clearCart();
     window.closeModal('modalTabCheckout');
-    window.showToast(`Tab order authorized for ${state.currentTabEmployee.fullName}`, 'success');
+    window.showToast(`Staff tab authorized for ${emp.fullName} (${formatMoney(totals.total)})`, 'success');
     if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
 
     try {
       if (window.cloudSaveEmployee) {
-        await window.cloudSaveEmployee(state.currentTabEmployee);
+        await window.cloudSaveEmployee(emp);
       }
     } catch (e) {
       console.warn('Cloud employee balance sync notice:', e.message);

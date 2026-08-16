@@ -356,12 +356,19 @@ window.updateHREmployeeDropdown = function() {
   const empSelect = document.getElementById('hrFilterEmp');
   if (!deptSelect || !empSelect) return;
   
+  const allEmps = state.employees || [];
   if (deptSelect.value === 'ALL') {
-    empSelect.innerHTML = '<option value="ALL">All Staff</option>';
-    empSelect.disabled = true;
+    empSelect.innerHTML = '<option value="ALL">-- All Staff Members --</option>' +
+      allEmps.map(e => {
+        const d = (state.departments || []).find(dept => dept && dept.id === e.departmentId);
+        const dTag = d ? ` [${d.code}]` : '';
+        return `<option value="${e.id}">${e.fullName} (${e.staffId})${dTag}</option>`;
+      }).join('');
+    empSelect.disabled = false;
   } else {
-    const emps = state.employees.filter(e => e.departmentId === deptSelect.value && e.currentBalance > 0);
-    empSelect.innerHTML = '<option value="ALL">All Staff in Dept</option>' + emps.map(e => `<option value="${e.id}">${e.fullName}</option>`).join('');
+    const emps = allEmps.filter(e => e && e.departmentId === deptSelect.value);
+    empSelect.innerHTML = '<option value="ALL">-- All Staff in Department --</option>' + 
+      emps.map(e => `<option value="${e.id}">${e.fullName} (${e.staffId})</option>`).join('');
     empSelect.disabled = false;
   }
 };

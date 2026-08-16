@@ -281,13 +281,10 @@
             <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Payment Method</label>
             <select id="directPaymentMethod" onchange="handlePaymentMethodChange()" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
               <option value="CARD">Credit/Debit Card</option>
-              <option value="MOBILE_MONEY">Mobile Money (MoMo)</option>
-            </select>
-          </div>
-
-          <div class="flex flex-col gap-2">
+              <option value="MOBILE_MONEY">Mobile Money (MoMo)</o          <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Payer / Customer Full Name (Optional)</label>
-            <input type="text" id="directPayerName" placeholder="e.g. JEAN-PAUL MUGISHA" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
+            <input type="text" id="directPayerName" list="payerNamesDatalist" placeholder="e.g. JEAN-PAUL MUGISHA" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
+            <datalist id="payerNamesDatalist"></datalist>
           </div>
           
 
@@ -334,7 +331,7 @@
     <div id="modalTabCheckout" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
         <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52]">Institutional Tab / Payroll Charge</h3>
+          <h3 class="text-lg font-bold text-[#1A3A52] flex items-center gap-2"><i class='bx bx-credit-card'></i> Institutional Staff Tab / Payroll</h3>
           <button onclick="closeModal('modalTabCheckout')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
         </div>
         <div class="p-5 flex flex-col gap-4">
@@ -342,21 +339,38 @@
             <span class="text-sm font-semibold text-[#6B7280]">Order Total</span>
             <span id="tabTotalText" class="text-xl sm:text-2xl font-extrabold text-[#1A3A52]">RWF 0</span>
           </div>
-          
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department</label>
-            <select id="checkoutDeptSelect" onchange="populateEmployeeDropdown(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <option value="">Select Department...</option>
-              <!-- Options populated dynamically -->
-            </select>
+
+          <!-- Instant Staff Search & Autocomplete -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">⚡ Instant Staff Search / Autofill</label>
+              <span class="text-[0.65rem] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Name or ID</span>
+            </div>
+            <div class="relative">
+              <input type="text" id="checkoutStaffSearch" list="staffAutofillDatalist" oninput="window.handleStaffSearchAutofill(this.value)" placeholder="Type staff name or ID (e.g. HABIMANA or EMP-001)..." autocomplete="off" class="w-full bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52]">
+              <datalist id="staffAutofillDatalist"></datalist>
+            </div>
           </div>
           
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff Account / Employee</label>
-            <select id="checkoutEmpSelect" disabled onchange="updateEmployeeTabPreview(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <option value="">Select Employee...</option>
-              <!-- Options populated dynamically -->
-            </select>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department</label>
+              <select id="checkoutDeptSelect" onchange="window.onCheckoutDepartmentChange(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
+                <option value="">-- All Departments --</option>
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center">
+                <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff Account *</label>
+                <button type="button" onclick="window.quickAddStaffFromCheckout()" class="text-[0.68rem] text-amber-800 font-extrabold hover:underline bg-transparent border-none cursor-pointer">+ New Staff</button>
+              </div>
+              <select id="checkoutEmpSelect" onchange="window.onCheckoutEmployeeSelect(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52]">
+                <option value="">-- Select Staff --</option>
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
           </div>
 
           <div id="tabEmpCreditBadge" class="mt-1"></div>
@@ -364,7 +378,10 @@
 
         <div class="bg-[#F8FAFC]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
           <button onclick="closeModal('modalTabCheckout')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Cancel</button>
-          <button onclick="processTabPayment()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20">Confirm & Charge Tab</button>
+          <button id="btnConfirmTabPayment" onclick="processTabPayment()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-sm font-extrabold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20 transition-all active:scale-95">Confirm & Charge Tab</button>
+        </div>
+      </div>
+    </div>b</button>
         </div>
       </div>
     </div>
@@ -699,18 +716,18 @@
         </div>
         <div class="p-5 flex flex-col gap-4">
           <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Full Name</label>
+            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Full Name *</label>
             <input type="text" id="addEmpFullName" placeholder="e.g. JEAN-PAUL HABIMANA" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
           </div>
           <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department</label>
+            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department *</label>
             <select id="addEmpDeptSelect" onchange="window.updateAutoStaffId()" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
               <!-- Options populated dynamically -->
             </select>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff ID</label>
+              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff ID *</label>
               <input type="text" id="addEmpStaffId" placeholder="EMP-9021" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] font-mono">
             </div>
             <div class="flex flex-col gap-2">
@@ -764,257 +781,8 @@
         <div class="p-6 flex flex-col gap-4 bg-white">
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Full Name</label>
-            <input type="text" id="adminNewUserFullName" placeholder="e.g. Marie Claire" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-          </div>
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Username</label>
-            <input type="text" id="adminNewUserUsername" placeholder="e.g. marie.claire" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] font-mono">
-          </div>
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Password</label>
-            <input type="password" id="adminNewUserPassword" placeholder="Enter password" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-          </div>
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Assigned Role</label>
-            <select id="adminNewUserRole" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <option value="cashier"><i class='bx bx-money'></i> Staff Cashier</option>
-              <option value="waiter"><i class='bx bx-user'></i> Service Waiter</option>
-              <option value="admin"><i class='bx bx-crown'></i> System Administrator</option>
-            </select>
-          </div>
-        </div>
-        <div class="bg-[#FFFFFF] px-6 py-4 border-t border-slate-200/80 flex justify-end items-center gap-3">
-          <button onclick="closeModal('modalAddUser')" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 cursor-pointer transition-all active:scale-95">Cancel</button>
-          <button onclick="saveNewUserByAdmin()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-amber-500/20 transition-all active:scale-95">Create & Approve User</button>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- Modal 5: Receipt Preview -->
-    <div id="modalReceipt" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-sm w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52] flex items-center gap-2"><span class="text-[#10B981]"><i class='bx bx-check'></i></span> Order Completed</h3>
-          <button onclick="closeModal('modalReceipt')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
-        </div>
-        <div class="p-5 bg-gray-100 flex justify-center overflow-y-auto max-h-[60vh]">
-          <!-- The receipt itself should look like paper -->
-          <div id="receiptPreviewContent" class="bg-white text-black p-5 w-full max-w-[300px] shadow-md text-sm font-mono leading-tight">
-            <!-- Receipt rendered here -->
-          </div>
-        </div>
-        <div class="bg-[#F8FAFC] px-5 py-4 border-t border-black/[0.1] flex justify-between items-center gap-3">
-          <button onclick="closeModal('modalReceipt')" class="px-4 py-2 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Close</button>
-          <button onclick="triggerPrintReceipt()" class="bg-[#1A3A52] hover:bg-[#2563EB] text-white rounded-xl px-5 py-2 text-sm font-bold cursor-pointer border-none flex items-center gap-2 shadow-lg shadow-[#1A3A52]/20">
-            <span><i class='bx bx-printer'></i></span> Print Receipt
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 2: Tab Checkout -->
-    <div id="modalTabCheckout" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52]">Institutional Tab / Payroll Charge</h3>
-          <button onclick="closeModal('modalTabCheckout')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
-        </div>
-        <div class="p-5 flex flex-col gap-4">
-          <div class="bg-[#F8FAFC]/50 rounded-xl p-4 flex justify-between items-center border border-[#1A3A52]/20">
-            <span class="text-sm font-semibold text-[#6B7280]">Order Total</span>
-            <span id="tabTotalText" class="text-xl sm:text-2xl font-extrabold text-[#1A3A52]">RWF 0</span>
-          </div>
-          
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department</label>
-            <select id="checkoutDeptSelect" onchange="populateEmployeeDropdown(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <option value="">Select Department...</option>
-              <!-- Options populated dynamically -->
-            </select>
-          </div>
-          
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff Account / Employee</label>
-            <select id="checkoutEmpSelect" disabled onchange="updateEmployeeTabPreview(this.value)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <option value="">Select Employee...</option>
-              <!-- Options populated dynamically -->
-            </select>
-          </div>
-
-          <div id="tabEmpCreditBadge" class="mt-1"></div>
-        </div>
-
-        <div class="bg-[#F8FAFC]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
-          <button onclick="closeModal('modalTabCheckout')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Cancel</button>
-          <button onclick="processTabPayment()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20">Confirm & Charge Tab</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 3: Patient Room Catering Checkout -->
-    <div id="modalPatientCheckout" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52]">Patient Room Catering Order</h3>
-          <button onclick="closeModal('modalPatientCheckout')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
-        </div>
-        <div class="p-5 flex flex-col gap-4">
-          <div class="bg-[#F8FAFC]/50 rounded-xl p-4 flex justify-between items-center border border-[#1A3A52]/30">
-            <span class="text-sm font-semibold text-[#6B7280]">Order Total</span>
-            <span id="patientTotalText" class="text-xl sm:text-2xl font-extrabold text-[#1A3A52]">RWF 0</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-2">
-              <div class="flex justify-between items-center">
-                <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Hospital Room *</label>
-                <button onclick="openAddRoomModal()" class="text-[0.65rem] text-[#1A3A52] hover:underline font-bold bg-transparent border-none cursor-pointer">Add Room</button>
-              </div>
-              <select id="patientRoomNumberSelect" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52]">
-                <!-- Options populated dynamically -->
-              </select>
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Meal Category *</label>
-              <select id="patientMealType" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52]">
-                <option value="Breakfast">Breakfast</option>
-                <option value="Lunch">Lunch</option>
-                <option value="Dinner">Dinner</option>
-                <option value="Tea & Snack">Tea / Snack</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Patient ID / MRN #</label>
-              <input type="text" id="patientIdInput" placeholder="e.g. PID-10492" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52] uppercase font-mono">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Patient Name / Diet Note</label>
-              <input type="text" id="patientNameNotes" placeholder="e.g. Jean Doe (Soft Food)" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Billing Type</label>
-            <select id="patientBillingType" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[#1A3A52]">
-              <option value="COVERED_PERK">Covered Room Perk (Hospital Covered)</option>
-              <option value="PATIENT_PAY">Patient Direct Pay</option>
-            </select>
-          </div>
-        </div>
-        <div class="bg-[#F8FAFC]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
-          <button onclick="closeModal('modalPatientCheckout')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Cancel</button>
-          <button onclick="processPatientPayment()" class="bg-[#1A3A52] hover:bg-[#7C3AED] text-white rounded-xl px-6 py-2.5 text-sm font-bold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20">Confirm & Print Ticket</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 6: Add Department -->
-    <div id="modalAddDepartment" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52] flex items-center gap-2"><span><i class='bx bx-building-house'></i></span> Add New Department</h3>
-          <button onclick="closeModal('modalAddDepartment')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
-        </div>
-        <div class="p-5 flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department Name</label>
-            <input type="text" id="addDeptName" placeholder="e.g. LABORATORY & PATHOLOGY" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
-          </div>
-          <div class="flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Chronological Dept Code</label>
-              <span class="text-[0.65rem] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Auto-Generated</span>
-            </div>
-            <input type="text" id="addDeptCode" placeholder="DPT-001" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-extrabold focus:outline-none focus:border-[#1A3A52] uppercase font-mono">
-          </div>
-        </div>
-        <div class="bg-[#F8FAFC]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
-          <button onclick="closeModal('modalAddDepartment')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Cancel</button>
-          <button onclick="saveNewDepartment()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-sm font-extrabold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20">Save Department</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 7: Add Employee -->
-    <div id="modalAddEmployee" class="modal-overlay hidden fixed inset-0 bg-[#FFFFFF]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#F8FAFC] px-5 py-4 border-b border-black/[0.1] flex justify-between items-center">
-          <h3 class="text-lg font-bold text-[#1A3A52] flex items-center gap-2"><span><i class='bx bx-user'></i></span> Add Staff Account</h3>
-          <button onclick="closeModal('modalAddEmployee')" class="text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer text-xl">×</button>
-        </div>
-        <div class="p-5 flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Full Name</label>
-            <input type="text" id="addEmpFullName" placeholder="e.g. JEAN-PAUL HABIMANA" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] uppercase">
-          </div>
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Department</label>
-            <select id="addEmpDeptSelect" onchange="window.updateAutoStaffId()" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-              <!-- Options populated dynamically -->
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Staff ID</label>
-              <input type="text" id="addEmpStaffId" placeholder="EMP-9021" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52] font-mono">
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Initial Unpaid Tab (RWF)</label>
-              <input type="number" id="addEmpInitialBalance" placeholder="0" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
-            </div>
-          </div>
-        </div>
-        <div class="bg-[#F8FAFC]/30 px-5 py-4 border-t border-black/[0.1] flex justify-end gap-3">
-          <button onclick="closeModal('modalAddEmployee')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#6B7280] hover:text-[#1A3A52] bg-transparent border-none cursor-pointer">Cancel</button>
-          <button onclick="saveNewEmployee()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white rounded-xl px-6 py-2.5 text-sm font-extrabold cursor-pointer border-none shadow-lg shadow-[#1A3A52]/20">Save Staff Account</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 8: Themed Confirm Dialog -->
-    <div id="modalConfirmDialog" class="modal-overlay hidden fixed inset-0 bg-[#1A3A52]/70 backdrop-blur-md z-[300] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-md w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#1A3A52] px-6 py-4 border-b border-black/[0.1] flex justify-between items-center text-white">
-          <h3 class="text-base font-bold flex items-center gap-2 text-white">
-            <span id="confirmDialogIcon" class="text-xl"><i class='bx bx-error'></i></span>
-            <span id="confirmDialogTitleText">Confirm Action</span>
-          </h3>
-          <button onclick="closeModal('modalConfirmDialog')" class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer text-2xl font-bold transition-colors">×</button>
-        </div>
-        <div class="p-6 flex flex-col gap-4 bg-white">
-          <div class="flex items-start gap-4">
-            <div id="confirmDialogIconContainer" class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-2xl shrink-0 border border-rose-500/20"><i class='bx bx-trash'></i></div>
-            <div class="flex flex-col gap-1 flex-1">
-              <span id="confirmDialogBadge" class="text-[0.65rem] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full w-fit">Irreversible Action</span>
-              <p id="confirmDialogMessage" class="text-sm font-medium text-slate-700 leading-relaxed mt-1">Are you sure you want to perform this action?</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-[#FFFFFF] px-6 py-4 border-t border-slate-200/80 flex justify-end items-center gap-3">
-          <button onclick="closeModal('modalConfirmDialog')" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 cursor-pointer transition-all active:scale-95">Cancel</button>
-          <button id="confirmDialogBtn" class="bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-xl px-6 py-2.5 text-xs font-extrabold cursor-pointer border-none shadow-lg shadow-rose-500/20 transition-all active:scale-95">Yes, Confirm Action</button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal 9: Add New User (Admin Direct Creation) -->
-    <div id="modalAddUser" class="modal-overlay hidden fixed inset-0 bg-[#1A3A52]/70 backdrop-blur-md z-[300] flex items-center justify-center p-4">
-      <div class="modal-card bg-[#FFFFFF] border border-black/[0.1] max-w-md w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="bg-[#1A3A52] px-6 py-4 border-b border-black/[0.1] flex justify-between items-center text-white">
-          <h3 class="text-base font-bold flex items-center gap-2 text-white">
-            <span class="text-xl"><i class='bx bx-plus'></i></span> Add New Pre-Approved User
-          </h3>
-          <button onclick="closeModal('modalAddUser')" class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer text-2xl font-bold transition-colors">×</button>
-        </div>
-        <div class="p-6 flex flex-col gap-4 bg-white">
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Full Name</label>
-            <input type="text" id="adminNewUserFullName" placeholder="e.g. Marie Claire" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
+            <input type="text" id="adminNewUserFullName" list="userStaffDatalist" oninput="window.handleAdminUserStaffSelect && window.handleAdminUserStaffSelect(this.value)" placeholder="e.g. Marie Claire" class="bg-[#F8FAFC] border border-black/[0.1] text-[#1A3A52] rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-[#1A3A52]">
+            <datalist id="userStaffDatalist"></datalist>
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Username</label>

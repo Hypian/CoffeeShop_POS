@@ -22,6 +22,7 @@ router.post('/', async (req, res) => {
 
     const results = [];
     for (const d of departments) {
+      const dId = d.id || `dept-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       const text = `
         INSERT INTO departments (id, code, name, monthly_credit_limit, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
         RETURNING *;
       `;
       const values = [
-        d.id,
+        dId,
         d.code,
         d.name,
         d.monthlyCreditLimit || d.monthly_credit_limit || 100000
