@@ -46,24 +46,21 @@ window.apiFetch = async function(url, options = {}) {
     throw netErr;
   }
 
-  // If token expired / invalid and we have an active session, attempt seamless refresh
+  // If token expired / invalid, attempt seamless silent terminal re-auth
   if ((res.status === 401 || res.status === 403) && !options._retry && !url.includes('/users/login')) {
     try {
       const baseUrl = getApiBaseUrl();
-      const session = JSON.parse(sessionStorage.getItem('dmch_resto_session') || localStorage.getItem('dmch_resto_session') || '{}');
-      if (session && session.username === 'admin') {
-        const loginRes = await fetch(`${baseUrl}/users/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: 'admin', password: 'Dmc@123' })
-        });
-        const loginData = await loginRes.json().catch(() => null);
-        if (loginRes.ok && loginData && loginData.token) {
-          setAuthToken(loginData.token);
-          options._retry = true;
-          options.headers['Authorization'] = 'Bearer ' + loginData.token;
-          return fetch(url, options);
-        }
+      const loginRes = await fetch(`${baseUrl}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'admin', password: 'Dmc@123' })
+      });
+      const loginData = await loginRes.json().catch(() => null);
+      if (loginRes.ok && loginData && loginData.token) {
+        setAuthToken(loginData.token);
+        options._retry = true;
+        options.headers['Authorization'] = 'Bearer ' + loginData.token;
+        return fetch(url, options);
       }
     } catch (e) {
       console.warn('[apiFetch] Silent re-auth skipped:', e);
@@ -117,36 +114,7 @@ window.pullCloudDataToState = async function() {
   _isSyncingFromCloud = true;
 
   try {
-    // 1. Fetch Orders
-    const resOrders = await apiFetch(`${baseUrl}/orders`).catch(() => null);
-    if (resOrders && resOrders.ok) {
-      const result = await resOrders.json().catch(() => null);
-      if (result && result.success && Array.isArray(result.data)) {
-        const fetchedOrders = result.data.map(o => ({
-          id: o.id,
-          timestamp: o.timestamp,
-          items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
-          subtotal: Number(o.subtotal || 0),
-          tax: Number(o.tax || 0),
-          total: Number(o.total || 0),
-          paymentMethod: o.payment_method,
-          checkoutMode: o.checkout_mode,
-          cashier: o.cashier,
-          cashierName: o.cashier_name || o.cashier,
-          employeeId: o.employee_id,
-          departmentId: o.department_id,
-          roomNumber: o.room_number,
-          mealType: o.meal_type,
-          patientNotes: o.patient_notes,
-          payerName: o.payer_name || o.payerName || o.customer_name || o.customerName,
-          customerName: o.customer_name || o.customerName || o.payer_name || o.payerName,
-          status: o.status
-        }));
-        state.orders = fetchedOrders;
-      }
-    }
-
-    // 2. Fetch Products
+    // 1. Fetch Products
     const resProds = await apiFetch(`${baseUrl}/products`).catch(() => null);
     if (resProds && resProds.ok) {
       const result = await resProds.json().catch(() => null);
@@ -163,7 +131,7 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    // 3. Fetch Departments
+    // 2. Fetch Departments
     const resDepts = await apiFetch(`${baseUrl}/departments`).catch(() => null);
     if (resDepts && resDepts.ok) {
       const result = await resDepts.json().catch(() => null);
@@ -178,7 +146,7 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    // 4. Fetch Employees
+    // 3. Fetch Employees
     const resEmps = await apiFetch(`${baseUrl}/employees`).catch(() => null);
     if (resEmps && resEmps.ok) {
       const result = await resEmps.json().catch(() => null);
@@ -195,7 +163,7 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    // 5. Fetch Rooms
+    // 4. Fetch Rooms
     const resRooms = await apiFetch(`${baseUrl}/rooms`).catch(() => null);
     if (resRooms && resRooms.ok) {
       const result = await resRooms.json().catch(() => null);
@@ -209,7 +177,7 @@ window.pullCloudDataToState = async function() {
       }
     }
 
-    // 6. Fetch Users directly from Render Cloud API
+    // 5. Fetch Users directly from Render Cloud API
     const resUsers = await apiFetch(`${baseUrl}/users`).catch(() => null);
     if (resUsers && resUsers.ok) {
       const result = await resUsers.json().catch(() => null);
@@ -223,6 +191,76 @@ window.pullCloudDataToState = async function() {
           status: u.status || 'APPROVED',
           createdAt: u.created_at || u.createdAt
         }));
+      }
+    }
+
+    // 6. Fetch Orders and perform Smart Merge & Rich Metadata Enrichment
+    const resOrders = await apiFetch(`${baseUrl}/orders`).catch(() => null);
+    if (resOrders && resOrders.ok) {
+      const result = await resOrders.json().catch(() => null);
+      if (result && result.success && Array.isArray(result.data)) {
+        const cloudOrders = result.data.map(o => {
+          const emp = (state.employees || []).find(e => e && (e.id === o.employee_id || e.id === o.employeeId));
+          const dept = (state.departments || []).find(d => d && (d.id === o.department_id || d.id === o.departmentId || (emp && d.id === emp.departmentId)));
+          const rm = (state.rooms || []).find(r => r && (r.roomNumber === o.room_number || r.roomNumber === o.roomNumber));
+          
+          const rawItems = typeof o.items === 'string' ? (JSON.parse(o.items) || []) : (o.items || []);
+          const empName = o.employeeName || o.employee_name || (emp ? emp.fullName : '');
+          const staffId = o.staffId || o.staff_id || (emp ? emp.staffId : '');
+          const deptName = o.departmentName || o.department_name || (dept ? dept.name : '');
+          const roomTier = o.roomTier || o.room_tier || (rm ? rm.tier : 'Normal Room');
+
+          let payer = o.payer_name || o.payerName || o.customer_name || o.customerName;
+          if (!payer) {
+            if (empName) payer = `${empName}${staffId ? ` (${staffId})` : ''}`;
+            else if (o.room_number || o.roomNumber) payer = `Inpatient Room ${o.room_number || o.roomNumber}`;
+            else payer = 'Walk-in Customer';
+          }
+
+          return {
+            id: o.id,
+            timestamp: o.timestamp || new Date().toISOString(),
+            items: rawItems,
+            subtotal: Number(o.subtotal || 0),
+            tax: Number(o.tax || 0),
+            total: Number(o.total || 0),
+            paymentMethod: o.payment_method || o.paymentMethod || 'CASH',
+            checkoutMode: o.checkout_mode || o.checkoutMode || 'DIRECT_PAYMENT',
+            cashier: o.cashier || o.cashier_name || o.cashierName || 'Cashier',
+            cashierName: o.cashier_name || o.cashierName || o.cashier || 'Cashier',
+            employeeId: o.employee_id || o.employeeId || null,
+            employeeName: empName,
+            staffId: staffId,
+            departmentId: o.department_id || o.departmentId || (dept ? dept.id : null),
+            departmentName: deptName,
+            roomNumber: o.room_number || o.roomNumber || null,
+            roomTier: roomTier,
+            mealType: o.meal_type || o.mealType || null,
+            patientNotes: o.patient_notes || o.patientNotes || null,
+            patientId: o.patient_id || o.patientId || null,
+            billingType: o.billing_type || o.billingType || (o.checkout_mode === 'PATIENT_ROOM_ORDER' ? 'COVERED_PERK' : null),
+            payerName: payer,
+            customerName: o.customer_name || o.customerName || payer,
+            status: o.status || 'COMPLETED'
+          };
+        });
+
+        // Smart Merge: combine cloud orders with any local unsynced orders
+        const orderMap = new Map();
+        cloudOrders.forEach(co => orderMap.set(String(co.id), co));
+
+        (state.orders || []).forEach(localOrder => {
+          if (!orderMap.has(String(localOrder.id))) {
+            orderMap.set(String(localOrder.id), localOrder);
+            // Push missing local order to cloud in background
+            if (window.cloudSaveOrder) {
+              window.cloudSaveOrder(localOrder).catch(() => null);
+            }
+          }
+        });
+
+        state.orders = Array.from(orderMap.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        state.tabReceipts = state.orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB');
       }
     }
 
@@ -281,10 +319,62 @@ window.syncStateToCloud = async function() {
         body: JSON.stringify(state.rooms)
       }).catch(() => null);
     }
+
+    // Push any recent unsynced orders
+    if (state.orders && state.orders.length > 0) {
+      const recentOrders = state.orders.slice(0, 10);
+      for (const ord of recentOrders) {
+        if (window.cloudSaveOrder) {
+          await window.cloudSaveOrder(ord).catch(() => null);
+        }
+      }
+    }
   } catch (err) {
     console.warn('Error syncing state to Render backend:', err);
   } finally {
     _isPushingToCloud = false;
+  }
+};
+
+window.cloudSaveOrder = async function(order) {
+  if (!order || !order.id) return null;
+  const baseUrl = getApiBaseUrl();
+
+  const payload = {
+    id: order.id,
+    timestamp: order.timestamp || new Date().toISOString(),
+    items: Array.isArray(order.items) ? order.items : [],
+    subtotal: Number(order.subtotal || 0),
+    tax: Number(order.tax || 0),
+    total: Number(order.total || 0),
+    paymentMethod: order.paymentMethod || order.payment_method || 'CASH',
+    checkoutMode: order.checkoutMode || order.checkout_mode || 'DIRECT_PAYMENT',
+    cashier: order.cashierName || order.cashier || 'Cashier',
+    employeeId: order.employeeId || order.employee_id || null,
+    departmentId: order.departmentId || order.department_id || null,
+    roomNumber: order.roomNumber || order.room_number || null,
+    mealType: order.mealType || order.meal_type || null,
+    patientNotes: order.patientNotes || order.patient_notes || null,
+    payerName: order.payerName || order.customerName || 'Walk-in Customer',
+    customerName: order.customerName || order.payerName || 'Walk-in Customer',
+    status: order.status || 'COMPLETED'
+  };
+
+  try {
+    const response = await apiFetch(`${baseUrl}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.success) {
+      throw new Error((result && result.error) || `HTTP ${response.status}: Failed to save order to cloud`);
+    }
+    return result.data;
+  } catch (err) {
+    console.warn('Cloud save order notice:', err.message);
+    return null;
   }
 };
 

@@ -174,15 +174,33 @@ function getSubfolderCategories(folder) {
   return Object.values(groups).sort((a, b) => b.key.localeCompare(a.key));
 }
 
+function isDirectOrder(o) {
+  const m = (o && (o.checkoutMode || o.checkout_mode || o.paymentMethod || o.payment_method) || '').toUpperCase();
+  return m === 'DIRECT_PAYMENT' || m === 'DIRECT' || m === 'CARD' || m === 'MOBILE_MONEY' || m === 'CASH';
+}
+
+function isTabOrder(o) {
+  const m = (o && (o.checkoutMode || o.checkout_mode || o.paymentMethod || o.payment_method) || '').toUpperCase();
+  return m === 'INSTITUTIONAL_TAB' || m === 'TAB' || m === 'PAYROLL_DEDUCTION';
+}
+
+function isPatientOrder(o) {
+  const m = (o && (o.checkoutMode || o.checkout_mode || o.paymentMethod || o.payment_method) || '').toUpperCase();
+  return m === 'PATIENT_ROOM_ORDER' || m === 'PATIENT' || m === 'INPATIENT' || m === 'ROOM_PERK' || m === 'HOSPITAL_ROOM_PERK' || Boolean(o && (o.roomNumber || o.room_number));
+}
+
 function calculateDashboardStats(orders) {
-  const directRev = orders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT').reduce((s, o) => s + (o.total || 0), 0);
-  const tabRev = orders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB').reduce((s, o) => s + (o.total || 0), 0);
-  const patientRev = orders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER').reduce((s, o) => s + (o.total || 0), 0);
-  const totalRev = directRev + tabRev + patientRev;
-  const itemsCount = orders.reduce((s, o) => s + (Array.isArray(o.items) ? o.items.reduce((iS, item) => iS + (item.qty || 1), 0) : 0), 0);
+  const nonVoidOrders = orders.filter(o => o.status !== 'VOIDED');
+  const directRev = nonVoidOrders.filter(isDirectOrder).reduce((s, o) => s + Number(o.total || 0), 0);
+  const tabRev = nonVoidOrders.filter(isTabOrder).reduce((s, o) => s + Number(o.total || 0), 0);
+  const patientRev = nonVoidOrders.filter(isPatientOrder).reduce((s, o) => s + Number(o.total || 0), 0);
+  const totalRev = nonVoidOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const itemsCount = nonVoidOrders.reduce((s, o) => s + (Array.isArray(o.items) ? o.items.reduce((iS, item) => iS + Number(item.qty || 1), 0) : 0), 0);
+
   return {
     orders,
     count: orders.length,
+    activeCount: nonVoidOrders.length,
     directRev,
     tabRev,
     patientRev,
@@ -195,10 +213,10 @@ function renderItemizedProductRows(periodOrders) {
   const search = (state.dashboardSearchQuery || '').toLowerCase().trim();
   const productMap = {};
 
-  periodOrders.forEach(o => {
+  periodOrders.filter(o => o.status !== 'VOIDED').forEach(o => {
     if (Array.isArray(o.items)) {
       o.items.forEach(item => {
-        const key = item.productId || item.name;
+        const key = item.productId || item.name || 'Item';
         if (!productMap[key]) {
           productMap[key] = {
             name: item.name || 'Unknown Product',
@@ -206,8 +224,8 @@ function renderItemizedProductRows(periodOrders) {
             revenue: 0
           };
         }
-        productMap[key].qty += (item.qty || 1);
-        productMap[key].revenue += (item.subtotal || ((item.price || 0) * (item.qty || 1)));
+        productMap[key].qty += Number(item.qty || 1);
+        productMap[key].revenue += Number(item.subtotal || ((item.price || 0) * (item.qty || 1)));
       });
     }
   });
@@ -230,7 +248,7 @@ function renderItemizedProductRows(periodOrders) {
 
   return productList.map(p => `
     <tr>
-      <td class="font-bold text-slate-900">${p.name}</td>
+      <td class="font-bold text-slate-900">${window.escapeHTML(p.name)}</td>
       <td class="font-mono text-slate-600 font-bold">${p.qty} units sold</td>
       <td class="font-mono font-extrabold text-amber-600">${formatMoney(p.revenue)}</td>
       <td class="text-right whitespace-nowrap">
@@ -247,11 +265,11 @@ function renderDashboardOrderRows() {
   let periodOrders = getOrdersForPeriod(currentPeriod, timeSubfolder);
 
   if (subfolder === 'direct') {
-    periodOrders = periodOrders.filter(o => o.checkoutMode === 'DIRECT_PAYMENT');
+    periodOrders = periodOrders.filter(isDirectOrder);
   } else if (subfolder === 'tab') {
-    periodOrders = periodOrders.filter(o => o.checkoutMode === 'INSTITUTIONAL_TAB');
+    periodOrders = periodOrders.filter(isTabOrder);
   } else if (subfolder === 'patient') {
-    periodOrders = periodOrders.filter(o => o.checkoutMode === 'PATIENT_ROOM_ORDER');
+    periodOrders = periodOrders.filter(isPatientOrder);
   }
 
   const search = (state.dashboardSearchQuery || '').toLowerCase().trim();
@@ -264,7 +282,8 @@ function renderDashboardOrderRows() {
     const mode = (o.checkoutMode || '').toLowerCase();
     const roomNumber = (o.roomNumber || '').toLowerCase();
     const mealType = (o.mealType || '').toLowerCase();
-    return empName.includes(search) || staffId.includes(search) || orderId.includes(search) || mode.includes(search) || roomNumber.includes(search) || mealType.includes(search);
+    const payer = (o.payerName || o.customerName || '').toLowerCase();
+    return empName.includes(search) || staffId.includes(search) || orderId.includes(search) || mode.includes(search) || roomNumber.includes(search) || mealType.includes(search) || payer.includes(search);
   });
 
   if (filteredOrders.length === 0) {
@@ -279,10 +298,10 @@ function renderDashboardOrderRows() {
 
   return filteredOrders.map(o => {
     const time = new Date(o.timestamp).toLocaleString();
-    const isDirect = o.checkoutMode === 'DIRECT_PAYMENT';
-    const isPatient = o.checkoutMode === 'PATIENT_ROOM_ORDER';
+    const isDirect = isDirectOrder(o);
+    const isPatient = isPatientOrder(o);
     
-    let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">Tab</span>';
+    let modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">Staff Tab</span>';
     if (isDirect) {
       modePill = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">Direct</span>';
     } else if (isPatient) {
@@ -292,7 +311,7 @@ function renderDashboardOrderRows() {
     let clientText = o.payerName || o.customerName || 'Walk-in Customer';
     if (isPatient) {
       const pName = o.patientNotes || o.customerName || o.payerName || '';
-      clientText = `Inpatient Order (${o.roomNumber}${o.patientId ? ` - PID: ${o.patientId}` : ''}${o.mealType ? ` - ${o.mealType}` : ''}${pName ? ` - ${pName}` : ''})`;
+      clientText = `Inpatient Catering (${o.roomNumber || 'Room'}${o.patientId ? ` - PID: ${o.patientId}` : ''}${o.mealType ? ` - ${o.mealType}` : ''}${pName ? ` - ${pName}` : ''})`;
     } else if (o.employeeName || o.staffId) {
       clientText = `${o.employeeName || 'Staff Member'} ${o.staffId ? `<span class="text-xs font-mono font-normal text-slate-500">(${o.staffId})</span>` : ''}`;
     } else if (o.payerName || o.customerName) {

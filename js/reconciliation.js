@@ -63,10 +63,18 @@ window.confirmVoidOrder = async function() {
   order.voidedBy = state.currentUser ? state.currentUser.name : 'Admin';
 
   addAuditLog("Order Voided", `Voided transaction ${order.id} (${formatMoney(order.total)}). Reason: ${reason}`);
-  saveData();
+  saveData({ sync: false });
   window.closeModal('modalVoidOrder');
   window.showToast(`Transaction ${order.id} voided & inventory restored!`, 'success');
   if (window.renderAllViews) window.renderAllViews();
+
+  try {
+    if (window.cloudSaveOrder) {
+      await window.cloudSaveOrder(order);
+    }
+  } catch(e) {
+    console.warn('Cloud void sync error:', e);
+  }
 };
 
 window.deleteOrder = function(orderId) {

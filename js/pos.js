@@ -236,6 +236,7 @@ window.processDirectPayment = function() {
       id: `ORD-${new Date().toISOString().replace(/\D/g,'').slice(0,14)}`,
       timestamp: new Date().toISOString(),
       cashierName: cashierName,
+      cashier: cashierName,
       checkoutMode: 'DIRECT_PAYMENT',
       paymentMethod: method,
       paymentDetails: paymentDetails,
@@ -250,12 +251,19 @@ window.processDirectPayment = function() {
 
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
-    saveData();
+    saveData({ sync: false });
     window.clearCart();
     window.closeModal('modalDirectCheckout');
-    window.showToast(`Payment approved via ${method.replace('_', ' ')}`, 'success');
-    renderAllViews();
+    window.showToast(`Payment approved via ${method.replace('_', ' ')} (${formatMoney(totals.total)})`, 'success');
+    if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
+
+    // Non-blocking cloud persistence
+    try {
+      if (window.cloudSaveOrder) {
+        window.cloudSaveOrder(order).catch(e => console.warn('Cloud order sync notice:', e.message));
+      }
+    } catch(e) {}
   } finally {
     setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }
@@ -477,6 +485,7 @@ window.processTabPayment = async function() {
       id: `ORD-${new Date().toISOString().replace(/\D/g,'').slice(0,14)}`,
       timestamp: new Date().toISOString(),
       cashierName: cashierName,
+      cashier: cashierName,
       checkoutMode: 'INSTITUTIONAL_TAB',
       paymentMethod: 'PAYROLL_DEDUCTION',
       departmentId: dept ? dept.id : null,
@@ -484,6 +493,8 @@ window.processTabPayment = async function() {
       employeeId: emp.id,
       employeeName: emp.fullName,
       staffId: emp.staffId,
+      payerName: `${emp.fullName} (${emp.staffId})`,
+      customerName: `${emp.fullName} (${emp.staffId})`,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,
@@ -500,19 +511,23 @@ window.processTabPayment = async function() {
 
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
-    saveData();
+    saveData({ sync: false });
     window.clearCart();
     window.closeModal('modalTabCheckout');
     window.showToast(`Staff tab authorized for ${emp.fullName} (${formatMoney(totals.total)})`, 'success');
     if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
 
+    // Non-blocking cloud persistence for order and updated employee tab balance
     try {
+      if (window.cloudSaveOrder) {
+        window.cloudSaveOrder(order).catch(e => console.warn('Cloud tab order sync notice:', e.message));
+      }
       if (window.cloudSaveEmployee) {
-        await window.cloudSaveEmployee(emp);
+        window.cloudSaveEmployee(emp).catch(e => console.warn('Cloud employee balance sync notice:', e.message));
       }
     } catch (e) {
-      console.warn('Cloud employee balance sync notice:', e.message);
+      console.warn('Cloud sync error:', e);
     }
   } catch (err) {
     console.error('Error processing staff tab payment:', err);
@@ -568,11 +583,14 @@ window.processPatientPayment = function() {
     const roomTier = roomObj ? roomObj.tier : 'Normal Room';
 
     const totals = calculateCartTotals();
+    const cashierName = state.currentUser ? (state.currentUser.name || state.currentUser.username || 'Cashier') : 'Cashier';
+    const payerName = `Inpatient Room ${roomNumber}${notes ? ` (${notes})` : ''}`;
 
     const order = {
       id: `ORD-${new Date().toISOString().replace(/\D/g,'').slice(0,14)}`,
       timestamp: new Date().toISOString(),
-      cashierName: state.currentUser ? state.currentUser.name : 'Cashier',
+      cashierName: cashierName,
+      cashier: cashierName,
       checkoutMode: 'PATIENT_ROOM_ORDER',
       paymentMethod: billingType === 'COVERED_PERK' ? 'HOSPITAL_ROOM_PERK' : 'PATIENT_DIRECT_PAY',
       roomNumber: roomNumber,
@@ -581,6 +599,8 @@ window.processPatientPayment = function() {
       patientId: patientId,
       patientNotes: notes,
       billingType: billingType,
+      payerName: payerName,
+      customerName: `Inpatient Room ${roomNumber}`,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,
@@ -590,14 +610,21 @@ window.processPatientPayment = function() {
 
     state.orders.unshift(order);
     state.tabReceipts.unshift(order);
-    saveData();
+    saveData({ sync: false });
     window.clearCart();
     window.closeModal('modalPatientCheckout');
-    window.showToast(`Catering order for ${roomNumber} (${roomTier} - ${mealType}) processed!`, 'success');
-    renderAllViews();
+    window.showToast(`Catering order for Room ${roomNumber} (${roomTier} - ${mealType}) processed!`, 'success');
+    if (window.renderAllViews) window.renderAllViews();
     if (window.showReceiptModal) window.showReceiptModal(order);
+
+    // Non-blocking cloud persistence
+    try {
+      if (window.cloudSaveOrder) {
+        window.cloudSaveOrder(order).catch(e => console.warn('Cloud patient order sync notice:', e.message));
+      }
+    } catch(e) {}
   } finally {
-    setTimeout(() => { state.isProcessingPayment = false; }, 1000);
+    setTimeout(() => { state.isProcessingPayment = false; }, 500);
   }
 };
 
