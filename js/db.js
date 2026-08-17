@@ -320,12 +320,12 @@ window.syncStateToCloud = async function() {
       }).catch(() => null);
     }
 
-    // Push any recent unsynced orders
+    // Push any recent unsynced orders to database (without re-triggering sheet sync)
     if (state.orders && state.orders.length > 0) {
       const recentOrders = state.orders.slice(0, 10);
       for (const ord of recentOrders) {
         if (window.cloudSaveOrder) {
-          await window.cloudSaveOrder(ord).catch(() => null);
+          await window.cloudSaveOrder(ord, { skipGoogleSheets: true }).catch(() => null);
         }
       }
     }
@@ -336,7 +336,9 @@ window.syncStateToCloud = async function() {
   }
 };
 
-window.cloudSaveOrder = async function(order) {
+const _syncedGoogleSheetOrderIds = new Set();
+
+window.cloudSaveOrder = async function(order, options = {}) {
   if (!order || !order.id) return null;
   const baseUrl = getApiBaseUrl();
 
@@ -372,8 +374,8 @@ window.cloudSaveOrder = async function(order) {
       throw new Error((result && result.error) || `HTTP ${response.status}: Failed to save order to cloud`);
     }
 
-    // Live Google Sheets Real-Time Sync
-    if (window.syncOrderToGoogleSheets) {
+    // Live Google Sheets Real-Time Sync (Deduplicated)
+    if (!options.skipGoogleSheets && window.syncOrderToGoogleSheets) {
       window.syncOrderToGoogleSheets(order).catch(() => null);
     }
 
@@ -384,7 +386,14 @@ window.cloudSaveOrder = async function(order) {
   }
 };
 
-window.syncOrderToGoogleSheets = async function(order, customUrl = null) {
+window.syncOrderToGoogleSheets = async function(order, customUrl = null, force = false) {
+  if (!order || !order.id) return false;
+  
+  // Deduplicate: prevent sending the same order multiple times in the same session
+  if (!force && _syncedGoogleSheetOrderIds.has(order.id)) {
+    return true;
+  }
+
   const webhookUrl = customUrl || localStorage.getItem('dmch_resto_google_sheets_url') || '';
   if (!webhookUrl || !webhookUrl.startsWith('https://script.google.com/macros/s/')) {
     return false;
@@ -414,6 +423,7 @@ window.syncOrderToGoogleSheets = async function(order, customUrl = null) {
   };
 
   try {
+    _syncedGoogleSheetOrderIds.add(order.id);
     await fetch(webhookUrl, {
       method: 'POST',
       mode: 'no-cors',

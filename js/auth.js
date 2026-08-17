@@ -175,6 +175,33 @@ function applyRolePermissions() {
   });
 }
 
+let _authLoadingTimer = null;
+
+function showAuthLoading(title = 'Connecting to Cloud Terminal...', subtext = 'Authenticating credentials & waking up secure server...') {
+  const overlay = document.getElementById('authLoadingOverlay');
+  const subtextEl = document.getElementById('authLoadingSubtext');
+  const titleEl = document.querySelector('#authLoadingOverlay .auth-loading-title');
+  if (titleEl) titleEl.textContent = title;
+  if (subtextEl) subtextEl.textContent = subtext;
+  if (overlay) overlay.style.display = 'flex';
+
+  if (_authLoadingTimer) clearTimeout(_authLoadingTimer);
+  _authLoadingTimer = setTimeout(() => {
+    if (subtextEl && overlay && overlay.style.display !== 'none') {
+      subtextEl.textContent = 'Database container is waking up from idle, almost there...';
+    }
+  }, 2500);
+}
+
+function hideAuthLoading() {
+  if (_authLoadingTimer) {
+    clearTimeout(_authLoadingTimer);
+    _authLoadingTimer = null;
+  }
+  const overlay = document.getElementById('authLoadingOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
 async function handleLogin() {
   try {
     const usernameInput = document.getElementById('loginUsername');
@@ -200,6 +227,9 @@ async function handleLogin() {
       return;
     }
     
+    // Show themed Hamster loading animation
+    showAuthLoading('Connecting to Cloud Terminal...', 'Verifying credentials & establishing secure session...');
+
     // Call backend API for login
     let user = null;
     try {
@@ -228,6 +258,7 @@ async function handleLogin() {
       console.warn('Backend login notice:', err);
       // If the backend actively rejected the credentials, don't let them in!
       if (window.cloudSyncActive && err.message && err.message.startsWith('BACKEND_AUTH_FAILED:')) {
+        hideAuthLoading();
         const errorMsg = err.message.replace('BACKEND_AUTH_FAILED: ', '');
         if (errorIcon) errorIcon.textContent = '❌';
         if (errorText) errorText.textContent = errorMsg;
@@ -255,6 +286,7 @@ async function handleLogin() {
       }
       
       if (!user) {
+        hideAuthLoading();
         if (errorIcon) errorIcon.textContent = '❌';
         if (errorText) errorText.textContent = err.message ? err.message.replace('BACKEND_AUTH_FAILED: ', '') : 'Invalid username or password.';
         if (errorIcon) errorIcon.innerHTML = "<i class='bx bx-x'></i>";
@@ -265,12 +297,14 @@ async function handleLogin() {
       
       const userStatus = user.status || 'APPROVED';
       if (userStatus === 'PENDING_APPROVAL') {
+        hideAuthLoading();
         if (errorIcon) errorIcon.textContent = '⏳';
         if (errorText) errorText.textContent = 'Account Pending Approval.';
         if (errorDiv) errorDiv.classList.add('visible');
         return;
       }
       if (userStatus === 'DECLINED') {
+        hideAuthLoading();
         if (errorIcon) errorIcon.textContent = '🚫';
         if (errorText) errorText.textContent = 'Access Denied: Account declined.';
         if (errorDiv) errorDiv.classList.add('visible');
@@ -278,6 +312,7 @@ async function handleLogin() {
       }
     }
 
+    hideAuthLoading();
     if (errorDiv) errorDiv.classList.remove('visible');
 
     const session = {
@@ -307,6 +342,7 @@ async function handleLogin() {
       window.addSecurityAuditLog('AUTH', 'Successful Login', `User @${session.username} (${session.role}) signed in successfully.`, 'INFO');
     }
   } catch (err) {
+    hideAuthLoading();
     console.error('Error during login:', err);
     const errorDiv = document.getElementById('loginError');
     const errorText = document.getElementById('loginErrorText');
@@ -355,8 +391,11 @@ async function handleSignup() {
       return;
     }
     
+    showAuthLoading('Creating Staff Account...', 'Registering credentials with secure database...');
+
     const users = getUsers();
     if (users.find(u => u && u.username && u.username.toLowerCase() === username)) {
+      hideAuthLoading();
       if (errorText) errorText.textContent = 'Username already exists. Choose a different one.';
       if (errorDiv) errorDiv.classList.add('visible');
       return;
@@ -386,9 +425,11 @@ async function handleSignup() {
     confirmInput.value = '';
     if (errorDiv) errorDiv.classList.remove('visible');
     
+    hideAuthLoading();
     showLoginForm();
     if (window.showToast) window.showToast(`Account @${username} created successfully! You can now sign in.`, 'success');
   } catch (err) {
+    hideAuthLoading();
     console.error('Error during signup:', err);
     const errorDiv = document.getElementById('signupError');
     const errorText = document.getElementById('signupErrorText');
