@@ -371,10 +371,100 @@ window.cloudSaveOrder = async function(order) {
     if (!response.ok || !result || !result.success) {
       throw new Error((result && result.error) || `HTTP ${response.status}: Failed to save order to cloud`);
     }
+
+    // Live Google Sheets Real-Time Sync
+    if (window.syncOrderToGoogleSheets) {
+      window.syncOrderToGoogleSheets(order).catch(() => null);
+    }
+
     return result.data;
   } catch (err) {
     console.warn('Cloud save order notice:', err.message);
     return null;
+  }
+};
+
+window.syncOrderToGoogleSheets = async function(order, customUrl = null) {
+  const webhookUrl = customUrl || localStorage.getItem('dmch_resto_google_sheets_url') || '';
+  if (!webhookUrl || !webhookUrl.startsWith('https://script.google.com/macros/s/')) {
+    return false;
+  }
+
+  const itemsFormatted = Array.isArray(order.items) 
+    ? order.items.map(i => `${i.qty || 1}x ${i.name || 'Item'}`)
+    : [];
+
+  const payload = {
+    id: order.id,
+    timestamp: order.timestamp ? new Date(order.timestamp).toLocaleString() : new Date().toLocaleString(),
+    checkoutMode: order.checkoutMode || 'DIRECT_PAYMENT',
+    payerName: order.payerName || order.customerName || 'Walk-in Customer',
+    customerName: order.customerName || order.payerName || 'Walk-in Customer',
+    departmentName: order.departmentName || '',
+    roomNumber: order.roomNumber || '',
+    mealType: order.mealType || '',
+    items: Array.isArray(order.items) ? order.items : [],
+    itemsSummary: itemsFormatted.join(', '),
+    subtotal: Number(order.subtotal || 0),
+    tax: Number(order.tax || 0),
+    total: Number(order.total || 0),
+    paymentMethod: order.paymentMethod || 'CASH',
+    cashierName: order.cashierName || order.cashier || 'Cashier',
+    status: order.status || 'COMPLETED'
+  };
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return true;
+  } catch (err) {
+    console.warn('Google Sheets live sync notice:', err);
+    return false;
+  }
+};
+
+window.testGoogleSheetsSync = async function(urlInput) {
+  const webhookUrl = (urlInput || localStorage.getItem('dmch_resto_google_sheets_url') || '').trim();
+  if (!webhookUrl || !webhookUrl.startsWith('https://script.google.com/macros/s/')) {
+    window.showToast('Please enter a valid Google Apps Script Web App URL (starting with https://script.google.com/macros/s/)', 'error');
+    return;
+  }
+
+  const testPayload = {
+    id: `ORD-TEST-${Date.now().toString().slice(-4)}`,
+    timestamp: new Date().toLocaleString(),
+    checkoutMode: 'INSTITUTIONAL_TAB',
+    payerName: 'Dr. Test Staff (Cardiology)',
+    customerName: 'Dr. Test Staff',
+    departmentName: 'Cardiology',
+    roomNumber: 'VIP-101',
+    mealType: 'Lunch',
+    items: [{ qty: 2, name: 'Cappuccino' }, { qty: 1, name: 'Club Sandwich' }],
+    itemsSummary: '2x Cappuccino, 1x Club Sandwich',
+    subtotal: 10500,
+    tax: 0,
+    total: 10500,
+    paymentMethod: 'PAYROLL_DEDUCTION',
+    cashierName: 'Admin Tester',
+    status: 'COMPLETED'
+  };
+
+  try {
+    window.showToast('Sending test row to Google Sheets...', 'info');
+    await fetch(webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testPayload)
+    });
+    localStorage.setItem('dmch_resto_google_sheets_url', webhookUrl);
+    window.showToast('✅ Test row sent! Check your Google Sheet in 2 seconds.', 'success');
+  } catch (err) {
+    window.showToast(`Google Sheets Sync Error: ${err.message}`, 'error');
   }
 };
 

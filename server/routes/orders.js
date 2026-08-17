@@ -60,6 +60,46 @@ router.post('/', async (req, res) => {
     ];
 
     const { rows } = await db.query(text, values);
+
+    // Optional Server-side Google Sheets Live Sync
+    const googleSheetUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+    if (googleSheetUrl && googleSheetUrl.startsWith('https://script.google.com/macros/s/')) {
+      const https = require('https');
+      try {
+        const payloadData = JSON.stringify({
+          id: order.id,
+          timestamp: order.timestamp || new Date().toISOString(),
+          checkoutMode: order.checkoutMode || order.checkout_mode || 'DIRECT',
+          payerName: order.payerName || order.payer_name || order.customerName || 'Walk-in',
+          customerName: order.customerName || order.customer_name || 'Walk-in',
+          departmentName: order.departmentName || '',
+          roomNumber: order.roomNumber || order.room_number || '',
+          mealType: order.mealType || order.meal_type || '',
+          items: order.items || [],
+          subtotal: order.subtotal || 0,
+          tax: order.tax || 0,
+          total: order.total,
+          paymentMethod: order.paymentMethod || order.payment_method || 'CASH',
+          cashierName: order.cashier || order.cashierName || 'Cashier',
+          status: order.status || 'COMPLETED'
+        });
+
+        const urlObj = new URL(googleSheetUrl);
+        const reqPost = https.request({
+          hostname: urlObj.hostname,
+          path: urlObj.pathname + urlObj.search,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payloadData)
+          }
+        });
+        reqPost.on('error', () => {});
+        reqPost.write(payloadData);
+        reqPost.end();
+      } catch(e) {}
+    }
+
     res.status(201).json({ success: true, data: rows[0] });
   } catch (err) {
     console.error('Error creating order:', err);

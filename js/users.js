@@ -136,6 +136,42 @@ window.renderUsers = function(isRefresh = false) {
       </div>
     ` : ''}
 
+    <!-- Google Sheets Live Real-Time Sync & Auto-Backup Card -->
+    <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/[0.06] pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl border border-emerald-200">
+            <i class="bx bxs-spreadsheet"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[#1A3A52] flex items-center gap-2">
+              Google Sheets Real-Time Cloud Sync & Auto-Backup
+              <span id="googleSheetSyncBadge" class="text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold ${localStorage.getItem('dmch_resto_google_sheets_url') ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+                ${localStorage.getItem('dmch_resto_google_sheets_url') ? '🟢 Live Sync Active' : '⚪ Not Connected'}
+              </span>
+            </h3>
+            <p class="text-xs text-[#6B7280]">Automatically appends every transaction (Direct, Staff Tab, Room Perks) to your Google Sheet in real time for free.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center gap-3">
+        <div class="relative flex-1 w-full">
+          <input type="text" id="googleSheetsWebhookInput" placeholder="Paste Google Apps Script Web App URL (https://script.google.com/macros/s/.../exec)" 
+                 value="${localStorage.getItem('dmch_resto_google_sheets_url') || ''}"
+                 class="w-full bg-[#F8FAFC] border border-black/[0.1] text-xs text-[#1A3A52] font-mono rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#1A3A52]">
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button onclick="window.testGoogleSheetsConnection()" class="bg-[#1A3A52] hover:bg-[#D4A574] text-white border-none rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-all whitespace-nowrap shadow-xs active:scale-95 flex items-center justify-center gap-1.5 flex-1 sm:flex-initial">
+            <span>🚀</span> Test Connection
+          </button>
+          <button onclick="window.saveGoogleSheetsWebhook()" class="bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer transition-all whitespace-nowrap shadow-xs active:scale-95 flex items-center justify-center gap-1.5 flex-1 sm:flex-initial">
+            <span>💾</span> Save Webhook
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Search & Filter Controls -->
     <div class="bg-[#FFFFFF] border border-black/[0.1] rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="relative w-full sm:w-80">
@@ -539,4 +575,32 @@ window.renderSecurityAuditLog = function(containerId = 'auditLogContent') {
       </div>
     </div>
   `;
+};
+
+window.testGoogleSheetsConnection = function() {
+  const url = (document.getElementById('googleSheetsWebhookInput')?.value || '').trim();
+  if (window.testGoogleSheetsSync) {
+    window.testGoogleSheetsSync(url);
+  }
+};
+
+window.saveGoogleSheetsWebhook = function() {
+  const url = (document.getElementById('googleSheetsWebhookInput')?.value || '').trim();
+  if (!url) {
+    localStorage.removeItem('dmch_resto_google_sheets_url');
+    window.showToast('Google Sheets sync disabled.', 'info');
+  } else if (!url.startsWith('https://script.google.com/macros/s/')) {
+    window.showToast('Please enter a valid Google Apps Script Web App URL.', 'error');
+    return;
+  } else {
+    localStorage.setItem('dmch_resto_google_sheets_url', url);
+    window.showToast('✅ Google Sheets Webhook URL saved! Live sync is now active.', 'success');
+  }
+
+  const badge = document.getElementById('googleSheetSyncBadge');
+  if (badge) {
+    const isSaved = Boolean(localStorage.getItem('dmch_resto_google_sheets_url'));
+    badge.className = `text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold ${isSaved ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-200'}`;
+    badge.textContent = isSaved ? '🟢 Live Sync Active' : '⚪ Not Connected';
+  }
 };
