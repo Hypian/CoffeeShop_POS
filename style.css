@@ -968,3 +968,207 @@ header.topbar {
   from { transform: rotate(0); }
   to { transform: rotate(-1turn); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REVENUE DISTRIBUTION & EXECUTIVE DASHBOARD STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dash-header-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+}
+
+.dash-time-pills-container {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-0);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  gap: 2px;
+}
+
+.dash-time-pill {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dash-time-pill:hover {
+  color: var(--text-1);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.dash-time-pill.active {
+  background: var(--primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: var(--shadow-el1);
+}
+
+.dash-kpi-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: var(--transition-smooth);
+}
+
+.dash-kpi-card:hover {
+  box-shadow: var(--shadow-el2);
+  border-color: rgba(26, 58, 82, 0.2);
+  transform: translateY(-2px);
+}
+
+.dash-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dash-kpi-value {
+  font-family: var(--font-mono);
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.dash-trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.dash-trend-pill.positive {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.dash-trend-pill.warning {
+  color: #DC2626;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dash-trend-pill.info {
+  color: #2563EB;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+/* Donut chart styles */
+.donut-segment {
+  transition: stroke-width 0.25s ease, opacity 0.25s ease;
+  transform-origin: center;
+}
+
+.donut-segment:hover {
+  stroke-width: 22 !important;
+  opacity: 0.95;
+  cursor: pointer;
+}
+
+.dash-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  transition: var(--transition-smooth);
+  cursor: pointer;
+}
+
+.dash-category-row:hover {
+  background: var(--surface-0);
+  border-color: var(--border);
+}
+
+.dash-category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Action Required Card */
+.dash-action-card {
+  background: #FFFDFD;
+  border: 1px solid #FECACA;
+  border-left: 4px solid #DC2626;
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.06);
+}
+
+.dash-btn-action {
+  background: #B91C1C;
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 9px 18px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 2px 4px rgba(185, 28, 28, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-btn-action:hover {
+  background: #991B1B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(185, 28, 28, 0.35);
+}
+
+.dash-btn-action:active {
+  transform: scale(0.98);
+}
+
+/* Bullet Dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot.navy { background-color: #1A3A52; }
+.status-dot.teal { background-color: #0D9488; }
+.status-dot.emerald { background-color: #10B981; }
+.status-dot.gold { background-color: #D4A574; }
+.status-dot.purple { background-color: #8B5CF6; }
+.status-dot.red { background-color: #EF4444; }
+
